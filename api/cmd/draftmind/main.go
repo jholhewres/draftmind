@@ -66,7 +66,7 @@ func runSync(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, log *sl
 	if len(os.Args) < 3 || os.Args[2] != "heroes" {
 		return fmt.Errorf("unknown sync target; %s", usage)
 	}
-	src := gamesync.NewHTTPSource(gamesync.DefaultDotaconstantsBase, cfg.DotaconstantsRef, &http.Client{Timeout: 30 * time.Second})
+	src := gamesync.NewHTTPSource(gamesync.DefaultGitHubAPI, gamesync.DefaultDotaconstantsBase, cfg.DotaconstantsRef, &http.Client{Timeout: 30 * time.Second})
 	_, err := gamesync.NewSyncer(pool, src, log).Heroes(ctx)
 	return err
 }

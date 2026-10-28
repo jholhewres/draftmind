@@ -37,8 +37,11 @@ func (s *Store) Heroes(ctx context.Context) (string, []Hero, error) {
 		return "", nil, fmt.Errorf("current patch: %w", err)
 	}
 	rows, err := s.pool.Query(ctx, `
-		SELECT id, slug, name, primary_attr, attack_type, roles, img, icon
-		FROM hero ORDER BY name`)
+		SELECT h.id, h.slug, h.name, h.primary_attr, h.attack_type, h.roles, h.img, h.icon
+		FROM hero h
+		JOIN hero_patch hp ON hp.hero_id = h.id
+		JOIN patch p ON p.id = hp.patch_id AND p.is_current
+		ORDER BY h.name`)
 	if err != nil {
 		return "", nil, fmt.Errorf("list heroes: %w", err)
 	}
