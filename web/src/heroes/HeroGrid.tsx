@@ -83,8 +83,10 @@ export default function HeroGrid() {
           <ul className="hero-grid" aria-label={t('heroes.list')}>
             {visible.map((h) => (
               <li key={h.id} className="hero-card">
-                <img src={heroImageBase + h.img} alt="" loading="lazy" width={128} height={72} />
-                <span className="hero-name">{h.name}</span>
+                <a href={`#/heroes/${encodeURIComponent(h.slug)}`}>
+                  <img src={heroImageBase + h.img} alt="" loading="lazy" width={128} height={72} />
+                  <span className="hero-name">{h.name}</span>
+                </a>
               </li>
             ))}
           </ul>

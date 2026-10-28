@@ -8,12 +8,14 @@ import (
 
 func readFixture(t *testing.T, name string) []byte {
 	t.Helper()
-	b, err := os.ReadFile("testdata/" + name)
+	b, err := readFixtureFile(name)
 	if err != nil {
 		t.Fatal(err)
 	}
 	return b
 }
+
+func readFixtureFile(name string) ([]byte, error) { return os.ReadFile("testdata/" + name) }
 
 func TestParseHeroesReadsDotaconstantsFixture(t *testing.T) {
 	heroes, err := ParseHeroes(readFixture(t, "heroes.json"))

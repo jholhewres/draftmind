@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import { fetchHealth, type Health } from './api'
 import HeroGrid from './heroes/HeroGrid'
+import HeroPage from './heroes/HeroPage'
 import { useI18n } from './i18n'
 import Placeholder from './shell/Placeholder'
-import { tabLabel, useTab } from './shell/route'
+import { tabLabel, useRoute } from './shell/route'
 import TabBar from './shell/TabBar'
 
 export default function App() {
   const { t } = useI18n()
-  const tab = useTab()
+  const { tab, hero } = useRoute()
   const [health, setHealth] = useState<Health | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -32,7 +33,7 @@ export default function App() {
           </span>
           <span className="brand-name">Draftmind</span>
         </header>
-        <main>{tab === 'heroes' ? <HeroGrid /> : <Placeholder title={tabLabel[tab]} />}</main>
+        <main>{hero ? <HeroPage slug={hero} /> : tab === 'heroes' ? <HeroGrid /> : <Placeholder title={tabLabel[tab]} />}</main>
         <footer>
           <p className="note">{t('app.trademark')}</p>
           <p className="status" role="status">

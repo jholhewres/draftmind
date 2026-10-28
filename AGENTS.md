@@ -4,7 +4,8 @@ Rules for coding agents working in this repository. Read [docs/SPEC.md](docs/SPE
 
 ## Layout
 
-- `api/` — Go module `github.com/jholhewres/draftmind/api`. Entry point `cmd/draftmind` (`serve`, `migrate`, `sync heroes`). Packages under `internal/`.
+- `api/` — Go module `github.com/jholhewres/draftmind/api`. Entry point `cmd/draftmind` (`serve`, `migrate`, `sync heroes`, `sync details`). Packages under `internal/`.
+- `sync heroes` loads patches and heroes from dotaconstants and is fast; `sync details` then loads each current-patch hero's stats, abilities and talents from the game's data feed (ADR-0007), rate limited to about 2 requests a second, one hero per transaction. Run `sync heroes` first; `make sync` runs both.
 - `api/internal/db/migrations/` — numbered SQL files, applied once in name order. Never edit an applied migration; add a new one.
 - `web/` — React + Vite + TypeScript. `/api` is proxied to the Go server in dev.
 - `docs/` — spec, plan, ADRs.

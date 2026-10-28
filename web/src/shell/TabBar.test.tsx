@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import TabBar from './TabBar'
-import { tabFromHash } from './route'
+import { routeFromHash, tabFromHash } from './route'
 
 test('the tab bar links the four tabs and marks the current one with aria-current', () => {
   render(<TabBar current="heroes" />)
@@ -19,4 +19,11 @@ test('the hash names the tab, and an empty or unknown hash opens Draft', () => {
   expect(tabFromHash('#/patches')).toBe('patches')
   expect(tabFromHash('')).toBe('draft')
   expect(tabFromHash('#/nope')).toBe('draft')
+})
+
+test('a hero hash opens that hero under the Heroes tab', () => {
+  expect(routeFromHash('#/heroes/puck')).toEqual({ tab: 'heroes', hero: 'puck' })
+  expect(routeFromHash('#/heroes')).toEqual({ tab: 'heroes', hero: null })
+  expect(routeFromHash('#/heroes/')).toEqual({ tab: 'heroes', hero: null })
+  expect(routeFromHash('#/draft/puck')).toEqual({ tab: 'draft', hero: null })
 })

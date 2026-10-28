@@ -131,3 +131,10 @@ test('with the browser in pt-BR and no patch synced, the patch label is in Portu
   )
   expect(await screen.findByText('Ainda não sincronizado')).toBeInTheDocument()
 })
+
+test('each hero links to its page', async () => {
+  vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }))
+  render(<HeroGrid />)
+  const list = await screen.findByRole('list', { name: /heroes/i })
+  expect(within(list).getByRole('link', { name: 'Crystal Maiden' })).toHaveAttribute('href', '#/heroes/crystal_maiden')
+})

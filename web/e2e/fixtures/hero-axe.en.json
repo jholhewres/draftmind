@@ -1,0 +1,157 @@
+{
+  "id": 2,
+  "slug": "axe",
+  "name": "Axe",
+  "primaryAttr": "str",
+  "attackType": "Melee",
+  "roles": [
+    "Initiator",
+    "Durable",
+    "Disabler",
+    "Carry"
+  ],
+  "img": "/apps/dota2/images/dota_react/heroes/axe.png",
+  "icon": "/apps/dota2/images/dota_react/heroes/icons/axe.png",
+  "patch": "7.41",
+  "lang": "en",
+  "hype": "One after another, Axe cuts down his foes. Marching ahead of his team, he locks his enemies in battle then counters their blows with a deadly spin of his weapon. Slamming his culling blade through a weakened enemy, he is always charging onward.",
+  "complexity": 1,
+  "stats": {
+    "strBase": 25,
+    "strGain": 2.7,
+    "agiBase": 18,
+    "agiGain": 1.7,
+    "intBase": 18,
+    "intGain": 1.6,
+    "armor": 3,
+    "magicResistance": 25,
+    "damageMin": 56,
+    "damageMax": 60,
+    "attackRate": 1.7,
+    "attackRange": 150,
+    "movementSpeed": 315,
+    "maxHealth": 670,
+    "healthRegen": 4.5,
+    "maxMana": 291,
+    "manaRegen": 0.90000004
+  },
+  "abilities": [
+    {
+      "id": 5007,
+      "kind": "ability",
+      "name": "Berserker's Call",
+      "description": "Axe taunts nearby enemy units, forcing them to attack him while he gains bonus armor during the duration.",
+      "lore": "Mogul Khan's warcry taunts opponents into engaging in an unconquerable battle with the Axe.",
+      "cooldowns": [
+        18,
+        16,
+        14,
+        12
+      ],
+      "manaCosts": [
+        90,
+        100,
+        110,
+        120
+      ]
+    },
+    {
+      "id": 5008,
+      "kind": "ability",
+      "name": "Battle Hunger",
+      "description": "Enrages an enemy unit, causing it to take damage over time until it kills another unit or the duration ends. The enemy is slowed as long as they are facing away from Axe.",
+      "lore": "Ordinary heroes cannot withstand Mogul Khan's rage for battle, such that it injures them until it is satisfied.",
+      "cooldowns": [
+        20,
+        15,
+        10,
+        5
+      ],
+      "manaCosts": [
+        50,
+        60,
+        70,
+        80
+      ]
+    },
+    {
+      "id": 5009,
+      "kind": "ability",
+      "name": "Counter Helix",
+      "description": "After a set number of attacks, Axe will perform a helix counter attack, dealing pure damage to all nearby enemies.",
+      "lore": "Axe is the only reinforcement this army needs.",
+      "cooldowns": [
+        0.3
+      ],
+      "manaCosts": []
+    },
+    {
+      "id": 5010,
+      "kind": "ability",
+      "name": "Culling Blade",
+      "description": "Axe spots a weakness and strikes, dealing pure damage. When an enemy hero is killed with Culling Blade, its cooldown is reset, and all nearby allied units gain bonus movement speed and armor.\n\nAxe permanently drenches his blade every time he kills an enemy Hero with Culling Blade, gaining bonus armor for each stack.",
+      "lore": "Mogul Khan is the embodiment of battle and fury, launching into a gruesome fatality against those who dare engage the Axe in combat.",
+      "cooldowns": [
+        80,
+        75,
+        70
+      ],
+      "manaCosts": [
+        100,
+        125,
+        150
+      ]
+    },
+    {
+      "id": 1166,
+      "kind": "innate",
+      "name": "One Man Army",
+      "description": "Axe gains Strength based on 50% of his Armor as long as there are no allied heroes within 700 distance from Axe.  The effect fades over 3s after approaching an ally.",
+      "lore": "",
+      "cooldowns": [],
+      "manaCosts": []
+    }
+  ],
+  "talents": [
+    {
+      "id": 1189,
+      "level": 10,
+      "name": "+3s Culling Blade Kill Buff Bonus Duration"
+    },
+    {
+      "id": 9401,
+      "level": 10,
+      "name": "+8% Movement Speed per active Battle Hunger"
+    },
+    {
+      "id": 6102,
+      "level": 15,
+      "name": "+8 Battle Hunger Damage Per Second"
+    },
+    {
+      "id": 974,
+      "level": 15,
+      "name": "+10 Berserker's Call Armor"
+    },
+    {
+      "id": 6145,
+      "level": 20,
+      "name": "+15 Strength"
+    },
+    {
+      "id": 6991,
+      "level": 20,
+      "name": "+40 Counter Helix Damage"
+    },
+    {
+      "id": 6608,
+      "level": 25,
+      "name": "+85 Berserker's Call AoE"
+    },
+    {
+      "id": 562,
+      "level": 25,
+      "name": "+150 Culling Blade Damage"
+    }
+  ]
+}

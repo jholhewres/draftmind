@@ -19,6 +19,8 @@ type Pinger interface {
 // Catalog reads the synced game data.
 type Catalog interface {
 	Heroes(ctx context.Context) (patch string, heroes []catalog.Hero, err error)
+	// HeroDetail returns catalog.ErrNotFound for a hero the current patch lacks.
+	HeroDetail(ctx context.Context, slug, lang string) (catalog.HeroDetail, error)
 }
 
 // Server wires the routes to their dependencies.
@@ -38,6 +40,7 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", s.health)
 	mux.HandleFunc("GET /api/heroes", s.listHeroes)
+	mux.HandleFunc("GET /api/heroes/{slug}", s.heroDetail)
 	return mux
 }
 

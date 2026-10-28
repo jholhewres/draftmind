@@ -6,6 +6,7 @@ import I18nProvider from './I18nProvider'
 beforeEach(() => {
   window.location.hash = ''
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    if (String(input).startsWith('/api/heroes/')) return new Response('{}', { status: 404 })
     const body = String(input).endsWith('/api/heroes') ? { patch: '7.41', heroes: [] } : { status: 'ok', database: 'up' }
     return new Response(JSON.stringify(body), { status: 200 })
   })
@@ -29,4 +30,11 @@ test('with the browser in pt-BR, the footer is in Portuguese', async () => {
   expect(await screen.findByText('API: ok, banco de dados up')).toBeInTheDocument()
   expect(screen.getByText(/Sem relação com a Valve/)).toBeInTheDocument()
   expect(document.documentElement.lang).toBe('pt-BR')
+})
+
+test('a hero hash opens the hero page under the Heroes tab', async () => {
+  window.location.hash = '#/heroes/axe'
+  render(<App />)
+  expect(await screen.findByText('No hero “axe” on the current patch.')).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Heroes' })).toHaveAttribute('aria-current', 'page')
 })

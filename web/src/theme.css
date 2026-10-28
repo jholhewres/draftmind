@@ -94,6 +94,63 @@ main { flex: 1; }
   font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
+.hero-card a { display: block; color: inherit; text-decoration: none; }
+.hero-card a:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.back-link { font-weight: 600; }
+
+/* Hero page: banner, then stats and abilities stacked; side by side on desktop. */
+.hero-page { display: flex; flex-direction: column; gap: 14px; padding-bottom: 8px; }
+.hero-banner {
+  position: relative; height: 196px; margin: 0 -20px; display: flex; flex-direction: column; overflow: hidden;
+  background: var(--surface-solid);
+}
+.hero-banner img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; }
+.hero-banner::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(10, 12, 15, 0.35) 0%, rgba(10, 12, 15, 0.1) 35%, rgba(10, 12, 15, 0.95) 100%);
+}
+.hero-banner .back {
+  position: relative; z-index: 1; margin: 8px 0 0 10px; width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; background: rgba(10, 12, 15, 0.6); color: var(--fg);
+}
+.hero-banner .back:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.hero-banner-text { position: relative; z-index: 1; margin-top: auto; padding: 0 20px 12px; display: flex; flex-direction: column; gap: 6px; }
+.hero-banner h1 { font-size: 32px; line-height: 1; }
+.hero-meta { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #d5dae0; }
+.hero-meta .attr-icon { flex-shrink: 0; }
+.hero-hype { margin: 0; font-size: 14px; color: var(--muted); }
+
+.hero-body, .hero-side { display: flex; flex-direction: column; gap: 14px; }
+.panel { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); }
+.panel h2 { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+.hero-attrs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.hero-attrs li {
+  display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border);
+  font-variant-numeric: tabular-nums; font-weight: 600;
+}
+.hero-attrs li[aria-current='true'] { border-color: var(--gold); }
+.hero-attrs .muted { font-weight: 400; font-size: 13px; }
+.stats { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; font-size: 14px; }
+.stats div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--border); padding: 4px 0; }
+.stats dt { color: var(--muted); }
+.stats dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.talents { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.talents li { display: flex; gap: 10px; }
+.talent-level { flex-shrink: 0; width: 64px; color: var(--gold); font: 700 14px 'Barlow Condensed', Barlow, system-ui, sans-serif; }
+
+.abilities { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.ability { display: flex; flex-direction: column; gap: 4px; }
+.ability + .ability { border-top: 1px solid var(--border); padding-top: 12px; }
+.ability-head { display: flex; align-items: center; gap: 8px; }
+.ability h3 { margin: 0; font-size: 16px; font-weight: 600; color: var(--gold-light); }
+.tag { padding: 1px 7px; border-radius: 6px; background: #1e242c; color: var(--muted); font-size: 12px; font-weight: 600; }
+.ability-desc { margin: 0; font-size: 14px; white-space: pre-line; }
+.ability-cost { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
 footer { padding: 16px 0; font-size: 12px; line-height: 1.4; color: var(--muted); }
 footer p { margin: 0 0 4px; }
 
@@ -110,4 +167,7 @@ footer p { margin: 0 0 4px; }
   h1 { font-size: 30px; }
   .hero-grid { gap: 12px; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); }
   .hero-name { font-size: 13px; }
+  .hero-banner { margin: 0; height: 240px; border-radius: 10px; }
+  .hero-banner h1 { font-size: 40px; }
+  .hero-body { display: grid; grid-template-columns: minmax(300px, 2fr) 3fr; align-items: start; gap: 20px; }
 }

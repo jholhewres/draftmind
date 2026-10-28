@@ -1,0 +1,157 @@
+{
+  "id": 2,
+  "slug": "axe",
+  "name": "Axe",
+  "primaryAttr": "str",
+  "attackType": "Melee",
+  "roles": [
+    "Initiator",
+    "Durable",
+    "Disabler",
+    "Carry"
+  ],
+  "img": "/apps/dota2/images/dota_react/heroes/axe.png",
+  "icon": "/apps/dota2/images/dota_react/heroes/icons/axe.png",
+  "patch": "7.41",
+  "lang": "pt-BR",
+  "hype": "Um após o outro, o Axe corta os seus inimigos. Marchando à frente da sua equipe, ele prende os inimigos em uma batalha e então revida os seus golpes com um giro mortal da sua arma. Passando a sua lâmina de abate através de um inimigo enfraquecido, ele está sempre avançando.",
+  "complexity": 1,
+  "stats": {
+    "strBase": 25,
+    "strGain": 2.7,
+    "agiBase": 18,
+    "agiGain": 1.7,
+    "intBase": 18,
+    "intGain": 1.6,
+    "armor": 3,
+    "magicResistance": 25,
+    "damageMin": 56,
+    "damageMax": 60,
+    "attackRate": 1.7,
+    "attackRange": 150,
+    "movementSpeed": 315,
+    "maxHealth": 670,
+    "healthRegen": 4.5,
+    "maxMana": 291,
+    "manaRegen": 0.90000004
+  },
+  "abilities": [
+    {
+      "id": 5007,
+      "kind": "ability",
+      "name": "Grito do Furioso",
+      "description": "Em inglês: Berserker's Call\n \nO Axe provoca unidades inimigas próximas, forçando-as a atacá-lo enquanto ele ganha armadura adicional até o fim da duração.",
+      "lore": "O grito de guerra do Mogul Khan desafia os seus oponentes a participarem de uma batalha invencível com o Axe.",
+      "cooldowns": [
+        18,
+        16,
+        14,
+        12
+      ],
+      "manaCosts": [
+        90,
+        100,
+        110,
+        120
+      ]
+    },
+    {
+      "id": 5008,
+      "kind": "ability",
+      "name": "Fome de Batalha",
+      "description": "Em inglês: Battle Hunger\n \nEnfurece uma unidade inimiga, fazendo-a sofrer dano com o tempo até que mate outra unidade ou a duração acabe. O inimigo também sofre retardo caso esteja se afastando do Axe.",
+      "lore": "Heróis comuns não aguentam a fúria de batalha do Mogul Khan, que lhes causa dano até que se satisfaça.",
+      "cooldowns": [
+        20,
+        15,
+        10,
+        5
+      ],
+      "manaCosts": [
+        50,
+        60,
+        70,
+        80
+      ]
+    },
+    {
+      "id": 5009,
+      "kind": "ability",
+      "name": "Contraespiral",
+      "description": "Em inglês: Counter Helix\n \nApós sofrer uma quantidade definida de ataques, o Axe desfere um contra-ataque em espiral, causando dano puro a todos os inimigos próximos.",
+      "lore": "O Axe é o único reforço que este exército precisa.",
+      "cooldowns": [
+        0.3
+      ],
+      "manaCosts": []
+    },
+    {
+      "id": 5010,
+      "kind": "ability",
+      "name": "Lâmina de Abate",
+      "description": "Em inglês: Culling Blade\n \nO Axe encontra fraquezas e golpeia, causando dano puro. Quando um herói inimigo for morto pela Lâmina de Abate, o intervalo entre usos da habilidade é zerado, e todas as unidades aliadas próximas ganham velocidade de movimento e armadura adicionais.\n\nO Axe encharca o machado permanentemente sempre que matar um herói inimigo com a Lâmina de Abate, ganhando armadura adicional por acúmulo.",
+      "lore": "Mogul Khan é a encarnação da batalha e da fúria, jogando-se em uma fatalidade macabra contra aqueles que ousam engajar-se numa batalha com o Axe.",
+      "cooldowns": [
+        80,
+        75,
+        70
+      ],
+      "manaCosts": [
+        100,
+        125,
+        150
+      ]
+    },
+    {
+      "id": 1166,
+      "kind": "innate",
+      "name": "Exército de Um Homem Só",
+      "description": "O Axe ganha Força igual a 50% da sua armadura enquanto não houver heróis aliados em até 700 unidades de distância. O efeito desvanece por 3s após se aproximar de um aliado.",
+      "lore": "",
+      "cooldowns": [],
+      "manaCosts": []
+    }
+  ],
+  "talents": [
+    {
+      "id": 1189,
+      "level": 10,
+      "name": "+3s para o efeito por vítimas da Lâmina de Abate"
+    },
+    {
+      "id": 9401,
+      "level": 10,
+      "name": "+8% de vel. de mov. por Fome de Batalha ativa"
+    },
+    {
+      "id": 6102,
+      "level": 15,
+      "name": "+8 de DPS para Fome de Batalha"
+    },
+    {
+      "id": 974,
+      "level": 15,
+      "name": "+10 de armadura para Grito do Furioso"
+    },
+    {
+      "id": 6145,
+      "level": 20,
+      "name": "+15 de Força"
+    },
+    {
+      "id": 6991,
+      "level": 20,
+      "name": "+40 de dano para Contraespiral"
+    },
+    {
+      "id": 6608,
+      "level": 25,
+      "name": "+85 à área de efeito do Grito do Furioso"
+    },
+    {
+      "id": 562,
+      "level": 25,
+      "name": "+150 de dano para Lâmina de Abate"
+    }
+  ]
+}

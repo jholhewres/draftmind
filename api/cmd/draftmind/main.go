@@ -21,7 +21,7 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/httpapi"
 )
 
-const usage = "usage: draftmind <serve|migrate|sync heroes>"
+const usage = "usage: draftmind <serve|migrate|sync heroes|sync details>"
 
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
@@ -63,12 +63,23 @@ func run(ctx context.Context, cmd string, log *slog.Logger) error {
 }
 
 func runSync(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, log *slog.Logger) error {
-	if len(os.Args) < 3 || os.Args[2] != "heroes" {
+	client := &http.Client{Timeout: 30 * time.Second}
+	target := ""
+	if len(os.Args) >= 3 {
+		target = os.Args[2]
+	}
+	switch target {
+	case "heroes":
+		src := gamesync.NewHTTPSource(gamesync.DefaultGitHubAPI, gamesync.DefaultDotaconstantsBase, cfg.DotaconstantsRef, client)
+		_, err := gamesync.NewSyncer(pool, src, log).Heroes(ctx)
+		return err
+	case "details":
+		feed := gamesync.NewHTTPFeed(gamesync.DefaultDatafeedBase, gamesync.DefaultDatafeedInterval, client)
+		_, err := gamesync.NewSyncer(pool, nil, log).Details(ctx, feed)
+		return err
+	default:
 		return fmt.Errorf("unknown sync target; %s", usage)
 	}
-	src := gamesync.NewHTTPSource(gamesync.DefaultGitHubAPI, gamesync.DefaultDotaconstantsBase, cfg.DotaconstantsRef, &http.Client{Timeout: 30 * time.Second})
-	_, err := gamesync.NewSyncer(pool, src, log).Heroes(ctx)
-	return err
 }
 
 func serve(ctx context.Context, cfg config.Config, h http.Handler, log *slog.Logger) error {
