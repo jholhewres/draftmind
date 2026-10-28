@@ -97,6 +97,9 @@ func (s *Syncer) heroes(ctx context.Context) (Result, error) {
 	if err != nil {
 		return res, err
 	}
+	if len(heroes) == 0 {
+		return res, errors.New("heroes.json has no heroes")
+	}
 
 	err = pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		current := patches[len(patches)-1].Name
@@ -141,7 +144,7 @@ func (s *Syncer) heroes(ctx context.Context) (Result, error) {
 			}
 			res.add(inserted, written)
 		}
-		return s.heroPatch(ctx, tx, current, heroes, &res)
+		return setPatchHeroes(ctx, tx, current, heroes, &res)
 	})
 	if err != nil {
 		return Result{Revision: rev}, err
@@ -149,8 +152,8 @@ func (s *Syncer) heroes(ctx context.Context) (Result, error) {
 	return res, nil
 }
 
-// heroPatch makes the current patch's heroes exactly the synced ones.
-func (s *Syncer) heroPatch(ctx context.Context, tx pgx.Tx, patch string, heroes []Hero, res *Result) error {
+// setPatchHeroes makes the patch's hero_patch rows exactly the synced heroes.
+func setPatchHeroes(ctx context.Context, tx pgx.Tx, patch string, heroes []Hero, res *Result) error {
 	ids := make([]int, len(heroes))
 	for i, h := range heroes {
 		ids[i] = h.ID

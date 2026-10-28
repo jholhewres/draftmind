@@ -187,3 +187,22 @@ func TestSyncHeroesCountsAHeroDroppedFromTheCurrentPatchAsDeleted(t *testing.T) 
 		t.Fatalf("second run %+v, want 1 deleted and 6 unchanged", res)
 	}
 }
+
+func TestSyncHeroesFailsAndKeepsTheHeroesWhenHeroesJSONIsEmpty(t *testing.T) {
+	pool := dbtest.New(t)
+	ctx := context.Background()
+	if _, err := NewSyncer(pool, fixtureSource{t: t}, quietLog()).Heroes(ctx); err != nil {
+		t.Fatal(err)
+	}
+	empty := fixtureSource{t: t, files: map[string]string{"heroes.json": `{}`}}
+	if _, err := NewSyncer(pool, empty, quietLog()).Heroes(ctx); err == nil {
+		t.Fatal("want an error when heroes.json has no heroes")
+	}
+	var n int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM hero_patch`).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	if n != 3 {
+		t.Fatalf("current patch has %d heroes after the failed run, want 3", n)
+	}
+}
