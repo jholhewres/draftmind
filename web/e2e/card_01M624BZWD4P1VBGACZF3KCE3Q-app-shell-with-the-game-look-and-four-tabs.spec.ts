@@ -1,4 +1,4 @@
-import { expect, portraitsLoaded, test } from './fixtures.ts'
+import { expect, imagesLoaded, portraitsLoaded, test } from './fixtures.ts'
 import heroes from './fixtures/heroes.json' with { type: 'json' }
 
 const tabs = ['Draft', 'Coach', 'Heroes', 'Patches']
@@ -86,5 +86,8 @@ test('Visual tests match the shell and hero grid baselines at 390x844 (bottom ta
   await expect(page).toHaveScreenshot('shell-heroes.png')
   await page.goto('/')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Draft')
+  // The Draft tab ranks the empty draft; its portraits come from the fixture.
+  await expect(page.getByRole('list', { name: 'Suggestions' }).getByRole('listitem')).toHaveCount(5)
+  await imagesLoaded(page.locator('main'))
   await expect(page).toHaveScreenshot('shell-draft.png')
 })

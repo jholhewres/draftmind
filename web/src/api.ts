@@ -77,3 +77,34 @@ export async function fetchHero(slug: string, lang: string, signal?: AbortSignal
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
   return (await res.json()) as HeroDetail
 }
+
+// A draft as POST /api/draft/suggest takes it: hero ids per side and the
+// player's position, 1 to 5.
+export type DraftInput = { allies: number[]; enemies: number[]; bans: number[]; role: number }
+
+// A candidate's shrunk win rate against one enemy minus 50, in points.
+export type EnemyDelta = { heroId: number; delta: number; games: number }
+
+export type Suggestion = {
+  heroId: number
+  score: number
+  counter: number
+  winRate: number
+  roleFit: number
+  enemies: EnemyDelta[]
+}
+
+export type SuggestResult = { patch: string; suggestions: Suggestion[] }
+
+export async function fetchSuggestions(input: DraftInput, signal?: AbortSignal): Promise<SuggestResult> {
+  const path = '/api/draft/suggest'
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+    signal,
+  })
+  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
+  const body = (await res.json()) as Partial<SuggestResult>
+  return { patch: body.patch ?? '', suggestions: body.suggestions ?? [] }
+}

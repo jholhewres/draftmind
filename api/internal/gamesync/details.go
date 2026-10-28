@@ -2,7 +2,6 @@ package gamesync
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -46,20 +45,9 @@ func (s *Syncer) Details(ctx context.Context, feed Feed) (Result, error) {
 
 func (s *Syncer) details(ctx context.Context, feed Feed) (Result, error) {
 	var res Result
-	var patchID int
-	if err := s.pool.QueryRow(ctx, `SELECT id FROM patch WHERE is_current`).Scan(&patchID); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return res, errors.New("no current patch: run sync heroes first")
-		}
-		return res, fmt.Errorf("current patch: %w", err)
-	}
-	rows, err := s.pool.Query(ctx, `SELECT hero_id FROM hero_patch WHERE patch_id = $1 ORDER BY hero_id`, patchID)
+	patchID, ids, err := s.currentPatchHeroes(ctx)
 	if err != nil {
-		return res, fmt.Errorf("current patch heroes: %w", err)
-	}
-	ids, err := pgx.CollectRows(rows, pgx.RowTo[int])
-	if err != nil {
-		return res, fmt.Errorf("current patch heroes: %w", err)
+		return res, err
 	}
 	inPatch := make(map[int]bool, len(ids))
 	for _, id := range ids {

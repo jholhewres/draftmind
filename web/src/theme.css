@@ -171,3 +171,88 @@ footer p { margin: 0 0 4px; }
   .hero-banner h1 { font-size: 40px; }
   .hero-body { display: grid; grid-template-columns: minmax(300px, 2fr) 3fr; align-items: start; gap: 20px; }
 }
+
+/* Draft tab: board, position and suggestions stacked; side by side on desktop. */
+.draft-layout, .draft-board { display: flex; flex-direction: column; gap: 12px; }
+.board { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); }
+.slot-row { display: flex; align-items: flex-start; gap: 4px; }
+.row-label {
+  width: 58px; flex-shrink: 0; padding-top: 6px;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+}
+.slot-row.ally .row-label { color: var(--radiant); }
+.slot-row.enemy .row-label { color: var(--dire); }
+.slots { flex: 1; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.slot {
+  padding: 0; aspect-ratio: 16 / 9; border-radius: 4px; border: 2px solid var(--border-strong); background: none;
+  display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; color: var(--muted);
+}
+.slot img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.slot.empty { border-style: dashed; background: rgba(21, 25, 31, 0.6); }
+.slot:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.ally .slot.filled { border-color: #5e8a2a; }
+.enemy .slot.filled { border-color: #a8392a; }
+.ban .slot.filled img { filter: grayscale(1) brightness(0.7); }
+.slot.you { cursor: default; border: 2px dashed var(--gold); color: var(--gold); font-size: 12px; font-weight: 600; }
+
+.roles { margin: 0; padding: 0; border: 0; min-width: 0; }
+.role-options { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.role-option {
+  position: relative; height: 38px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface);
+  display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px;
+}
+.role-option input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+.role-option:has(input:checked) { border-color: var(--gold); background: var(--gold); color: var(--gold-text); font-weight: 600; }
+.role-option:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
+.hint { margin: 0; font-size: 13px; }
+
+.suggestions { display: flex; flex-direction: column; gap: 8px; }
+.suggestions h2 { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.suggestions p { margin: 0; }
+.suggestion-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.suggestion {
+  display: flex; align-items: center; gap: 12px; padding: 6px 12px 6px 6px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+}
+.suggestion:first-child { border-color: var(--gold); }
+.suggestion img { width: 64px; height: 36px; flex-shrink: 0; object-fit: cover; border-radius: 4px; display: block; }
+.suggestion:first-child img { width: 96px; height: 54px; border-radius: 6px; }
+.suggestion-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.suggestion-name { font-size: 15px; font-weight: 600; }
+.suggestion:first-child .suggestion-name { font: 700 18px Cinzel, Georgia, serif; }
+.deltas { display: flex; flex-wrap: wrap; gap: 4px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.delta { padding: 2px 6px; border-radius: 5px; background: #1e242c; color: var(--muted); white-space: nowrap; }
+.delta.up { background: rgba(156, 203, 74, 0.14); color: #b5db72; }
+.delta.down { background: rgba(226, 85, 62, 0.16); color: #f08a76; }
+.score { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
+.score-label { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.score-value { font: 700 18px 'Barlow Condensed', Barlow, system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+
+/* Hero picker: a bottom sheet on a phone, a centered dialog on desktop. */
+.picker-backdrop { position: fixed; inset: 0; z-index: 20; display: flex; align-items: flex-end; justify-content: center; background: rgba(5, 6, 8, 0.72); }
+.picker {
+  width: 100%; max-height: 85dvh; display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 16px;
+  background: var(--surface-solid); border-top: 1px solid var(--border-strong); border-radius: 14px 14px 0 0;
+}
+.picker-head { display: flex; align-items: center; gap: 8px; }
+.picker-head h2 { flex: 1; margin: 0; font: 700 18px Cinzel, Georgia, serif; }
+.picker-close {
+  width: 44px; height: 44px; border: 0; border-radius: 50%; background: none; color: var(--fg); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.picker-close:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+.picker-grid { list-style: none; margin: 0; padding: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.picker-grid button {
+  width: 100%; padding: 0; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; cursor: pointer;
+  display: flex; flex-direction: column; background: var(--bg); color: var(--fg); font: 600 11px Barlow, system-ui, sans-serif;
+}
+.picker-grid img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; }
+.picker-grid span { padding: 3px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.picker-grid button:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+
+@media (min-width: 1024px) {
+  .draft-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+  .picker-backdrop { align-items: center; }
+  .picker { max-width: 760px; max-height: 80dvh; border: 1px solid var(--border-strong); border-radius: 14px; }
+  .picker-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}

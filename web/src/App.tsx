@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchHealth, type Health } from './api'
+import DraftBoard from './draft/DraftBoard'
 import HeroGrid from './heroes/HeroGrid'
 import HeroPage from './heroes/HeroPage'
 import { useI18n } from './i18n'
@@ -33,7 +34,17 @@ export default function App() {
           </span>
           <span className="brand-name">Draftmind</span>
         </header>
-        <main>{hero ? <HeroPage slug={hero} /> : tab === 'heroes' ? <HeroGrid /> : <Placeholder title={tabLabel[tab]} />}</main>
+        <main>
+          {hero ? (
+            <HeroPage slug={hero} />
+          ) : tab === 'heroes' ? (
+            <HeroGrid />
+          ) : tab === 'draft' ? (
+            <DraftBoard />
+          ) : (
+            <Placeholder title={tabLabel[tab]} />
+          )}
+        </main>
         <footer>
           <p className="note">{t('app.trademark')}</p>
           <p className="status" role="status">

@@ -1,0 +1,13 @@
+{
+  "patch": "7.41",
+  "suggestions": [
+    { "heroId": 8, "score": 9.04, "counter": 2.44, "winRate": 51.2, "roleFit": 1, "enemies": [{ "heroId": 2, "delta": 3.06, "games": 141 }, { "heroId": 6, "delta": -0.62, "games": 88 }] },
+    { "heroId": 1, "score": 6.31, "counter": 2.3, "winRate": 50.1, "roleFit": 1, "enemies": [{ "heroId": 2, "delta": 1.4, "games": 120 }, { "heroId": 6, "delta": 0.9, "games": 97 }] },
+    { "heroId": 4, "score": 5.2, "counter": 1.1, "winRate": 50.2, "roleFit": 1, "enemies": [{ "heroId": 2, "delta": -1.2, "games": 133 }, { "heroId": 6, "delta": 2.3, "games": 75 }] },
+    { "heroId": 2, "score": 4.0, "counter": 0, "winRate": 52.0, "roleFit": 0.5, "enemies": [{ "heroId": 6, "delta": 0.4, "games": 110 }] },
+    { "heroId": 6, "score": 3.5, "counter": 0, "winRate": 49.0, "roleFit": 1, "enemies": [{ "heroId": 2, "delta": -0.4, "games": 110 }] },
+    { "heroId": 7, "score": 3.1, "counter": 3.1, "winRate": 48.8, "roleFit": 0, "enemies": [{ "heroId": 2, "delta": 2.0, "games": 160 }, { "heroId": 6, "delta": 1.1, "games": 90 }] },
+    { "heroId": 5, "score": 1.7, "counter": -2.4, "winRate": 49.5, "roleFit": 0, "enemies": [{ "heroId": 2, "delta": -2.4, "games": 150 }, { "heroId": 6, "delta": 0, "games": 0 }] },
+    { "heroId": 3, "score": 0.9, "counter": 0, "winRate": 47.9, "roleFit": 0, "enemies": [] }
+  ]
+}

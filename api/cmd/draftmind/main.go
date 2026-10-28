@@ -21,7 +21,7 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/httpapi"
 )
 
-const usage = "usage: draftmind <serve|migrate|sync heroes|sync details>"
+const usage = "usage: draftmind <serve|migrate|sync heroes|sync details|sync stats>"
 
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
@@ -76,6 +76,10 @@ func runSync(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, log *sl
 	case "details":
 		feed := gamesync.NewHTTPFeed(gamesync.DefaultDatafeedBase, gamesync.DefaultDatafeedInterval, client)
 		_, err := gamesync.NewSyncer(pool, nil, log).Details(ctx, feed)
+		return err
+	case "stats":
+		od := gamesync.NewHTTPOpenDota(gamesync.DefaultOpenDotaBase, cfg.OpenDotaAPIKey, client)
+		_, err := gamesync.NewSyncer(pool, nil, log).Stats(ctx, od)
 		return err
 	default:
 		return fmt.Errorf("unknown sync target; %s", usage)

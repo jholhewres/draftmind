@@ -1,5 +1,6 @@
 import path from 'node:path'
-import { test as base, expect, type Page } from '@playwright/test'
+import { test as base, expect, type Locator, type Page } from '@playwright/test'
+import ranking from './fixtures/suggest.json' with { type: 'json' }
 
 const fixture = (name: string) => path.join(import.meta.dirname, 'fixtures', name)
 
@@ -9,9 +10,13 @@ const imageCDN = 'https://cdn.cloudflare.steamstatic.com/**'
 const backgroundImage = 'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/backgrounds/**'
 const googleFonts = 'https://fonts.googleapis.com/**'
 
+export type DraftInput = { allies: number[]; enemies: number[]; bans: number[]; role: number }
+
 type Fixtures = {
   // Requests that tried to leave the dev server unmocked; each was aborted.
   escaped: string[]
+  // Each draft POST /api/draft/suggest was asked to rank, in order.
+  drafts: DraftInput[]
   mockApi: void
 }
 
@@ -26,10 +31,26 @@ export const test = base.extend<Fixtures>({
     })
     await provide(escaped)
   },
+  // The fixture ranking without the heroes the draft took, each keeping its
+  // deltas against the draft's enemies only.
+  drafts: async ({ page, escaped }, provide) => {
+    void escaped
+    const drafts: DraftInput[] = []
+    await page.route('**/api/draft/suggest', (route) => {
+      const draft = route.request().postDataJSON() as DraftInput
+      drafts.push(draft)
+      const taken = new Set([...draft.allies, ...draft.enemies, ...draft.bans])
+      const suggestions = ranking.suggestions
+        .filter((s) => !taken.has(s.heroId))
+        .map((s) => ({ ...s, enemies: s.enemies.filter((e) => draft.enemies.includes(e.heroId)) }))
+      return route.fulfill({ json: { patch: ranking.patch, suggestions } })
+    })
+    await provide(drafts)
+  },
   // Registered after the guard, so these routes win.
   mockApi: [
-    async ({ page, escaped }, provide) => {
-      void escaped
+    async ({ page, drafts }, provide) => {
+      void drafts
       await page.route('**/api/health', (route) => route.fulfill({ path: fixture('health.json') }))
       await page.route('**/api/heroes', (route) => route.fulfill({ path: fixture('heroes.json') }))
       await page.route(imageCDN, (route) => route.fulfill({ path: fixture('hero-portrait.png') }))
@@ -50,6 +71,13 @@ export async function portraitsLoaded(page: Page) {
     await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)).toBe(128)
   }
   await page.evaluate(() => window.scrollTo(0, 0))
+}
+
+// Waits until every image under root has loaded from the local fixture.
+export async function imagesLoaded(root: Locator) {
+  for (const img of await root.locator('img').all()) {
+    await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)).toBe(128)
+  }
 }
 
 export { expect }
