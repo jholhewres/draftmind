@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { fetchHeroes, heroImageBase, type HeroCatalog } from '../api'
+import { useI18n } from '../i18n'
 
 export default function HeroGrid() {
+  const { t } = useI18n()
   const [catalog, setCatalog] = useState<HeroCatalog | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -22,22 +24,22 @@ export default function HeroGrid() {
     return q ? heroes.filter((h) => h.name.toLocaleLowerCase().includes(q)) : heroes
   }, [catalog, query])
 
-  if (error) return <p role="alert">Could not load heroes: {error}</p>
-  if (!catalog) return <p role="status">Loading heroes…</p>
+  if (error) return <p role="alert">{t('heroes.loadError', { error })}</p>
+  if (!catalog) return <p role="status">{t('heroes.loading')}</p>
 
   return (
     <section className="heroes">
       <div className="heroes-bar">
         <input
           type="search"
-          aria-label="Search heroes"
-          placeholder="Search heroes"
+          aria-label={t('heroes.search')}
+          placeholder={t('heroes.search')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <span className="muted">{catalog.patch ? `Patch ${catalog.patch}` : 'Not synced yet'}</span>
+        <span className="muted">{catalog.patch ? t('heroes.patch', { patch: catalog.patch }) : t('heroes.notSynced')}</span>
       </div>
-      <ul className="hero-grid" aria-label="Heroes">
+      <ul className="hero-grid" aria-label={t('heroes.list')}>
         {visible.map((h) => (
           <li key={h.id} className="hero-card">
             <img src={heroImageBase + h.img} alt="" loading="lazy" width={128} height={72} />
@@ -45,7 +47,7 @@ export default function HeroGrid() {
           </li>
         ))}
       </ul>
-      {visible.length === 0 && <p className="muted">No hero matches “{query}”.</p>}
+      {visible.length === 0 && <p className="muted">{t('heroes.noMatch', { query })}</p>}
     </section>
   )
 }

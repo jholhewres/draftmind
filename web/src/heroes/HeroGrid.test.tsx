@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { vi } from 'vitest'
 import HeroGrid from './HeroGrid'
+import I18nProvider from '../I18nProvider'
 
 const payload = {
   patch: '7.41',
@@ -32,4 +33,29 @@ test('shows an empty state when no hero matches', async () => {
   await screen.findByRole('list', { name: /heroes/i })
   fireEvent.change(screen.getByRole('searchbox', { name: /search heroes/i }), { target: { value: 'zzz' } })
   expect(screen.getByText(/no hero matches/i)).toBeInTheDocument()
+})
+
+test('with the browser in pt-BR, the search label, patch label and empty state are in Portuguese', async () => {
+  vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['pt-BR', 'en-US'])
+  vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }))
+  render(
+    <I18nProvider>
+      <HeroGrid />
+    </I18nProvider>,
+  )
+  await screen.findByRole('list', { name: 'Heróis' })
+  expect(screen.getByText('Patch 7.41')).toBeInTheDocument()
+  fireEvent.change(screen.getByRole('searchbox', { name: 'Buscar heróis' }), { target: { value: 'zzz' } })
+  expect(screen.getByText('Nenhum herói encontrado para “zzz”.')).toBeInTheDocument()
+})
+
+test('with the browser in pt-BR and no patch synced, the patch label is in Portuguese', async () => {
+  vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['pt-BR'])
+  vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ patch: '', heroes: [] }), { status: 200 }))
+  render(
+    <I18nProvider>
+      <HeroGrid />
+    </I18nProvider>,
+  )
+  expect(await screen.findByText('Ainda não sincronizado')).toBeInTheDocument()
 })
