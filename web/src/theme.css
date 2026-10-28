@@ -1,0 +1,109 @@
+/* Dark game look from the approved prototype. Mobile first; the desktop
+   layout starts at 1024px. */
+:root {
+  --bg: #0a0c0f;
+  --surface: rgba(21, 25, 31, 0.9);
+  --surface-solid: #15191f;
+  --bar: #111419;
+  --border: #2c333c;
+  --border-strong: #3a424d;
+  --fg: #edeff2;
+  --muted: #a3abb5;
+  --gold: #d9ae5b;
+  --gold-text: #16120a;
+  --radiant: #9ccb4a;
+  --dire: #e2553e;
+  --tabbar: 64px;
+  --rail: 96px;
+  color-scheme: dark;
+  font-family: Barlow, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  color: var(--fg);
+  background: var(--bg) url(https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/backgrounds/greyfade.jpg) center top / cover no-repeat fixed;
+}
+a { color: var(--gold); }
+h1 { font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: 26px; line-height: 1.15; margin: 0; }
+.muted, .status { color: var(--muted); }
+
+.app { min-height: 100dvh; padding-bottom: var(--tabbar); }
+.column { min-height: calc(100dvh - var(--tabbar)); display: flex; flex-direction: column; padding: 0 20px; }
+main { flex: 1; }
+
+.brand { display: flex; align-items: center; gap: 10px; padding: 14px 0; }
+.brand-mark {
+  width: 32px; height: 32px; border-radius: 6px; display: grid; place-items: center;
+  background: var(--gold); color: var(--gold-text); font: 700 19px Cinzel, Georgia, serif;
+}
+.brand-name { font: 700 20px Cinzel, Georgia, serif; letter-spacing: 0.04em; }
+
+/* Bottom tab bar on a phone. */
+.tabbar {
+  position: fixed; z-index: 10; left: 0; right: 0; bottom: 0; height: var(--tabbar);
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  background: var(--bar); border-top: 1px solid var(--border);
+}
+.tabbar a {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  color: var(--muted); text-decoration: none;
+  font: 600 13px 'Barlow Condensed', Barlow, system-ui, sans-serif; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.tabbar a[aria-current='page'] { color: var(--gold); }
+.tabbar a:focus-visible { outline: 2px solid var(--gold); outline-offset: -4px; }
+
+.screen { display: flex; flex-direction: column; gap: 12px; padding-top: 4px; }
+.screen-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.screen-head .muted { font-size: 13px; }
+
+.search { position: relative; display: flex; align-items: center; color: var(--muted); }
+.search svg { position: absolute; left: 14px; }
+.search input {
+  width: 100%; height: 46px; padding: 0 14px 0 42px; border-radius: 10px;
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--fg); font: inherit; font-size: 15px;
+}
+.search input:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+.attr-filter { display: flex; gap: 6px; }
+.chip {
+  min-width: 44px; height: 36px; padding: 0 12px; border-radius: 8px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--fg);
+  font: 600 13px Barlow, system-ui, sans-serif;
+}
+.chip[aria-pressed='true'] { border-color: var(--gold); background: rgba(217, 174, 91, 0.16); color: #e8c27a; }
+.chip:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.attr-icon { width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.35); }
+.attr-str { background: #e2553e; }
+.attr-agi { background: #9ccb4a; }
+.attr-int { background: #4fb8e0; }
+.attr-all { background: conic-gradient(#e2553e 0 33%, #9ccb4a 0 66%, #4fb8e0 0); }
+
+.hero-grid { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.hero-card { position: relative; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-solid); }
+.hero-card img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; }
+.hero-name {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 6px 3px;
+  background: linear-gradient(180deg, rgba(10, 12, 15, 0) 0%, rgba(10, 12, 15, 0.92) 70%);
+  font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+footer { padding: 16px 0; font-size: 12px; line-height: 1.4; color: var(--muted); }
+footer p { margin: 0 0 4px; }
+
+/* Desktop: left rail and a centered column. */
+@media (min-width: 1024px) {
+  .app { padding-bottom: 0; padding-left: var(--rail); }
+  .column { min-height: 100dvh; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+  .tabbar {
+    top: 0; right: auto; width: var(--rail); height: auto;
+    grid-template-columns: 1fr; grid-auto-rows: 80px; align-content: start; padding-top: 72px;
+    border-top: 0; border-right: 1px solid var(--border);
+  }
+  .tabbar a[aria-current='page'] { box-shadow: inset 3px 0 0 var(--gold); }
+  h1 { font-size: 30px; }
+  .hero-grid { gap: 12px; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); }
+  .hero-name { font-size: 13px; }
+}

@@ -1,17 +1,27 @@
 import type { Messages } from './en'
 
 export const ptBR: Messages = {
-  'app.tagline': 'Ajuda no draft e um coach durante a partida, a partir de uma foto da tela de picks.',
   'app.health.checking': 'API: verificando…',
   'app.health.ok': 'API: {status}, banco de dados {database}',
   'app.health.unreachable': 'API: inacessível ({error})',
-  'app.trademark':
-    'O Draftmind é uma ferramenta independente, sem afiliação com a Valve Corporation nem endosso dela. Dota 2 é uma marca registrada da Valve. O Draftmind roda em outro dispositivo ou aba e nunca lê, altera nem se sobrepõe ao cliente do jogo.',
+  'app.trademark': 'Sem relação com a Valve nem com o jogo. Não lê nem altera o cliente do jogo.',
+  'screen.soon': 'Em breve.',
+  'nav.label': 'Principal',
+  'nav.draft': 'Draft',
+  'nav.coach': 'Coach',
+  'nav.heroes': 'Heróis',
+  'nav.patches': 'Patches',
   'heroes.loadError': 'Não foi possível carregar os heróis: {error}',
   'heroes.loading': 'Carregando heróis…',
   'heroes.search': 'Buscar heróis',
   'heroes.patch': 'Patch {patch}',
   'heroes.notSynced': 'Ainda não sincronizado',
+  'heroes.attr.label': 'Filtrar por atributo',
+  'heroes.attr.any': 'Todos',
+  'heroes.attr.str': 'Força',
+  'heroes.attr.agi': 'Agilidade',
+  'heroes.attr.int': 'Inteligência',
+  'heroes.attr.all': 'Universal',
   'heroes.list': 'Heróis',
   'heroes.noMatch': 'Nenhum herói encontrado para “{query}”.',
 }

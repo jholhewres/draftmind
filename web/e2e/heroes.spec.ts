@@ -7,7 +7,7 @@ const sizes: Record<string, { width: number; height: number }> = {
 }
 
 test('runs at the project size against the mocked API', async ({ page, escaped }, testInfo) => {
-  await page.goto('/')
+  await page.goto('/#/heroes')
 
   await expect(page.getByRole('status').filter({ hasText: 'API:' })).toHaveText('API: ok, database ok')
   await expect(page.getByText('Patch 7.41')).toBeVisible()
@@ -16,12 +16,12 @@ test('runs at the project size against the mocked API', async ({ page, escaped }
 })
 
 test('the hero grid matches its baseline', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/#/heroes')
 
   const grid = page.getByRole('list', { name: 'Heroes' })
   await expect(grid.getByRole('listitem')).toHaveCount(8)
   // Every portrait comes from the local fixture and has loaded.
-  for (const img of await grid.getByRole('img').all()) {
+  for (const img of await grid.locator('img').all()) {
     await img.scrollIntoViewIfNeeded()
     await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)).toBe(128)
   }

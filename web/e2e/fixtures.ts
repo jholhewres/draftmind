@@ -6,6 +6,9 @@ const fixture = (name: string) => path.join(import.meta.dirname, 'fixtures', nam
 // The CDN host the hero image paths point to (see heroImageBase in src/api.ts).
 const imageCDN = 'https://cdn.cloudflare.steamstatic.com/**'
 
+const backgroundImage = 'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/backgrounds/**'
+const googleFonts = 'https://fonts.googleapis.com/**'
+
 type Fixtures = {
   // Requests that tried to leave the dev server unmocked; each was aborted.
   escaped: string[]
@@ -30,6 +33,9 @@ export const test = base.extend<Fixtures>({
       await page.route('**/api/health', (route) => route.fulfill({ path: fixture('health.json') }))
       await page.route('**/api/heroes', (route) => route.fulfill({ path: fixture('heroes.json') }))
       await page.route(imageCDN, (route) => route.fulfill({ path: fixture('hero-portrait.png') }))
+      // Plain background color and fallback fonts keep the baselines stable.
+      await page.route(backgroundImage, (route) => route.fulfill({ status: 404 }))
+      await page.route(googleFonts, (route) => route.fulfill({ contentType: 'text/css', body: '' }))
       await provide()
     },
     { auto: true },

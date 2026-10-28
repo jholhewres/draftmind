@@ -8,13 +8,13 @@ test.describe(() => {
     page,
     escaped,
   }) => {
-    await page.goto('/')
+    await page.goto('/#/heroes')
 
     await expect(page.getByRole('list', { name: 'Heróis' })).toBeVisible()
     await expect(page.getByText('Patch 7.41')).toBeVisible()
     await page.getByRole('searchbox', { name: 'Buscar heróis' }).fill('zzz')
     await expect(page.getByText('Nenhum herói encontrado para “zzz”.')).toBeVisible()
-    await expect(page.getByText(/sem afiliação com a Valve Corporation/)).toBeVisible()
+    await expect(page.getByText(/Sem relação com a Valve/)).toBeVisible()
     expect(escaped).toEqual([])
     await expect(page).toHaveScreenshot('pt-br-empty-state.png', { fullPage: true })
   })
@@ -24,12 +24,12 @@ test.describe(() => {
   test.use({ locale: 'fr-FR' })
 
   test('An unsupported browser language falls back to English', async ({ page, escaped }) => {
-    await page.goto('/')
+    await page.goto('/#/heroes')
 
     await expect(page.getByRole('list', { name: 'Heroes' })).toBeVisible()
     await page.getByRole('searchbox', { name: 'Search heroes' }).fill('zzz')
     await expect(page.getByText('No hero matches “zzz”.')).toBeVisible()
-    await expect(page.getByText(/not affiliated with or endorsed by Valve/)).toBeVisible()
+    await expect(page.getByText(/Not affiliated with Valve/)).toBeVisible()
     expect(escaped).toEqual([])
     await expect(page).toHaveScreenshot('fallback-en-empty-state.png', { fullPage: true })
   })
