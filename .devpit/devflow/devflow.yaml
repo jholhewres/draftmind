@@ -40,6 +40,7 @@ stages:
         report: junit
         evidence: [screenshots]
         exclusive: playwright-e2e
+    e2e_dir: web/e2e
   - uses: builtin/review
     enabled: true
   - uses: builtin/completion
@@ -52,6 +53,10 @@ review:
   reviewers:
     - agent: claude
       persona: devflow-security
+    - agent: claude
+      persona: devflow-spec
+    - agent: claude
+      persona: devflow-standards
   block_on: [critical, high]
   # How several reviewers' findings become one: jev (Decisions, else a
   # model pass), agent (one model pass) or none (merged as they are).

@@ -12,6 +12,7 @@ Rules for coding agents working in this repository. Read [docs/SPEC.md](docs/SPE
 ## Commands
 
 - `make dev`, `make sync`, `make test`, `make lint`, `make build`. Run `make test lint` before calling work done.
+- `make e2e` runs the visual tests (Playwright, phone 390x844 and desktop 1280x800) against a mocked API; `make e2e-update` rewrites the baselines after an intended UI change. Browser specs live in `web/e2e/*.spec.ts`; baselines are Linux-only.
 - Database tests use a throwaway database per test on the compose Postgres (`TEST_DATABASE_URL` overrides it) and skip when it is down: run `make db-up` first.
 
 ## Product rules
