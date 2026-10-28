@@ -137,6 +137,10 @@ func ParseHeroData(b []byte, inPatch map[int]bool) (HeroDetail, error) {
 	if h.NameLoc == "" {
 		return HeroDetail{}, fmt.Errorf("parse herodata: hero %d has no name", h.ID)
 	}
+	// Every hero has health, move speed and an attack time; zero means the feed changed.
+	if h.MaxHealth <= 0 || h.MovementSpeed <= 0 || h.AttackRate <= 0 {
+		return HeroDetail{}, fmt.Errorf("parse herodata: hero %d lacks its stats", h.ID)
+	}
 	d := HeroDetail{
 		ID:         h.ID,
 		Name:       h.NameLoc,

@@ -21,7 +21,16 @@ export type Route = { tab: Tab; hero: string | null }
 export function routeFromHash(hash: string): Route {
   const [id, slug] = hash.replace(/^#\/?/, '').split('/')
   if (!isTab(id)) return { tab: 'draft', hero: null }
-  return { tab: id, hero: id === 'heroes' && slug ? decodeURIComponent(slug) : null }
+  return { tab: id, hero: id === 'heroes' && slug ? decodeSlug(slug) : null }
+}
+
+// A malformed percent sequence opens the hero list rather than throwing.
+function decodeSlug(slug: string): string | null {
+  try {
+    return decodeURIComponent(slug)
+  } catch {
+    return null
+  }
 }
 
 export const tabFromHash = (hash: string): Tab => routeFromHash(hash).tab

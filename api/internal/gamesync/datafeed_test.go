@@ -150,7 +150,7 @@ func TestDatafeedHTTPFeedFailsOnAnErrorStatus(t *testing.T) {
 }
 
 func TestDatafeedFillsDurationChannelAndCastPointFromTheAbility(t *testing.T) {
-	b := []byte(`{"result": {"data": {"heroes": [{"id": 2, "name_loc": "Axe", "abilities": [{
+	b := []byte(`{"result": {"data": {"heroes": [{"id": 2, "name_loc": "Axe", "max_health": 600, "max_mana": 200, "movement_speed": 300, "attack_rate": 1.7, "abilities": [{
 		"id": 1, "name": "x_spell", "name_loc": "Spell",
 		"desc_loc": "Lasts %abilityduration%s, channels %AbilityChannelTime%s, casts in %abilitycastpoint%s, hits %Damage%.",
 		"durations": [2, 3], "channel_times": [4], "cast_points": [0.3],
@@ -161,5 +161,12 @@ func TestDatafeedFillsDurationChannelAndCastPointFromTheAbility(t *testing.T) {
 	}
 	if got, want := d.Abilities[0].Text.Description, "Lasts 2 / 3s, channels 4s, casts in 0.3s, hits 100."; got != want {
 		t.Fatalf("description %q, want %q", got, want)
+	}
+}
+
+func TestDatafeedRejectsAHeroWithoutStats(t *testing.T) {
+	b := []byte(`{"result": {"data": {"heroes": [{"id": 2, "name_loc": "Axe", "abilities": []}]}}}`)
+	if _, err := ParseHeroData(b, patchWithPuckAndAxe); err == nil || !strings.Contains(err.Error(), "stats") {
+		t.Fatalf("err = %v, want a rejection for missing stats", err)
 	}
 }

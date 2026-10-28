@@ -27,3 +27,7 @@ test('a hero hash opens that hero under the Heroes tab', () => {
   expect(routeFromHash('#/heroes/')).toEqual({ tab: 'heroes', hero: null })
   expect(routeFromHash('#/draft/puck')).toEqual({ tab: 'draft', hero: null })
 })
+
+test('a malformed hero hash opens the hero list instead of throwing', () => {
+  expect(routeFromHash('#/heroes/%E0%A4%A')).toEqual({ tab: 'heroes', hero: null })
+})
