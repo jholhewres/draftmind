@@ -12,6 +12,8 @@ coverage.*
 # Web
 node_modules/
 /web/dist/
+/web/test-results/
+/web/playwright-report/
 *.tsbuildinfo
 
 # Editors and OS

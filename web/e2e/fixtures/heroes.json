@@ -1,0 +1,13 @@
+{
+  "patch": "7.41",
+  "heroes": [
+    { "id": 1, "slug": "antimage", "name": "Anti-Mage", "primaryAttr": "agi", "attackType": "Melee", "roles": ["Carry", "Escape", "Nuker"], "img": "/apps/dota2/images/dota_react/heroes/antimage.png", "icon": "/apps/dota2/images/dota_react/heroes/icons/antimage.png" },
+    { "id": 2, "slug": "axe", "name": "Axe", "primaryAttr": "str", "attackType": "Melee", "roles": ["Initiator", "Durable", "Disabler"], "img": "/apps/dota2/images/dota_react/heroes/axe.png", "icon": "/apps/dota2/images/dota_react/heroes/icons/axe.png" },
+    { "id": 3, "slug": "bane", "name": "Bane", "primaryAttr": "all", "attackType": "Ranged", "roles": ["Support", "Disabler", "Nuker"], "img": "/apps/dota2/images/dota_react/heroes/bane.png", "icon": "/apps/dota2/images/dota_react/heroes/icons/bane.png" },
+    { "id": 4, "slug": "bloodseeker", "name": "Bloodseeker", "primaryAttr": "agi", "attackType": "Melee", "roles": ["Carry", "Disabler", "Nuker"], "img": "/apps/dota2/images/dota_react/heroes/bloodseeker.png", "icon": "/apps/dota2/images/dota_react/heroes/icons/bloodseeker.png" },
+    { "id": 5, "slug": "crystal_maiden", "name": "Crystal Maiden", "primaryAttr": "int", "attackType": "Ranged", "roles": ["Support", "Disabler", "Nuker"], "img": "/apps/dota2/images/dota_react/heroes/crystal_maiden.png", "icon": "/apps/dota2/images/dota_react/heroes/icons/crystal_maiden.png" },
+    { "id": 6, "slug": "drow_ranger", "name": "Drow Ranger", "primaryAttr": "agi", "attackType": "Ranged", "roles": ["Carry", "Disabler", "Pusher"], "img": "/apps/dota2/images/dota_react/heroes/drow_ranger.png", "icon": "/apps/dota2/images/dota_react/heroes/icons/drow_ranger.png" },
+    { "id": 7, "slug": "earthshaker", "name": "Earthshaker", "primaryAttr": "str", "attackType": "Melee", "roles": ["Support", "Initiator", "Disabler"], "img": "/apps/dota2/images/dota_react/heroes/earthshaker.png", "icon": "/apps/dota2/images/dota_react/heroes/icons/earthshaker.png" },
+    { "id": 8, "slug": "juggernaut", "name": "Juggernaut", "primaryAttr": "agi", "attackType": "Melee", "roles": ["Carry", "Pusher", "Escape"], "img": "/apps/dota2/images/dota_react/heroes/juggernaut.png", "icon": "/apps/dota2/images/dota_react/heroes/icons/juggernaut.png" }
+  ]
+}

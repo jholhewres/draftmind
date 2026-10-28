@@ -35,6 +35,11 @@ stages:
       - name: lint
         run: sh .devpit/devflow/scripts/check-lint.sh
         report: none
+      - name: e2e
+        run: sh .devpit/devflow/scripts/check-e2e.sh
+        report: junit
+        evidence: [screenshots]
+        exclusive: playwright-e2e
   - uses: builtin/review
     enabled: true
   - uses: builtin/completion

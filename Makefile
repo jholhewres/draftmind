@@ -51,6 +51,14 @@ test-api: ## Run Go tests
 test-web: ## Run web tests
 	cd $(WEB) && pnpm test
 
+.PHONY: e2e
+e2e: ## Run the visual tests at phone and desktop sizes against a mocked API
+	cd $(WEB) && pnpm exec playwright install --only-shell chromium && pnpm exec playwright test
+
+.PHONY: e2e-update
+e2e-update: ## Rewrite the visual baselines after an intended UI change
+	cd $(WEB) && pnpm exec playwright install --only-shell chromium && pnpm exec playwright test --update-snapshots
+
 .PHONY: lint
 lint: lint-api lint-web ## Run all linters and type checks
 
