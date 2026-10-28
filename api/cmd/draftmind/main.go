@@ -17,6 +17,7 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/catalog"
 	"github.com/jholhewres/draftmind/api/internal/config"
 	"github.com/jholhewres/draftmind/api/internal/db"
+	"github.com/jholhewres/draftmind/api/internal/decision"
 	"github.com/jholhewres/draftmind/api/internal/gamesync"
 	"github.com/jholhewres/draftmind/api/internal/httpapi"
 )
@@ -56,7 +57,14 @@ func run(ctx context.Context, cmd string, log *slog.Logger) error {
 	case "sync":
 		return runSync(ctx, cfg, pool, log)
 	case "serve":
-		return serve(ctx, cfg, httpapi.New(pool, catalog.NewStore(pool), log).Handler(), log)
+		srv := httpapi.New(pool, catalog.NewStore(pool), log)
+		if cfg.OpenRouterAPIKey != "" {
+			srv.WithDecider(decision.New(cfg.OpenRouterBaseURL, cfg.OpenRouterAPIKey, cfg.DecisionModel,
+				cfg.DecisionProvider, decision.NewPGLog(pool, log)))
+		} else {
+			log.Warn("OPENROUTER_API_KEY is not set: suggestions keep the code ranking")
+		}
+		return serve(ctx, cfg, srv.Handler(), log)
 	default:
 		return fmt.Errorf("unknown command %q; %s", cmd, usage)
 	}

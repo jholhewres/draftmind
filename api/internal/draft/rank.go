@@ -26,6 +26,7 @@ type Pair struct{ Hero, Opponent int }
 // Hero is a hero of the current patch with its dotaconstants roles.
 type Hero struct {
 	ID    int
+	Name  string
 	Roles []string
 }
 
@@ -58,6 +59,8 @@ type Suggestion struct {
 	WinRate float64      `json:"winRate"` // shrunk patch win rate, in %
 	RoleFit float64      `json:"roleFit"` // 0..1
 	Enemies []EnemyDelta `json:"enemies"` // in the draft's enemy order
+	// Probability is Jev's for this hero, when Jev was asked about it.
+	Probability *float64 `json:"probability,omitempty"`
 }
 
 // Delta is 100 * ShrunkWinRate - 50, in win-rate points, in a form that
@@ -84,8 +87,14 @@ var roleFit = map[int]map[string]float64{
 	5: {"Support": 1, "Disabler": 0.5},
 }
 
-// RoleFit is how well roles fit position role, from 0 to 1.
+// RoleFit is how well roles fit position role, from 0 to 1. A hero listed
+// as Support but not Carry fits no core position (1-3), whatever else it
+// lists: Bane's Nuker or Treant Protector's Durable do not make a mid or an
+// offlaner (ADR-0009).
 func RoleFit(role int, roles []string) float64 {
+	if role <= 3 && slices.Contains(roles, "Support") && !slices.Contains(roles, "Carry") {
+		return 0
+	}
 	fit := 0.0
 	for _, r := range roles {
 		fit = max(fit, roleFit[role][r])
@@ -94,7 +103,10 @@ func RoleFit(role int, roles []string) float64 {
 }
 
 // Rank returns the best n legal heroes for the draft: every hero not picked
-// or banned, by score, then by hero id.
+// or banned, the heroes that fit the position first, each group by score,
+// then by hero id. Counter deltas over five enemies outweigh the role term,
+// so fitting first is what keeps a support off a mid's list; when fewer
+// heroes fit than are asked for, the rest fill in.
 func Rank(ds Dataset, d Draft, n int) []Suggestion {
 	taken := make(map[int]bool, len(d.Allies)+len(d.Enemies)+len(d.Bans))
 	for _, list := range [][]int{d.Allies, d.Enemies, d.Bans} {
@@ -128,6 +140,12 @@ func Rank(ds Dataset, d Draft, n int) []Suggestion {
 		out = append(out, s)
 	}
 	slices.SortFunc(out, func(a, b Suggestion) int {
+		if fa, fb := a.RoleFit > 0, b.RoleFit > 0; fa != fb {
+			if fa {
+				return -1
+			}
+			return 1
+		}
 		if c := cmp.Compare(b.Score, a.Score); c != 0 {
 			return c
 		}

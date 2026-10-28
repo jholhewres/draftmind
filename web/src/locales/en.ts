@@ -81,6 +81,11 @@ export const en = {
   'draft.ranking': 'Ranking…',
   'draft.rankError': 'Could not rank the heroes: {error}',
   'draft.none': 'No hero to suggest.',
+  'draft.source.ranking': 'Ranked from stats',
+  'draft.source.timeout': 'The decision model did not answer in time.',
+  'draft.source.error': 'The decision model failed.',
+  'draft.source.unavailable': 'No decision model is configured.',
+  'draft.source.fewCandidates': 'Nothing to choose between.',
 }
 
 export type MessageKey = keyof typeof en

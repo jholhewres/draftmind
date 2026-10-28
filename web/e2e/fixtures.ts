@@ -32,7 +32,7 @@ export const test = base.extend<Fixtures>({
     await provide(escaped)
   },
   // The fixture ranking without the heroes the draft took, each keeping its
-  // deltas against the draft's enemies only.
+  // deltas against the draft's enemies only, as Jev's order.
   drafts: async ({ page, escaped }, provide) => {
     void escaped
     const drafts: DraftInput[] = []
@@ -43,7 +43,7 @@ export const test = base.extend<Fixtures>({
       const suggestions = ranking.suggestions
         .filter((s) => !taken.has(s.heroId))
         .map((s) => ({ ...s, enemies: s.enemies.filter((e) => draft.enemies.includes(e.heroId)) }))
-      return route.fulfill({ json: { patch: ranking.patch, suggestions } })
+      return route.fulfill({ json: { patch: ranking.patch, source: 'jev', confidence: 0.4, suggestions } })
     })
     await provide(drafts)
   },

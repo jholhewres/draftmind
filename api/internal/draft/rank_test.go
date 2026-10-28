@@ -120,6 +120,12 @@ func TestRankRoleFitMapsEachPositionToItsRoles(t *testing.T) {
 		{1, []string{"Carry", "Escape"}, 1},
 		{1, []string{"Support"}, 0},
 		{2, []string{"Nuker"}, 1},
+		{2, []string{"Support", "Nuker", "Escape"}, 0},      // a support is no mid
+		{2, []string{"Support", "Carry", "Nuker"}, 1},       // unless also a carry (Lina)
+		{1, []string{"Support", "Carry"}, 1},                // a carry that can support
+		{3, []string{"Support", "Initiator", "Durable"}, 0}, // a support is no offlaner
+		{4, []string{"Support", "Nuker"}, 1},                // supports fit the support positions
+		{5, []string{"Support", "Disabler", "Initiator"}, 1},
 		{2, []string{"Carry", "Pusher"}, 0.5},
 		{3, []string{"Durable"}, 1},
 		{3, []string{"Disabler"}, 0.5},
@@ -220,5 +226,92 @@ func BenchmarkRank(b *testing.B) {
 	d := Draft{Allies: []int{1, 2, 3, 4}, Enemies: []int{10, 20, 30, 40, 50}, Bans: []int{5, 6, 7}, Role: 3}
 	for b.Loop() {
 		Rank(ds, d, 8)
+	}
+}
+
+// pubMidDraft is a real-draft-like fixture with the heroes' dotaconstants
+// roles: five supports that each beat the five enemies by about 3 points
+// and ten mid heroes that beat them by about 1.7, as in the A3 run where
+// Phoenix, Treant Protector and Bane topped a Pos 2 list.
+func pubMidDraft() (Dataset, Draft) {
+	supports := []Hero{
+		{ID: 3, Name: "Bane", Roles: []string{"Support", "Disabler", "Nuker", "Durable"}},
+		{ID: 7, Name: "Earthshaker", Roles: []string{"Support", "Initiator", "Disabler", "Nuker"}},
+		{ID: 26, Name: "Lion", Roles: []string{"Support", "Disabler", "Nuker", "Initiator"}},
+		{ID: 83, Name: "Treant Protector", Roles: []string{"Support", "Initiator", "Durable", "Disabler", "Escape"}},
+		{ID: 110, Name: "Phoenix", Roles: []string{"Support", "Nuker", "Initiator", "Escape", "Disabler"}},
+	}
+	mids := []Hero{
+		{ID: 11, Name: "Shadow Fiend", Roles: []string{"Carry", "Nuker"}},
+		{ID: 13, Name: "Puck", Roles: []string{"Initiator", "Disabler", "Escape", "Nuker"}},
+		{ID: 17, Name: "Storm Spirit", Roles: []string{"Carry", "Escape", "Nuker", "Initiator", "Disabler"}},
+		{ID: 25, Name: "Lina", Roles: []string{"Support", "Carry", "Nuker", "Disabler"}},
+		{ID: 34, Name: "Tinker", Roles: []string{"Carry", "Nuker", "Pusher"}},
+		{ID: 39, Name: "Queen of Pain", Roles: []string{"Carry", "Nuker", "Escape"}},
+		{ID: 46, Name: "Templar Assassin", Roles: []string{"Carry", "Escape"}},
+		{ID: 74, Name: "Invoker", Roles: []string{"Carry", "Nuker", "Disabler", "Escape", "Pusher"}},
+		{ID: 106, Name: "Ember Spirit", Roles: []string{"Carry", "Escape", "Nuker", "Disabler", "Initiator"}},
+		{ID: 126, Name: "Void Spirit", Roles: []string{"Carry", "Escape", "Nuker", "Disabler"}},
+	}
+	enemies := []Hero{
+		{ID: 2, Name: "Axe", Roles: []string{"Initiator", "Durable", "Disabler", "Carry"}},
+		{ID: 5, Name: "Crystal Maiden", Roles: []string{"Support", "Disabler", "Nuker"}},
+		{ID: 8, Name: "Juggernaut", Roles: []string{"Carry", "Pusher", "Escape"}},
+		{ID: 28, Name: "Slardar", Roles: []string{"Carry", "Durable", "Initiator", "Disabler", "Escape"}},
+		{ID: 35, Name: "Sniper", Roles: []string{"Carry", "Nuker"}},
+	}
+	ds := Dataset{Matchups: map[Pair]Record{}, Stats: map[int]Record{}}
+	ds.Heroes = append(append(append(ds.Heroes, supports...), mids...), enemies...)
+	d := Draft{Role: 2}
+	for _, e := range enemies {
+		d.Enemies = append(d.Enemies, e.ID)
+		for _, s := range supports {
+			ds.Matchups[Pair{Hero: s.ID, Opponent: e.ID}] = Record{Games: 200, Wins: 109} // +3.0
+		}
+		for _, m := range mids {
+			ds.Matchups[Pair{Hero: m.ID, Opponent: e.ID}] = Record{Games: 200, Wins: 105} // +1.7
+		}
+	}
+	return ds, d
+}
+
+func TestRankAPos2ListOnARealDraftHasNoSupportInItsTop8(t *testing.T) {
+	ds, d := pubMidDraft()
+	top := Rank(ds, d, 8)
+	names := map[int]string{}
+	for _, h := range ds.Heroes {
+		names[h.ID] = h.Name
+	}
+	for _, s := range top {
+		switch names[s.HeroID] {
+		case "Bane", "Earthshaker", "Lion", "Treant Protector", "Phoenix":
+			t.Fatalf("%s is in the Pos 2 top 8: %v", names[s.HeroID], ids(top))
+		}
+	}
+	if len(top) != 8 {
+		t.Fatalf("%d suggestions, want 8", len(top))
+	}
+	// Templar Assassin fits Pos 2 at 0.5 (Carry, Escape): last of the mids.
+	if all := Rank(ds, d, -1); all[9].HeroID != 46 || all[10].HeroID != 3 {
+		t.Fatalf("order %v, want Templar Assassin 10th and the supports after", ids(all))
+	}
+}
+
+func TestRankFillsFromTheRestWhenFewerThan8HeroesFitThePosition(t *testing.T) {
+	ds, d := pubMidDraft()
+	var kept []Hero
+	for _, h := range ds.Heroes {
+		switch h.ID {
+		case 11, 13, 17, 25, 34, 39, 46: // drop seven mids: three still fit
+		default:
+			kept = append(kept, h)
+		}
+	}
+	ds.Heroes = kept
+	got := ids(Rank(ds, d, 8))
+	// Invoker, Ember Spirit and Void Spirit fit, tied, by id; then the
+	// supports by score (tied, by id).
+	if want := []int{74, 106, 126, 3, 7, 26, 83, 110}; !slices.Equal(got, want) {
+		t.Fatalf("top 8 %v, want %v", got, want)
 	}
 }

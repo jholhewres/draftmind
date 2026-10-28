@@ -3,16 +3,19 @@ package httpapi
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"math"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/jholhewres/draftmind/api/internal/catalog"
 	"github.com/jholhewres/draftmind/api/internal/dbtest"
+	"github.com/jholhewres/draftmind/api/internal/decision"
 	"github.com/jholhewres/draftmind/api/internal/draft"
 )
 
@@ -46,15 +49,23 @@ func seedDraft(t *testing.T) *pgxpool.Pool {
 
 type suggestBody struct {
 	Patch       string             `json:"patch"`
+	Source      string             `json:"source"`
+	Reason      string             `json:"reason"`
+	Confidence  *float64           `json:"confidence"`
 	Suggestions []draft.Suggestion `json:"suggestions"`
 	Error       string             `json:"error"`
 }
 
 func suggest(t *testing.T, pool *pgxpool.Pool, body string) (int, suggestBody) {
 	t.Helper()
+	return suggestWith(t, pool, nil, body)
+}
+
+func suggestWith(t *testing.T, pool *pgxpool.Pool, jev draft.Asker, body string) (int, suggestBody) {
+	t.Helper()
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/api/draft/suggest", strings.NewReader(body))
-	New(fakeDB{}, catalog.NewStore(pool), quietLog()).Handler().ServeHTTP(rec, req)
+	New(fakeDB{}, catalog.NewStore(pool), quietLog()).WithDecider(jev).Handler().ServeHTTP(rec, req)
 	var out suggestBody
 	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
 		t.Fatalf("status %d, body %q: %v", rec.Code, rec.Body, err)
@@ -128,5 +139,81 @@ func TestDraftSuggestRejectsABadDraft(t *testing.T) {
 		if code != http.StatusBadRequest || !strings.Contains(body.Error, want) {
 			t.Errorf("%s: status %d error %q, want 400 with %q", in, code, body.Error, want)
 		}
+	}
+}
+
+// jevOn is a decision client on an httptest server that runs handle,
+// logging every call to the test database.
+func jevOn(t *testing.T, pool *pgxpool.Pool, handle http.HandlerFunc) *decision.Client {
+	t.Helper()
+	srv := httptest.NewServer(handle)
+	t.Cleanup(srv.Close)
+	c := decision.New(srv.URL, "test-key", "typesafe/jev-1.13", "typesafe", decision.NewPGLog(pool, quietLog()))
+	c.HTTP = srv.Client()
+	return c
+}
+
+func TestDraftSuggestWithoutADecisionModelLabelsTheCodeRanking(t *testing.T) {
+	pool := seedDraft(t)
+	_, body := suggest(t, pool, `{"enemies": [2], "role": 1}`)
+	if body.Source != "ranking" || body.Reason != "unavailable" || body.Confidence != nil {
+		t.Fatalf("source %q reason %q, want the ranking labelled unavailable", body.Source, body.Reason)
+	}
+}
+
+func TestDraftSuggestReturnsJevsOrderAndLogsTheCall(t *testing.T) {
+	pool := seedDraft(t)
+	var asked map[string]any
+	jev := jevOn(t, pool, func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&asked)
+		_, _ = io.WriteString(w, `{"model": "typesafe/jev-1.13.0", "answers": {"pick": {"type": "choice",
+			"choice": "Anti-Mage", "confidence": 0.5, "probabilities": {"Anti-Mage": 0.7, "Juggernaut": 0.3}}},
+			"usage": {"input_tokens": 512, "output_tokens": 24, "cost": 0.0003}}`)
+	})
+	code, body := suggestWith(t, pool, jev, `{"enemies": [2], "bans": [5, 7], "role": 1}`)
+	if code != http.StatusOK || body.Source != "jev" || body.Confidence == nil || *body.Confidence != 0.5 {
+		t.Fatalf("status %d source %q confidence %v, want Jev's answer", code, body.Source, body.Confidence)
+	}
+	// The code ranks Juggernaut (+5 vs Axe) first; Jev prefers Anti-Mage.
+	if len(body.Suggestions) != 2 || body.Suggestions[0].HeroID != 1 || body.Suggestions[1].HeroID != 8 {
+		t.Fatalf("suggestions %+v, want Anti-Mage then Juggernaut", body.Suggestions)
+	}
+	state, _ := json.Marshal(asked["state"])
+	if !strings.Contains(string(state), `"enemies":["Axe"]`) {
+		t.Fatalf("state %s, want the enemies by name from the database", state)
+	}
+	var model, outcome string
+	var latency int
+	var cost float64
+	if err := pool.QueryRow(context.Background(),
+		`SELECT model, outcome, latency_ms, cost_usd::float8 FROM decision_log`).Scan(&model, &outcome, &latency, &cost); err != nil {
+		t.Fatalf("decision_log: %v", err)
+	}
+	if model != "typesafe/jev-1.13" || outcome != "ok" || latency < 0 || cost != 0.0003 {
+		t.Fatalf("logged model %q outcome %q latency %d cost %v", model, outcome, latency, cost)
+	}
+}
+
+func TestDraftSuggestFallsBackToTheCodeRankingWhenJevIsLate(t *testing.T) {
+	pool := seedDraft(t)
+	jev := jevOn(t, pool, func(_ http.ResponseWriter, r *http.Request) {
+		_, _ = io.Copy(io.Discard, r.Body)
+		select {
+		case <-r.Context().Done():
+		case <-time.After(2 * time.Second):
+		}
+	})
+	jev.Deadline, jev.HedgeAfter = 50*time.Millisecond, 20*time.Millisecond
+	_, body := suggestWith(t, pool, jev, `{"enemies": [2], "bans": [5, 7], "role": 1}`)
+	if body.Source != "ranking" || body.Reason != "timeout" || len(body.Suggestions) != 2 || body.Suggestions[0].HeroID != 8 {
+		t.Fatalf("source %q reason %q suggestions %+v, want the code ranking labelled timeout", body.Source, body.Reason, body.Suggestions)
+	}
+	var outcome string
+	var hedged bool
+	if err := pool.QueryRow(context.Background(), `SELECT outcome, hedged FROM decision_log`).Scan(&outcome, &hedged); err != nil {
+		t.Fatalf("decision_log: %v", err)
+	}
+	if outcome != "timeout" || !hedged {
+		t.Fatalf("logged outcome %q hedged %t, want a hedged timeout", outcome, hedged)
 	}
 }

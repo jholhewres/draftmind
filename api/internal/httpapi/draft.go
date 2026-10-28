@@ -29,11 +29,13 @@ type suggestRequest struct {
 }
 
 type suggestResponse struct {
-	Patch       string             `json:"patch"`
-	Suggestions []draft.Suggestion `json:"suggestions"`
+	Patch string `json:"patch"`
+	draft.Decided
 }
 
-// suggest ranks every legal hero of the current patch for the draft.
+// suggest ranks every legal hero of the current patch for the draft and
+// lets Jev order the top of the ranking (ADR-0003); the code ranking stands,
+// labelled, when Jev fails or is late.
 func (s *Server) suggest(w http.ResponseWriter, r *http.Request) {
 	var req suggestRequest
 	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10))
@@ -73,7 +75,12 @@ func (s *Server) suggest(w http.ResponseWriter, r *http.Request) {
 		limit = *req.Limit
 	}
 	d := draft.Draft{Allies: req.Allies, Enemies: req.Enemies, Bans: req.Bans, Role: req.Role}
-	writeJSON(w, http.StatusOK, suggestResponse{Patch: patch, Suggestions: draft.Rank(ds, d, limit)})
+	decided := draft.Decide(r.Context(), s.jev, ds, d, draft.Rank(ds, d, max(limit, draft.JevCandidates)))
+	if decided.Source == draft.SourceRanking && decided.Reason != draft.ReasonUnavailable && decided.Reason != draft.ReasonFewCandidates {
+		s.log.Warn("draft suggest: kept the code ranking", "reason", decided.Reason)
+	}
+	decided.Suggestions = decided.Suggestions[:min(limit, len(decided.Suggestions))]
+	writeJSON(w, http.StatusOK, suggestResponse{Patch: patch, Decided: decided})
 }
 
 func (q suggestRequest) validate() error {

@@ -35,9 +35,11 @@ const suggestion = (heroId: number, score: number, enemies: { heroId: number; de
   enemies: enemies.map((e) => ({ ...e, games: 100 })),
 })
 
-// Eight suggestions, as the API returns by default; the board shows five.
+// Eight suggestions, as the API returns by default, in Jev's order; the board shows five.
 const ranked = {
   patch: '7.41',
+  source: 'jev',
+  confidence: 0.4,
   suggestions: [
     suggestion(8, 9.04, [{ heroId: 2, delta: 3.06 }]),
     suggestion(1, 4, [{ heroId: 2, delta: -0.62 }]),
@@ -52,12 +54,12 @@ const ranked = {
 
 type Asked = { allies: number[]; enemies: number[]; bans: number[]; role: number }
 
-function mockApi(suggestStatus = 200) {
+function mockApi(suggestStatus = 200, result: object = ranked) {
   const asked: Asked[] = []
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (String(input) === '/api/draft/suggest') {
       asked.push(JSON.parse(String(init?.body)) as Asked)
-      return new Response(JSON.stringify(ranked), { status: suggestStatus })
+      return new Response(JSON.stringify(result), { status: suggestStatus })
     }
     return new Response(JSON.stringify(catalog), { status: 200 })
   })
@@ -156,4 +158,19 @@ test('with the browser in pt-BR, the board is in Portuguese and deltas use a dec
   expect(within(list).getByText('▲ Axe +3,1')).toBeInTheDocument()
   expect(within(list).getByText('▼ Axe −0,6')).toBeInTheDocument()
   expect(screen.getByRole('group', { name: 'Sua posição' })).toBeInTheDocument()
+})
+
+test("the code ranking kept when Jev is late carries a small label, and Jev's order carries none", async () => {
+  mockApi(200, { ...ranked, source: 'ranking', reason: 'timeout', confidence: undefined })
+  const { unmount } = render(<DraftBoard />)
+  const label = await screen.findByText('Ranked from stats')
+  expect(label).toHaveAttribute('title', 'The decision model did not answer in time.')
+  expect(within(screen.getByRole('region', { name: 'Suggestions' })).getByText('Ranked from stats')).toBe(label)
+  unmount()
+  vi.restoreAllMocks()
+
+  mockApi()
+  render(<DraftBoard />)
+  await screen.findByRole('list', { name: 'Suggestions' })
+  expect(screen.queryByText('Ranked from stats')).not.toBeInTheDocument()
 })

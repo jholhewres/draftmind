@@ -21,6 +21,7 @@ Client rules (our own implementation in `api/internal/decision`, not a copy of u
 - Provider pinned with no fallbacks and zero data retention; snapshot drift is logged.
 - Deadline per call, bounded retries on 429/5xx with `Retry-After`, and a hedged second request after a short delay.
 - Every call and answer goes to `decision_log`.
+- Defaults (2026-10-28): a 1.5 s deadline per call, up to 3 attempts per request with a 100 ms doubling backoff (or `Retry-After`) while the deadline leaves room, and a hedged second request after 600 ms; the first answer wins. The draft sends the ranking's top 8 (ADR-0009) as one `choice` keyed by hero name, with the draft, the position and each candidate's reasons in the state and criteria. `POST /api/draft/suggest` returns `source` (`jev` or `ranking`) and, for the ranking, a `reason` (`timeout`, `error`, `unavailable`, `few_candidates`).
 
 **Fail open:** if Jev errors or times out, the code ranking is shown as is, labelled "ranked from stats".
 

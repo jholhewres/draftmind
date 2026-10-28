@@ -21,6 +21,8 @@ The Draft tab ranks every legal hero against a typed draft (ADR-0003, step 2). O
   | 4 (soft support) | Support | Initiator, Disabler, Nuker |
   | 5 (hard support) | Support | Disabler |
 
+- **Core positions exclude supports (amended 2026-10-28).** For positions 1–3, a hero listed as Support but not Carry fits 0, whatever else it lists: Bane's or Phoenix's Nuker and Treant Protector's Escape do not make a mid. Lina, Windranger and other Carry+Support heroes keep their fit.
+- **Heroes that fit come first (amended 2026-10-28).** The ranking lists every hero with a role fit above 0 before the others, each group by score. On a real 5-enemy draft the counter sum (12–19 points) outweighs the 4-point role term, so the A3 run put Phoenix, Treant Protector and Bane at the top of a Pos 2 list; raising the weight enough to fix that would drown the counters between fitting heroes. When fewer heroes fit than are asked for, the rest fill in by score. On 7.41, 72 heroes fit Pos 1, 88 Pos 2, 71 Pos 3, 118 Pos 4 and 100 Pos 5, so the 8 candidates Jev sees are always role-appropriate.
 - Picked and banned heroes never enter the ranking; ties break by hero id. `POST /api/draft/suggest` returns the top 8 by default with every reason as data.
 
 ## Consequences
@@ -28,3 +30,4 @@ The Draft tab ranks every legal hero against a typed draft (ADR-0003, step 2). O
 - A strong counter on a thin sample ranks below a moderate one on a large sample; that is intended.
 - The deltas are against 50 %, so a hero that wins a lot in general also shows positive deltas; the patch term is kept small for that reason.
 - k, the weights and the role table are constants in `api/internal/draft`; revisit them once real drafts are validated (SPEC open question 3).
+- A core hero dotaconstants also lists as Support (Underlord, Sand King at Pos 3) drops below every fitting hero; dotaconstants roles cannot tell it from a real support. Positions 4–5 keep carries that list Disabler or Nuker at 0.5.

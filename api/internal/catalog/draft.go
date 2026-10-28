@@ -21,7 +21,7 @@ func (s *Store) DraftDataset(ctx context.Context, enemies []int) (string, draft.
 	var patch string
 	err := pgx.BeginTxFunc(ctx, s.pool, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly}, func(tx pgx.Tx) error {
 		rows, err := tx.Query(ctx, `
-			SELECT p.name, h.id, h.roles FROM hero h
+			SELECT p.name, h.id, h.name, h.roles FROM hero h
 			JOIN hero_patch hp ON hp.hero_id = h.id
 			JOIN patch p ON p.id = hp.patch_id AND p.is_current
 			ORDER BY h.id`)
@@ -30,7 +30,7 @@ func (s *Store) DraftDataset(ctx context.Context, enemies []int) (string, draft.
 		}
 		ds.Heroes, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (draft.Hero, error) {
 			var h draft.Hero
-			return h, row.Scan(&patch, &h.ID, &h.Roles)
+			return h, row.Scan(&patch, &h.ID, &h.Name, &h.Roles)
 		})
 		if err != nil {
 			return fmt.Errorf("heroes: %w", err)

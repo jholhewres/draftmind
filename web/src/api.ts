@@ -92,9 +92,22 @@ export type Suggestion = {
   winRate: number
   roleFit: number
   enemies: EnemyDelta[]
+  // Jev's probability, when Jev chose among the top of the ranking.
+  probability?: number
 }
 
-export type SuggestResult = { patch: string; suggestions: Suggestion[] }
+// Why the code ranking was kept instead of Jev's order.
+export type FallbackReason = 'timeout' | 'error' | 'unavailable' | 'few_candidates'
+
+// source is 'jev' when Jev ordered the list, else the code ranking stands
+// with its reason (ADR-0003: fail open).
+export type SuggestResult = {
+  patch: string
+  source: 'jev' | 'ranking'
+  reason?: FallbackReason
+  confidence?: number
+  suggestions: Suggestion[]
+}
 
 export async function fetchSuggestions(input: DraftInput, signal?: AbortSignal): Promise<SuggestResult> {
   const path = '/api/draft/suggest'
@@ -106,5 +119,11 @@ export async function fetchSuggestions(input: DraftInput, signal?: AbortSignal):
   })
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
   const body = (await res.json()) as Partial<SuggestResult>
-  return { patch: body.patch ?? '', suggestions: body.suggestions ?? [] }
+  return {
+    patch: body.patch ?? '',
+    source: body.source === 'jev' ? 'jev' : 'ranking',
+    reason: body.reason,
+    confidence: body.confidence,
+    suggestions: body.suggestions ?? [],
+  }
 }

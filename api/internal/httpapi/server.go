@@ -30,12 +30,20 @@ type Catalog interface {
 type Server struct {
 	db      Pinger
 	catalog Catalog
+	jev     draft.Asker
 	log     *slog.Logger
 }
 
 // New builds the server.
 func New(db Pinger, cat Catalog, log *slog.Logger) *Server {
 	return &Server{db: db, catalog: cat, log: log}
+}
+
+// WithDecider lets jev choose among the draft suggestions; nil keeps the
+// code ranking.
+func (s *Server) WithDecider(jev draft.Asker) *Server {
+	s.jev = jev
+	return s
 }
 
 // Handler returns the routed handler.

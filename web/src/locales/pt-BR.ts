@@ -82,4 +82,9 @@ export const ptBR: Messages = {
   'draft.ranking': 'Calculando…',
   'draft.rankError': 'Não foi possível ranquear os heróis: {error}',
   'draft.none': 'Nenhum herói para sugerir.',
+  'draft.source.ranking': 'Ordenado pelas estatísticas',
+  'draft.source.timeout': 'O modelo de decisão não respondeu a tempo.',
+  'draft.source.error': 'O modelo de decisão falhou.',
+  'draft.source.unavailable': 'Nenhum modelo de decisão configurado.',
+  'draft.source.fewCandidates': 'Nada para escolher.',
 }

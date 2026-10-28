@@ -1,5 +1,13 @@
 import { useEffect, useId, useMemo, useState, type ReactNode } from 'react'
-import { fetchHeroes, fetchSuggestions, heroImageBase, type Hero, type HeroCatalog, type SuggestResult } from '../api'
+import {
+  fetchHeroes,
+  fetchSuggestions,
+  heroImageBase,
+  type FallbackReason,
+  type Hero,
+  type HeroCatalog,
+  type SuggestResult,
+} from '../api'
 import { useI18n } from '../i18n'
 import type { MessageKey } from '../locales/en'
 import { formatDelta, formatScore } from './format'
@@ -23,6 +31,14 @@ const label: Record<Side, { row: MessageKey; add: MessageKey; slot: MessageKey; 
   ally: { row: 'draft.allies', add: 'draft.add.ally', slot: 'draft.slot.ally', choose: 'draft.choose.ally' },
   enemy: { row: 'draft.enemies', add: 'draft.add.enemy', slot: 'draft.slot.enemy', choose: 'draft.choose.enemy' },
   ban: { row: 'draft.bans', add: 'draft.add.ban', slot: 'draft.slot.ban', choose: 'draft.choose.ban' },
+}
+
+// What the fallback label says when hovered: why the code ranking stands.
+const fallbackReason: Record<FallbackReason, MessageKey> = {
+  timeout: 'draft.source.timeout',
+  error: 'draft.source.error',
+  unavailable: 'draft.source.unavailable',
+  few_candidates: 'draft.source.fewCandidates',
 }
 
 const ids = (slots: (number | null)[]) => slots.filter((id): id is number => id !== null)
@@ -144,7 +160,14 @@ export default function DraftBoard() {
             <p className="muted hint">{t('draft.hint')}</p>
           </div>
           <section className="suggestions" aria-label={t('draft.suggestions')}>
-            <h2>{t('draft.suggestions')}</h2>
+            <div className="suggestions-head">
+              <h2>{t('draft.suggestions')}</h2>
+              {result?.source === 'ranking' && !rankError && (
+                <span className="source-label" title={t(fallbackReason[result.reason ?? 'error'])}>
+                  {t('draft.source.ranking')}
+                </span>
+              )}
+            </div>
             {rankError ? (
               <p role="alert">{t('draft.rankError', { error: rankError })}</p>
             ) : !result ? (
