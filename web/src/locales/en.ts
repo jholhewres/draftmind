@@ -76,6 +76,7 @@ export const en = {
   'draft.pos': 'Pos {n}',
   'draft.hint': 'Tap a slot to add a hero. The ranking updates with every change.',
   'draft.suggestions': 'Suggestions',
+  'draft.delta': '{arrow} {hero} {delta}',
   'draft.score': 'Score',
   'draft.ranking': 'Ranking…',
   'draft.rankError': 'Could not rank the heroes: {error}',

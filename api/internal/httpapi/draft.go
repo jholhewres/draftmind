@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 
 	"github.com/jholhewres/draftmind/api/internal/draft"
@@ -91,6 +92,9 @@ func (q suggestRequest) validate() error {
 	seen := map[int]bool{}
 	for _, list := range [][]int{q.Allies, q.Enemies, q.Bans} {
 		for _, id := range list {
+			if id <= 0 || id > math.MaxInt32 { // no such hero, and not a database integer
+				return fmt.Errorf("unknown hero %d on the current patch", id)
+			}
 			if seen[id] {
 				return fmt.Errorf("hero %d is in the draft twice", id)
 			}

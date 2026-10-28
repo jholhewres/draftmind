@@ -331,14 +331,8 @@ func (f *HTTPFeed) HeroData(ctx context.Context, heroID int, language string) ([
 
 // wait holds the next request until interval has passed since the last one ended.
 func (f *HTTPFeed) wait(ctx context.Context) error {
-	if d := time.Until(f.last.Add(f.interval)); !f.last.IsZero() && d > 0 {
-		t := time.NewTimer(d)
-		defer t.Stop()
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-t.C:
-		}
+	if f.last.IsZero() {
+		return nil
 	}
-	return nil
+	return sleepUntil(ctx, f.last.Add(f.interval))
 }

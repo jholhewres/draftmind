@@ -87,19 +87,7 @@ func (s *Syncer) heroDetails(ctx context.Context, feed Feed, patchID, heroID int
 		}
 		byLang[i] = d
 	}
-	var counts Result
-	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
-		counts = Result{}
-		return storeHeroDetails(ctx, tx, patchID, byLang, &counts)
-	})
-	if err != nil {
-		return err
-	}
-	res.Inserted += counts.Inserted
-	res.Updated += counts.Updated
-	res.Deleted += counts.Deleted
-	res.Unchanged += counts.Unchanged
-	return nil
+	return s.inTx(ctx, res, func(tx pgx.Tx, r *Result) error { return storeHeroDetails(ctx, tx, patchID, byLang, r) })
 }
 
 func storeHeroDetails(ctx context.Context, tx pgx.Tx, patchID int, byLang []HeroDetail, res *Result) error {

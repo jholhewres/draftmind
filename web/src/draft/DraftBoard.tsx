@@ -167,7 +167,7 @@ export default function DraftBoard() {
                               const dir = arrow === '▲' ? 'up' : arrow === '▼' ? 'down' : 'even'
                               return (
                                 <span key={e.heroId} className={`delta ${dir}`}>
-                                  {[arrow, name(e.heroId), text].filter(Boolean).join(' ')}
+                                  {t('draft.delta', { arrow, hero: name(e.heroId), delta: text }).trim()}
                                 </span>
                               )
                             })}

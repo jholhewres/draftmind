@@ -77,6 +77,7 @@ export const ptBR: Messages = {
   'draft.pos': 'Pos {n}',
   'draft.hint': 'Toque num espaço para adicionar um herói. O ranking muda a cada alteração.',
   'draft.suggestions': 'Sugestões',
+  'draft.delta': '{arrow} {hero} {delta}',
   'draft.score': 'Pontuação',
   'draft.ranking': 'Calculando…',
   'draft.rankError': 'Não foi possível ranquear os heróis: {error}',
