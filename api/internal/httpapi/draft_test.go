@@ -109,6 +109,7 @@ func TestDraftSuggestRejectsABadDraft(t *testing.T) {
 	cases := map[string]string{
 		`{"enemies": [999], "role": 1}`:              "unknown hero 999",
 		`{"bans": [9], "role": 1}`:                   "unknown hero 9",
+		`{"enemies": [2147483648], "role": 1}`:       "unknown hero 2147483648",
 		`{"enemies": [4294967296], "role": 1}`:       "unknown hero 4294967296",
 		`{"allies": [-1], "role": 1}`:                "unknown hero -1",
 		`{"enemies": [2, 2], "role": 1}`:             "hero 2 is in the draft twice",
