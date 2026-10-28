@@ -1,5 +1,5 @@
-// Package sync loads game data from dotaconstants and OpenDota into Postgres.
-package sync
+// Package gamesync loads game data from dotaconstants and OpenDota into Postgres.
+package gamesync
 
 import (
 	"encoding/json"

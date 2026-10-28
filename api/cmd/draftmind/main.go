@@ -17,8 +17,8 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/catalog"
 	"github.com/jholhewres/draftmind/api/internal/config"
 	"github.com/jholhewres/draftmind/api/internal/db"
+	"github.com/jholhewres/draftmind/api/internal/gamesync"
 	"github.com/jholhewres/draftmind/api/internal/httpapi"
-	"github.com/jholhewres/draftmind/api/internal/sync"
 )
 
 const usage = "usage: draftmind <serve|migrate|sync heroes>"
@@ -66,8 +66,8 @@ func runSync(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, log *sl
 	if len(os.Args) < 3 || os.Args[2] != "heroes" {
 		return fmt.Errorf("unknown sync target; %s", usage)
 	}
-	src := sync.NewHTTPSource(sync.DefaultDotaconstantsBase, cfg.DotaconstantsRef, &http.Client{Timeout: 30 * time.Second})
-	_, err := sync.NewSyncer(pool, src, log).Heroes(ctx)
+	src := gamesync.NewHTTPSource(gamesync.DefaultDotaconstantsBase, cfg.DotaconstantsRef, &http.Client{Timeout: 30 * time.Second})
+	_, err := gamesync.NewSyncer(pool, src, log).Heroes(ctx)
 	return err
 }
 
