@@ -75,6 +75,26 @@ test('the attribute filter keeps the heroes of the pressed primary attribute', a
   expect(names(list)).toHaveLength(5)
 })
 
+test('the empty state names the pressed attribute', async () => {
+  vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }))
+  render(<HeroGrid />)
+  await screen.findByRole('list', { name: /heroes/i })
+  fireEvent.click(screen.getByRole('button', { name: 'Agility' }))
+  fireEvent.change(screen.getByRole('searchbox', { name: /search heroes/i }), { target: { value: 'axe' } })
+  expect(screen.getByText('No Agility hero matches “axe”.')).toBeInTheDocument()
+  fireEvent.change(screen.getByRole('searchbox', { name: /search heroes/i }), { target: { value: '' } })
+  expect(screen.queryByText(/no .*hero/i)).not.toBeInTheDocument()
+})
+
+test('with an attribute that has no heroes and no search, the empty state says so', async () => {
+  const onlyAxe = { patch: '7.41', heroes: payload.heroes.filter((h) => h.slug === 'axe') }
+  vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(onlyAxe), { status: 200 }))
+  render(<HeroGrid />)
+  await screen.findByRole('list', { name: /heroes/i })
+  fireEvent.click(screen.getByRole('button', { name: 'Intelligence' }))
+  expect(screen.getByText('No Intelligence hero.')).toBeInTheDocument()
+})
+
 test('shows an empty state when no hero matches', async () => {
   vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }))
   render(<HeroGrid />)

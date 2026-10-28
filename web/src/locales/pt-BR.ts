@@ -4,7 +4,7 @@ export const ptBR: Messages = {
   'app.health.checking': 'API: verificando…',
   'app.health.ok': 'API: {status}, banco de dados {database}',
   'app.health.unreachable': 'API: inacessível ({error})',
-  'app.trademark': 'Sem relação com a Valve nem com o jogo. Não lê nem altera o cliente do jogo.',
+  'app.trademark': 'Sem relação com a Valve nem com o jogo, e sem endosso da Valve. Dota 2 é marca registrada da Valve. Não lê nem altera o cliente do jogo.',
   'screen.soon': 'Em breve.',
   'nav.label': 'Principal',
   'nav.draft': 'Draft',
@@ -24,4 +24,6 @@ export const ptBR: Messages = {
   'heroes.attr.all': 'Universal',
   'heroes.list': 'Heróis',
   'heroes.noMatch': 'Nenhum herói encontrado para “{query}”.',
+  'heroes.noMatchAttr': 'Nenhum herói de {attr} encontrado para “{query}”.',
+  'heroes.noneAttr': 'Nenhum herói de {attr}.',
 }

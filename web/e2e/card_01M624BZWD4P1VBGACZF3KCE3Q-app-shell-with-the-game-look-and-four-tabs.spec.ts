@@ -1,18 +1,8 @@
-import { expect, test } from './fixtures.ts'
+import { expect, portraitsLoaded, test } from './fixtures.ts'
 import heroes from './fixtures/heroes.json' with { type: 'json' }
 
 const tabs = ['Draft', 'Coach', 'Heroes', 'Patches']
-const note = 'Not affiliated with Valve or the game. Never reads or changes the game client.'
-
-// Waits until every portrait in the grid has loaded from the local fixture.
-async function portraitsLoaded(page: import('@playwright/test').Page) {
-  const grid = page.getByRole('list', { name: 'Heroes' })
-  for (const img of await grid.locator('img').all()) {
-    await img.scrollIntoViewIfNeeded()
-    await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)).toBe(128)
-  }
-  await page.evaluate(() => window.scrollTo(0, 0))
-}
+const note = 'Not affiliated with or endorsed by Valve. Dota 2 is a Valve trademark. Never reads or changes the game client.'
 
 test('The tab bar switches between Draft, Coach, Heroes and Patches and marks the current tab with aria-current', async ({
   page,
@@ -62,13 +52,14 @@ test("The Heroes tab shows each hero's portrait from its image path and filters 
 })
 
 test('The trademark and fair-play note renders on every main tab', async ({ page, escaped }) => {
-  for (const tab of tabs) {
+  // Ends on Coach, the one screen no other baseline covers.
+  for (const tab of ['Draft', 'Heroes', 'Patches', 'Coach']) {
     await page.goto(`/#/${tab.toLowerCase()}`)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(tab)
     await expect(page.getByRole('contentinfo').getByText(note)).toBeVisible()
   }
   expect(escaped).toEqual([])
-  await expect(page).toHaveScreenshot('note-patches.png')
+  await expect(page).toHaveScreenshot('note-coach.png')
 })
 
 test('Visual tests match the shell and hero grid baselines at 390x844 (bottom tab bar) and 1280x800 (left rail)', async ({

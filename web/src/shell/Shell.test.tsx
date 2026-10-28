@@ -44,7 +44,7 @@ test('the trademark and fair-play note renders on every main tab', async () => {
   for (const tab of ['Draft', 'Coach', 'Heroes', 'Patches']) {
     fireEvent.click(within(tabBar()).getByRole('link', { name: tab }))
     await screen.findByRole('link', { name: tab, current: 'page' })
-    expect(within(screen.getByRole('contentinfo')).getByText('Not affiliated with Valve or the game. Never reads or changes the game client.')).toBeInTheDocument()
+    expect(within(screen.getByRole('contentinfo')).getByText('Not affiliated with or endorsed by Valve. Dota 2 is a Valve trademark. Never reads or changes the game client.')).toBeInTheDocument()
   }
 })
 
@@ -60,5 +60,5 @@ test('with the browser in pt-BR, the tabs, placeholder and note are in Portugues
   expect(await screen.findByRole('heading', { level: 1, name: 'Heróis' })).toBeInTheDocument()
   fireEvent.click(within(nav).getByRole('link', { name: 'Patches' }))
   expect(await screen.findByText('Em breve.')).toBeInTheDocument()
-  expect(screen.getByText('Sem relação com a Valve nem com o jogo. Não lê nem altera o cliente do jogo.')).toBeInTheDocument()
+  expect(screen.getByText('Sem relação com a Valve nem com o jogo, e sem endosso da Valve. Dota 2 é marca registrada da Valve. Não lê nem altera o cliente do jogo.')).toBeInTheDocument()
 })

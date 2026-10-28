@@ -38,6 +38,13 @@ export default function HeroGrid() {
     )
   }, [catalog, query, attr])
 
+  const emptyText = () => {
+    const q = query.trim()
+    if (!attr) return t('heroes.noMatch', { query: q })
+    const name = t(attrLabel[attr])
+    return q ? t('heroes.noMatchAttr', { attr: name, query: q }) : t('heroes.noneAttr', { attr: name })
+  }
+
   return (
     <section className="screen">
       <header className="screen-head">
@@ -81,7 +88,7 @@ export default function HeroGrid() {
               </li>
             ))}
           </ul>
-          {visible.length === 0 && <p className="muted">{t('heroes.noMatch', { query })}</p>}
+          {visible.length === 0 && <p className="muted">{emptyText()}</p>}
         </>
       )}
     </section>

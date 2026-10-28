@@ -16,7 +16,7 @@ test('the footer shows API health under the trademark note', async () => {
   render(<App />)
   const footer = screen.getByRole('contentinfo')
   expect(await within(footer).findByText('API: ok, database up')).toBeInTheDocument()
-  expect(within(footer).getByText(/Not affiliated with Valve/)).toBeInTheDocument()
+  expect(within(footer).getByText(/Dota 2 is a Valve trademark/)).toBeInTheDocument()
 })
 
 test('with the browser in pt-BR, the footer is in Portuguese', async () => {

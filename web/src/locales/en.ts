@@ -3,7 +3,7 @@ export const en = {
   'app.health.checking': 'API: checking…',
   'app.health.ok': 'API: {status}, database {database}',
   'app.health.unreachable': 'API: unreachable ({error})',
-  'app.trademark': 'Not affiliated with Valve or the game. Never reads or changes the game client.',
+  'app.trademark': 'Not affiliated with or endorsed by Valve. Dota 2 is a Valve trademark. Never reads or changes the game client.',
   'screen.soon': 'Coming soon.',
   'nav.label': 'Main',
   'nav.draft': 'Draft',
@@ -23,6 +23,8 @@ export const en = {
   'heroes.attr.all': 'Universal',
   'heroes.list': 'Heroes',
   'heroes.noMatch': 'No hero matches “{query}”.',
+  'heroes.noMatchAttr': 'No {attr} hero matches “{query}”.',
+  'heroes.noneAttr': 'No {attr} hero.',
 }
 
 export type MessageKey = keyof typeof en

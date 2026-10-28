@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { test as base, expect } from '@playwright/test'
+import { test as base, expect, type Page } from '@playwright/test'
 
 const fixture = (name: string) => path.join(import.meta.dirname, 'fixtures', name)
 
@@ -41,5 +41,15 @@ export const test = base.extend<Fixtures>({
     { auto: true },
   ],
 })
+
+// Waits until every portrait in the hero grid has loaded from the local
+// fixture (128px wide), then scrolls back to the top.
+export async function portraitsLoaded(page: Page) {
+  for (const img of await page.getByRole('list', { name: 'Heroes' }).locator('img').all()) {
+    await img.scrollIntoViewIfNeeded()
+    await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)).toBe(128)
+  }
+  await page.evaluate(() => window.scrollTo(0, 0))
+}
 
 export { expect }

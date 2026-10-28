@@ -11,8 +11,12 @@
   --muted: #a3abb5;
   --gold: #d9ae5b;
   --gold-text: #16120a;
+  --gold-light: #e8c27a;
   --radiant: #9ccb4a;
   --dire: #e2553e;
+  --attr-str: var(--dire);
+  --attr-agi: var(--radiant);
+  --attr-int: #4fb8e0;
   --tabbar: 64px;
   --rail: 96px;
   color-scheme: dark;
@@ -73,13 +77,13 @@ main { flex: 1; }
   border: 1px solid var(--border-strong); background: var(--surface); color: var(--fg);
   font: 600 13px Barlow, system-ui, sans-serif;
 }
-.chip[aria-pressed='true'] { border-color: var(--gold); background: rgba(217, 174, 91, 0.16); color: #e8c27a; }
+.chip[aria-pressed='true'] { border-color: var(--gold); background: rgba(217, 174, 91, 0.16); color: var(--gold-light); }
 .chip:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
 .attr-icon { width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.35); }
-.attr-str { background: #e2553e; }
-.attr-agi { background: #9ccb4a; }
-.attr-int { background: #4fb8e0; }
-.attr-all { background: conic-gradient(#e2553e 0 33%, #9ccb4a 0 66%, #4fb8e0 0); }
+.attr-str { background: var(--attr-str); }
+.attr-agi { background: var(--attr-agi); }
+.attr-int { background: var(--attr-int); }
+.attr-all { background: conic-gradient(var(--attr-str) 0 33%, var(--attr-agi) 0 66%, var(--attr-int) 0); }
 
 .hero-grid { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .hero-card { position: relative; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-solid); }

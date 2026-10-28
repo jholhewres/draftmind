@@ -1,4 +1,4 @@
-import { expect, test } from './fixtures.ts'
+import { expect, portraitsLoaded, test } from './fixtures.ts'
 
 // Literal sizes from the card, keyed by project.
 const sizes: Record<string, { width: number; height: number }> = {
@@ -20,10 +20,6 @@ test('the hero grid matches its baseline', async ({ page }) => {
 
   const grid = page.getByRole('list', { name: 'Heroes' })
   await expect(grid.getByRole('listitem')).toHaveCount(8)
-  // Every portrait comes from the local fixture and has loaded.
-  for (const img of await grid.locator('img').all()) {
-    await img.scrollIntoViewIfNeeded()
-    await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)).toBe(128)
-  }
+  await portraitsLoaded(page)
   await expect(page).toHaveScreenshot('hero-grid.png', { fullPage: true })
 })
