@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 // Outcomes of a call, as logged.
@@ -306,9 +307,13 @@ func (c *Client) redact(b []byte) []byte {
 
 func snippet(b []byte) string {
 	const n = 300
-	s := strings.TrimSpace(string(b))
+	s := strings.ToValidUTF8(strings.TrimSpace(string(b)), "\uFFFD")
 	if len(s) > n {
-		s = s[:n] + "…"
+		cut := n
+		for cut > 0 && !utf8.RuneStart(s[cut]) {
+			cut-- // never split a character
+		}
+		s = s[:cut] + "…"
 	}
 	return s
 }

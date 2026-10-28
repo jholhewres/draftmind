@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+	"unicode/utf8"
 )
 
 const testKey = "sk-or-test-key-not-real"
@@ -130,6 +131,8 @@ func TestDecisionClientFailsOnAMissingOrMistypedAnswer(t *testing.T) {
 			"confidence": 0.5, "probabilities": {"Juggernaut": 1}}}}`,
 		"a probability above 1": `{"model": "m", "answers": {"pick": {"type": "choice", "choice": "Juggernaut",
 			"confidence": 0.5, "probabilities": {"Juggernaut": 1.5, "Anti-Mage": 0}}}}`,
+		"a null probability": `{"model": "m", "answers": {"pick": {"type": "choice", "choice": "Juggernaut",
+			"confidence": 0.5, "probabilities": {"Juggernaut": 1, "Anti-Mage": null}}}}`,
 		"not JSON": `<html>bad gateway</html>`,
 	}
 	for name, body := range cases {
@@ -333,5 +336,16 @@ func TestDecisionClientParsesTheAnswerShapeOpenRouterSends(t *testing.T) {
 	}
 	if e := log.all()[0]; e.AnsweredModel != "typesafe/jev-1.13-20260917" || e.Cost == nil || *e.Cost != 0.00009072 || e.InputTokens != 2160 {
 		t.Fatalf("entry %+v", e)
+	}
+}
+
+func TestDecisionClientKeepsALongNonASCIIErrorValidUTF8(t *testing.T) {
+	c, log := newClient(t, reply(http.StatusBadRequest, `{"detail": "x`+strings.Repeat("é", 400)+`"}`))
+	_, err := c.Ask(context.Background(), pickRequest())
+	if err == nil || !utf8.ValidString(err.Error()) {
+		t.Fatalf("error %q, want a valid UTF-8 failure", err)
+	}
+	if e := log.all(); len(e) != 1 || !utf8.ValidString(e[0].Error) || !json.Valid(e[0].Answer) {
+		t.Fatalf("entry %+v, want valid UTF-8 text and JSON", e)
 	}
 }

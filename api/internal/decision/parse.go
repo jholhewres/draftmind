@@ -40,12 +40,12 @@ type wireResponse struct {
 
 // wireAnswer has pointers so that a missing field is told from a zero.
 type wireAnswer struct {
-	Type          *string            `json:"type"`
-	Choice        *string            `json:"choice"`
-	Noul          *float64           `json:"noul"`
-	Score         *float64           `json:"score"`
-	Confidence    *float64           `json:"confidence"`
-	Probabilities map[string]float64 `json:"probabilities"`
+	Type          *string             `json:"type"`
+	Choice        *string             `json:"choice"`
+	Noul          *float64            `json:"noul"`
+	Score         *float64            `json:"score"`
+	Confidence    *float64            `json:"confidence"`
+	Probabilities map[string]*float64 `json:"probabilities"` // a null is not a 0
 }
 
 // parse reads a 200 answer: every question asked must come back with its
@@ -125,13 +125,15 @@ func probabilities(a *Answer, w wireAnswer, keys []string) error {
 	if len(w.Probabilities) != len(keys) {
 		return fmt.Errorf("%d probabilities for %d options", len(w.Probabilities), len(keys))
 	}
+	a.Probabilities = make(map[string]float64, len(keys))
 	for _, k := range keys {
-		p, ok := w.Probabilities[k]
-		if !ok || !unit(p) {
+		p := w.Probabilities[k]
+		if p == nil || !unit(*p) {
 			return fmt.Errorf("probability of %q missing or outside 0..1", k)
 		}
+		a.Probabilities[k] = *p
 	}
-	a.Confidence, a.Probabilities = *w.Confidence, w.Probabilities
+	a.Confidence = *w.Confidence
 	return nil
 }
 
