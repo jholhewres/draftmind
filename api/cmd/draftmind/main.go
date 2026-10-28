@@ -12,12 +12,16 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/jholhewres/draftmind/api/internal/catalog"
 	"github.com/jholhewres/draftmind/api/internal/config"
 	"github.com/jholhewres/draftmind/api/internal/db"
 	"github.com/jholhewres/draftmind/api/internal/httpapi"
+	"github.com/jholhewres/draftmind/api/internal/sync"
 )
 
-const usage = "usage: draftmind <serve|migrate>"
+const usage = "usage: draftmind <serve|migrate|sync heroes>"
 
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
@@ -49,11 +53,22 @@ func run(ctx context.Context, cmd string, log *slog.Logger) error {
 		applied, err := db.Migrate(ctx, pool)
 		log.Info("migrations applied", "count", len(applied), "names", applied)
 		return err
+	case "sync":
+		return runSync(ctx, cfg, pool, log)
 	case "serve":
-		return serve(ctx, cfg, httpapi.New(pool, log).Handler(), log)
+		return serve(ctx, cfg, httpapi.New(pool, catalog.NewStore(pool), log).Handler(), log)
 	default:
 		return fmt.Errorf("unknown command %q; %s", cmd, usage)
 	}
+}
+
+func runSync(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, log *slog.Logger) error {
+	if len(os.Args) < 3 || os.Args[2] != "heroes" {
+		return fmt.Errorf("unknown sync target; %s", usage)
+	}
+	src := sync.NewHTTPSource(sync.DefaultDotaconstantsBase, cfg.DotaconstantsRef, &http.Client{Timeout: 30 * time.Second})
+	_, err := sync.NewSyncer(pool, src, log).Heroes(ctx)
+	return err
 }
 
 func serve(ctx context.Context, cfg config.Config, h http.Handler, log *slog.Logger) error {

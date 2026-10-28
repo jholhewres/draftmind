@@ -29,6 +29,10 @@ db-down: ## Stop Postgres (keeps the volume)
 migrate: ## Apply database migrations
 	cd $(API) && go run ./cmd/draftmind migrate
 
+.PHONY: sync
+sync: migrate ## Sync game data (heroes and patches) from dotaconstants
+	cd $(API) && go run ./cmd/draftmind sync heroes
+
 .PHONY: dev
 dev: db-up migrate ## Run Postgres, the API and the web dev server
 	@trap 'kill 0' EXIT; \

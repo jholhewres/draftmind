@@ -4,14 +4,15 @@ Rules for coding agents working in this repository. Read [docs/SPEC.md](docs/SPE
 
 ## Layout
 
-- `api/` — Go module `github.com/jholhewres/draftmind/api`. Entry point `cmd/draftmind` (`serve`, `migrate`; `sync` comes in S1). Packages under `internal/`.
+- `api/` — Go module `github.com/jholhewres/draftmind/api`. Entry point `cmd/draftmind` (`serve`, `migrate`, `sync heroes`). Packages under `internal/`.
 - `api/internal/db/migrations/` — numbered SQL files, applied once in name order. Never edit an applied migration; add a new one.
 - `web/` — React + Vite + TypeScript. `/api` is proxied to the Go server in dev.
 - `docs/` — spec, plan, ADRs.
 
 ## Commands
 
-- `make dev`, `make test`, `make lint`, `make build`. Run `make test lint` before calling work done.
+- `make dev`, `make sync`, `make test`, `make lint`, `make build`. Run `make test lint` before calling work done.
+- Database tests use a throwaway database per test on the compose Postgres (`TEST_DATABASE_URL` overrides it) and skip when it is down: run `make db-up` first.
 
 ## Product rules
 

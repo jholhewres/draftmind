@@ -7,6 +7,11 @@ linters:
     - gosec
     - misspell
     - revive
+  exclusions:
+    rules:
+      # Test code reads fixtures and uses the local compose credentials.
+      - path: '(_test\.go|internal/dbtest/)'
+        linters: [gosec]
 formatters:
   enable:
     - gofmt

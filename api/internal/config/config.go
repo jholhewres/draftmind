@@ -20,6 +20,7 @@ type Config struct {
 	WriterModel       string
 	STTModel          string
 	OpenDotaAPIKey    string
+	DotaconstantsRef  string
 }
 
 // Load reads the environment, applying defaults where a value is optional.
@@ -45,6 +46,7 @@ func load(getenv func(string) string) (Config, error) {
 		WriterModel:       get("WRITER_MODEL", ""),
 		STTModel:          get("STT_MODEL", ""),
 		OpenDotaAPIKey:    get("OPENDOTA_API_KEY", ""),
+		DotaconstantsRef:  get("DOTACONSTANTS_REF", "master"),
 	}
 	if c.DatabaseURL == "" {
 		return c, errors.New("DATABASE_URL is required")

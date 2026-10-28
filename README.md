@@ -20,6 +20,7 @@ Requirements: Go 1.27+, Node 22+, pnpm, Docker, golangci-lint v2.
 ```sh
 cp .env.example .env   # then set OPENROUTER_API_KEY
 make setup
+make sync              # load heroes and patches
 make dev               # Postgres on 127.0.0.1:55433, API on :8080, web on :5173
 ```
 
@@ -31,6 +32,7 @@ make dev               # Postgres on 127.0.0.1:55433, API on :8080, web on :5173
 | `make test` | Go tests and Vitest |
 | `make lint` | `go vet`, golangci-lint, oxlint and `tsc` |
 | `make migrate` | Applies pending migrations |
+| `make sync` | Syncs heroes and patches from dotaconstants |
 | `make build` | Builds `api/bin/draftmind` and `web/dist` |
 | `make db-up` / `make db-down` | Starts or stops Postgres |
 

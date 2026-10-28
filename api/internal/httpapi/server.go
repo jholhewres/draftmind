@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/jholhewres/draftmind/api/internal/catalog"
 )
 
 // Pinger reports whether the database answers.
@@ -14,21 +16,28 @@ type Pinger interface {
 	Ping(ctx context.Context) error
 }
 
+// Catalog reads the synced game data.
+type Catalog interface {
+	Heroes(ctx context.Context) (patch string, heroes []catalog.Hero, err error)
+}
+
 // Server wires the routes to their dependencies.
 type Server struct {
-	db  Pinger
-	log *slog.Logger
+	db      Pinger
+	catalog Catalog
+	log     *slog.Logger
 }
 
 // New builds the server.
-func New(db Pinger, log *slog.Logger) *Server {
-	return &Server{db: db, log: log}
+func New(db Pinger, cat Catalog, log *slog.Logger) *Server {
+	return &Server{db: db, catalog: cat, log: log}
 }
 
 // Handler returns the routed handler.
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", s.health)
+	mux.HandleFunc("GET /api/heroes", s.listHeroes)
 	return mux
 }
 

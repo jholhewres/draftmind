@@ -14,6 +14,8 @@ type fakeDB struct{ err error }
 
 func (f fakeDB) Ping(context.Context) error { return f.err }
 
+func quietLog() *slog.Logger { return slog.New(slog.NewTextHandler(io.Discard, nil)) }
+
 func TestHealth(t *testing.T) {
 	cases := []struct {
 		name string
@@ -25,7 +27,7 @@ func TestHealth(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			srv := New(tc.db, slog.New(slog.NewTextHandler(io.Discard, nil)))
+			srv := New(tc.db, nil, quietLog())
 			rec := httptest.NewRecorder()
 			srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/health", nil))
 			if rec.Code != tc.want {
