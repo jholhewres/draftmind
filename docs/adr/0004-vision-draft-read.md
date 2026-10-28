@@ -1,6 +1,6 @@
 # ADR-0004: Read the draft from a photo with a vision model
 
-Status: accepted · 2026-10-27
+Status: superseded by [ADR-0006](0006-photo-read-with-jev.md) · 2026-10-28
 
 ## Context
 

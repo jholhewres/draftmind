@@ -1,6 +1,6 @@
 # ADR-0002: Game data from dotaconstants and OpenDota, synced per patch
 
-Status: accepted · 2026-10-27
+Status: accepted · 2026-10-27 · amended by [ADR-0007](0007-valve-datafeed.md)
 
 ## Context
 
