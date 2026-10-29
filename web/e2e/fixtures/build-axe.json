@@ -94,5 +94,119 @@
         }
       ]
     }
+  ],
+  "builds": [
+    {
+      "position": 3,
+      "source": "opendota",
+      "name": "popular",
+      "games": 182400,
+      "winRate": 0.5134,
+      "items": [
+        {
+          "id": 44,
+          "key": "tango",
+          "name": "Tango",
+          "cost": 90,
+          "img": "/apps/dota2/images/dota_react/items/tango.png",
+          "phase": "start"
+        },
+        {
+          "id": 182,
+          "key": "ring_of_protection",
+          "name": "Ring of Protection",
+          "cost": 175,
+          "img": "/apps/dota2/images/dota_react/items/ring_of_protection.png",
+          "phase": "start"
+        },
+        {
+          "id": 16,
+          "key": "branches",
+          "name": "Iron Branch",
+          "cost": 50,
+          "img": "/apps/dota2/images/dota_react/items/branches.png",
+          "phase": "start"
+        },
+        {
+          "id": 36,
+          "key": "magic_wand",
+          "name": "Magic Wand",
+          "cost": 450,
+          "img": "/apps/dota2/images/dota_react/items/magic_wand.png",
+          "phase": "early"
+        },
+        {
+          "id": 50,
+          "key": "phase_boots",
+          "name": "Phase Boots",
+          "cost": 1500,
+          "img": "/apps/dota2/images/dota_react/items/phase_boots.png",
+          "phase": "early"
+        },
+        {
+          "id": 1,
+          "key": "blink",
+          "name": "Blink Dagger",
+          "cost": 2250,
+          "img": "/apps/dota2/images/dota_react/items/blink.png",
+          "phase": "mid"
+        },
+        {
+          "id": 263,
+          "key": "blade_mail",
+          "name": "Blade Mail",
+          "cost": 2100,
+          "img": "/apps/dota2/images/dota_react/items/blade_mail.png",
+          "phase": "mid"
+        }
+      ]
+    },
+    {
+      "position": 4,
+      "source": "curated",
+      "name": "support axe",
+      "items": [
+        {
+          "id": 44,
+          "key": "tango",
+          "name": "Tango",
+          "cost": 90,
+          "img": "/apps/dota2/images/dota_react/items/tango.png",
+          "phase": "start"
+        },
+        {
+          "id": 182,
+          "key": "ring_of_protection",
+          "name": "Ring of Protection",
+          "cost": 175,
+          "img": "/apps/dota2/images/dota_react/items/ring_of_protection.png",
+          "phase": "start"
+        },
+        {
+          "id": 16,
+          "key": "branches",
+          "name": "Iron Branch",
+          "cost": 50,
+          "img": "/apps/dota2/images/dota_react/items/branches.png",
+          "phase": "start"
+        },
+        {
+          "id": 36,
+          "key": "magic_wand",
+          "name": "Magic Wand",
+          "cost": 450,
+          "img": "/apps/dota2/images/dota_react/items/magic_wand.png",
+          "phase": "early"
+        },
+        {
+          "id": 50,
+          "key": "phase_boots",
+          "name": "Phase Boots",
+          "cost": 1500,
+          "img": "/apps/dota2/images/dota_react/items/phase_boots.png",
+          "phase": "early"
+        }
+      ]
+    }
   ]
 }

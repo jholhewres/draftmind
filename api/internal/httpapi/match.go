@@ -143,9 +143,15 @@ func (s *Server) matchMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	var req struct {
 		Text string `json:"text"`
+		// Quick names a quick action the code answers alone: items.
+		Quick string `json:"quick,omitempty"`
 	}
 	if err := decodeOne(w, r, &req, 8<<10); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	if req.Quick != "" && req.Quick != "items" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "quick must be items"})
 		return
 	}
 	req.Text = strings.TrimSpace(req.Text)
@@ -161,8 +167,15 @@ func (s *Server) matchMessage(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	s.coachTurn(w, r, sess, match.Message{Author: "player", Kind: "text", Text: req.Text}, lang, p)
+	var quick replyFunc
+	if req.Quick == "items" {
+		quick = func(_ match.Session, emit match.Emit) match.Reply { return match.QuickItems(sess, emit) }
+	}
+	s.coachTurnWith(w, r, sess, match.Message{Author: "player", Kind: "text", Text: req.Text}, lang, p, quick)
 }
+
+// replyFunc answers a turn in code alone, with no model call.
+type replyFunc func(match.Session, match.Emit) match.Reply
 
 // queryLang reads the ?lang= tag, en when absent; a bad one answers 400.
 func queryLang(w http.ResponseWriter, r *http.Request) (string, bool) {
@@ -180,6 +193,11 @@ func queryLang(w http.ResponseWriter, r *http.Request) (string, bool) {
 // coachTurn stores the player's message, then streams the coach's turn on
 // its text and stores the reply; lang is the UI language.
 func (s *Server) coachTurn(w http.ResponseWriter, r *http.Request, sess match.Session, msg match.Message, lang string, p persona.Persona) {
+	s.coachTurnWith(w, r, sess, msg, lang, p, nil)
+}
+
+// coachTurnWith is coachTurn, answered by quick instead of the coach when set.
+func (s *Server) coachTurnWith(w http.ResponseWriter, r *http.Request, sess match.Session, msg match.Message, lang string, p persona.Persona, quick replyFunc) {
 	mine, err := s.matches.Add(r.Context(), sess.ID, msg)
 	if err != nil {
 		s.log.Error("match message", "err", err)
@@ -189,7 +207,9 @@ func (s *Server) coachTurn(w http.ResponseWriter, r *http.Request, sess match.Se
 	out := newEventStream(w, s)
 	out.send("message", mine)
 	reply := match.Reply{Kind: "answer", TextSource: writer.SourceTemplate, Reason: writer.ReasonUnavailable}
-	if s.coach == nil {
+	if quick != nil {
+		reply = quick(sess, out.send)
+	} else if s.coach == nil {
 		out.send("answer", reply)
 	} else if reply, err = s.coach.Reply(r.Context(), sess, msg.Text, lang, p, out.send); err != nil {
 		s.log.Error("coach reply", "err", err)

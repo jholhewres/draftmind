@@ -370,6 +370,9 @@ footer p { margin: 0 0 4px; }
 .phase { display: flex; flex-direction: column; gap: 4px; }
 .phase dt { font-size: 12px; font-weight: 600; color: var(--muted); }
 .phase dd { margin: 0; }
+.hero-builds { display: flex; flex-direction: column; gap: 14px; }
+.hero-build h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-size: 15px; }
+.hero-build p { margin: 0 0 8px; font-size: 13px; }
 .item-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .item-card {
   display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border-radius: 8px;

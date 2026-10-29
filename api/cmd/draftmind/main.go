@@ -16,6 +16,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/jholhewres/draftmind/api/data"
 	"github.com/jholhewres/draftmind/api/internal/auth"
 	"github.com/jholhewres/draftmind/api/internal/catalog"
 	"github.com/jholhewres/draftmind/api/internal/config"
@@ -179,7 +180,12 @@ func runSync(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, log *sl
 	case "builds":
 		// Each hero's item popularity by phase, for the item build (B1).
 		od := gamesync.NewHTTPOpenDota(gamesync.DefaultOpenDotaBase, cfg.OpenDotaAPIKey, client)
-		_, err := gamesync.NewSyncer(pool, nil, log).ItemPopularity(ctx, od)
+		syncer := gamesync.NewSyncer(pool, nil, log)
+		if _, err := syncer.ItemPopularity(ctx, od); err != nil {
+			return err
+		}
+		// Then the builds, item relations and counter tags from it (ADR-0011).
+		_, err := syncer.Relations(ctx, data.ItemCounters)
 		return err
 	default:
 		return fmt.Errorf("unknown sync target; %s", usage)

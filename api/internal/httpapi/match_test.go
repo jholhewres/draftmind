@@ -112,3 +112,23 @@ func TestAPlayersMatchAnswers404ToEveryoneElse(t *testing.T) {
 		t.Fatalf("a visitor's match by its id: %d", rec.Code)
 	}
 }
+
+func TestTheItemsQuickActionAnswersWithoutTheCoach(t *testing.T) {
+	srv := buildPatches(t)
+	coach := &recordingCoach{}
+	h := srv.WithCoach(coach).Handler()
+	id := startTestMatch(t, h)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/match/"+id+"/messages", strings.NewReader(`{"text":"Items now?","quick":"items"}`)))
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"reason":"quick"`) || !strings.Contains(rec.Body.String(), `"items":[{`) {
+		t.Fatalf("quick: %d %s", rec.Code, rec.Body)
+	}
+	if len(coach.texts) != 0 {
+		t.Fatalf("the coach was asked %q", coach.texts)
+	}
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/match/"+id+"/messages", strings.NewReader(`{"text":"x","quick":"lane"}`)))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("unknown quick action: %d", rec.Code)
+	}
+}

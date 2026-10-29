@@ -303,9 +303,20 @@ export type Phase = 'start' | 'early' | 'mid' | 'late'
 
 export type PhaseItems = { phase: Phase; items: BuildItem[] }
 
+// A stored build for a position (ADR-0011): its items in order, with where
+// it comes from and, when the data has them, its games and win rate.
+export type StoredBuild = {
+  position: 1 | 2 | 3 | 4 | 5
+  source: 'opendota' | 'curated' | 'coach'
+  name: string
+  games?: number
+  winRate?: number
+  items: (ItemCard & { phase: Phase })[]
+}
+
 // A hero's most bought items by phase on the current patch, from OpenDota
-// item popularity.
-export type HeroBuild = { patch: string; source: string; core: PhaseItems[] }
+// item popularity, and its stored builds per position.
+export type HeroBuild = { patch: string; source: string; core: PhaseItems[]; builds?: StoredBuild[] }
 
 // The hero's popular build, or null when the current patch has no such hero.
 export async function fetchHeroBuild(slug: string, signal?: AbortSignal): Promise<HeroBuild | null> {
@@ -456,6 +467,9 @@ export type CoachEvent =
   | { type: 'reply'; message: Omit<MatchMessage, 'id'> }
 
 // Sends the player's message and streams the coach's turn.
+// A quick action the server answers in code alone, with no model call.
+export type QuickAction = 'items'
+
 export async function sendMatchMessage(
   id: string,
   text: string,
@@ -463,9 +477,10 @@ export async function sendMatchMessage(
   persona: Persona,
   onEvent: (e: CoachEvent) => void,
   signal?: AbortSignal,
+  quick?: QuickAction,
 ): Promise<void> {
   const path = `/api/match/${encodeURIComponent(id)}/messages?${coachQuery(lang, persona)}`
-  const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }), signal })
+  const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, quick }), signal })
   if (!res.ok || !res.body) throw new Error(`/api/match/messages: HTTP ${res.status}`)
   await readCoachTurn(res.body, onEvent)
 }

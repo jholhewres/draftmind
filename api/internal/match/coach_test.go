@@ -3,6 +3,7 @@ package match
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -74,6 +75,14 @@ func (fakeFacts) DraftDataset(context.Context, []int) (string, draft.Dataset, er
 	return "7.41", draft.Dataset{Matchups: map[draft.Pair]draft.Record{{Hero: 13, Opponent: 47}: {Games: 1000, Wins: 440}}}, nil
 }
 
+// HeroBuilds: Puck's stored mid build has Bottle.
+func (fakeFacts) HeroBuilds(_ context.Context, hero int) ([]catalog.Build, error) {
+	if hero != 13 {
+		return nil, nil
+	}
+	return []catalog.Build{{Position: 2, Source: "opendota", Items: []catalog.BuildItem{{Phase: "start", Card: items.Card{ID: 41, Name: "Bottle"}}}}}, nil
+}
+
 func (fakeFacts) Names(context.Context) (catalog.Names, error) {
 	return catalog.Names{
 		Heroes:    map[int][]string{13: {"Puck"}, 14: {"Pudge"}, 47: {"Viper"}},
@@ -121,6 +130,7 @@ func TestAnswersNameOnlyHeroesAbilitiesAndItemsInTheDatabaseForTheCurrentPatch(t
 	}{
 		{"names from the facts stand", laneParse, "Stay behind your creeps: Viper wins trades until level 6. Keep Phase Shift for Viper Strike and buy Black King Bar soon.", writer.SourceWriter, ""},
 		{"an item the facts lack fails", laneParse, "Stay back and farm a Divine Rapier.", writer.SourceTemplate, writer.ReasonRejected},
+		{"an item of the stored build for the position stands", laneParse, "Stay back with a Bottle until Viper Strike is down.", writer.SourceWriter, ""},
 		{"a name the database lacks fails", laneParse, "Stay back and buy a Glimmer Cape before you fight.", writer.SourceTemplate, writer.ReasonRejected},
 		{"an unknown name the player wrote fails at a sentence start", oldItemParse, "Viper is strong. Necronomicon helps you push.", writer.SourceTemplate, writer.ReasonRejected},
 		{"an unknown name the player wrote fails in lower case", oldItemParse, "Viper is strong, so a necronomicon helps you push.", writer.SourceTemplate, writer.ReasonRejected},
@@ -196,5 +206,23 @@ func TestAnAnswerCardsTheItemsItNamesThatTheCurrentPatchHas(t *testing.T) {
 	}
 	if len(r.Items) != len(want) || r.Items[0] != want[0] || r.Items[1] != want[1] {
 		t.Fatalf("cards %+v, want %+v", r.Items, want)
+	}
+}
+
+func TestTheItemsQuickActionAnswersFromTheBuildWithNoModelCall(t *testing.T) {
+	s := session()
+	s.ItemPlan.Situational = []items.Situational{
+		{Item: items.Item{ID: 50, Name: "Later Item", Cost: 100}, EnemyID: 47, Urgency: "later"},
+		{Item: items.Item{ID: 116, Key: "black_king_bar", Name: "Black King Bar", Cost: 4050, Img: "/bkb.png"}, EnemyID: 47, Urgency: "now"},
+	}
+	ev := &events{}
+	r := QuickItems(s, ev.emit)
+	want := []items.Card{{ID: 116, Key: "black_king_bar", Name: "Black King Bar", Cost: 4050, Img: "/bkb.png"}, {ID: 1, Name: "Witch Blade"}, {ID: 50, Name: "Later Item", Cost: 100}}
+	if r.Kind != "answer" || r.Category != "items" || r.TextSource != writer.SourceTemplate || r.Reason != ReasonQuick || r.Text != "" ||
+		fmt.Sprint(r.Items) != fmt.Sprint(want) {
+		t.Fatalf("reply %+v, want a template answer with %v", r, want)
+	}
+	if strings.Join(ev.names, ",") != "decision,answer" {
+		t.Fatalf("events %v", ev.names)
 	}
 }

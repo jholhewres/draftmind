@@ -122,3 +122,41 @@ func TestEachSituationalItemCitesTheEnemyHeroThatTriggersIt(t *testing.T) {
 		}
 	}
 }
+
+func TestSituationalCandidatesComeFromCounterTagsJoinedWithPopularity(t *testing.T) {
+	ds := lineup()
+	// Orchid Malevolence: hero 10 buys a little of it late, and no hero that
+	// beats an enemy buys it, so popularity alone never makes it a candidate.
+	ds.Items[200] = Item{ID: 200, Key: "orchid", Name: "Orchid Malevolence", Cost: 3275}
+	ds.Popularity[10]["late"] = append(ds.Popularity[10]["late"], Count{200, 50})
+	// An item the hero never buys gets no card even when its tag matches.
+	ds.Items[201] = Item{ID: 201, Key: "sheepstick_2", Name: "Unbought", Cost: 1}
+	without := SituationalCandidates(ds, 10, []int{20, 21, 22}, Core(ds, 10))
+	for _, c := range without {
+		if c.Item.Key == "orchid" {
+			t.Fatalf("orchid is a candidate without tags: %+v", c)
+		}
+	}
+
+	// Pudge (22) brings mobility; Orchid and the unbought item answer it.
+	ds.ItemTags = map[int][]string{200: {"mobility"}, 201: {"mobility"}}
+	ds.HeroTags = map[int][]string{22: {"mobility"}}
+	got := SituationalCandidates(ds, 10, []int{20, 21, 22}, Core(ds, 10))
+	var orchid *Candidate
+	for i, c := range got {
+		if c.Item.ID == 201 {
+			t.Fatalf("an item the hero never buys is a candidate: %+v", c)
+		}
+		if c.Item.Key == "orchid" {
+			orchid = &got[i]
+		}
+	}
+	if orchid == nil || orchid.Enemy != 22 || len(orchid.Tags) != 1 || orchid.Tags[0] != "mobility" {
+		t.Fatalf("candidates %+v, want Orchid against Pudge (22) for mobility", got)
+	}
+	// With Jev unavailable the code order stands and Orchid cites Pudge.
+	b := Decide(context.Background(), nil, ds, 10, []int{20, 21, 22})
+	if got := cited(b); got["orchid"] != 22 {
+		t.Fatalf("build cites %v, want orchid → 22", got)
+	}
+}

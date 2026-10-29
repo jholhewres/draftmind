@@ -27,6 +27,9 @@ const (
 	Shown           = 4 // situational items kept
 	CountersPerFoe  = 5 // heroes that beat an enemy whose items count as answers to it
 	minCandidateUse = 0.02
+	// TagLift is the lift, in share, a matching counter tag gives an item
+	// the hero buys: a curated answer weighs like a 5-point popularity lift.
+	TagLift = 0.05
 )
 
 // Item is an item of the current patch.
@@ -66,6 +69,10 @@ type Dataset struct {
 	Counters map[int][]int
 	// Names are hero names, for Jev.
 	Names map[int]string
+	// ItemTags are what each item answers, and HeroTags what each hero
+	// brings, from the curated counter tags (ADR-0011).
+	ItemTags map[int][]string
+	HeroTags map[int][]string
 }
 
 // PhaseItems is one phase of the core build.
@@ -184,13 +191,17 @@ type Candidate struct {
 	// Enemy is the enemy with the largest lift.
 	Enemy int
 	Score float64
+	// Tags are the counter tags it answers on the enemy it cites.
+	Tags []string
 }
 
 // SituationalCandidates are the situational candidates, strongest first: mid and
 // late items, not consumables and not in the core, that this hero buys or
 // that the heroes beating an enemy buy more than heroes overall, and not a
-// component of a core item or of another candidate. Every candidate answers
-// an enemy: one with no lift against any is dropped.
+// component of a core item or of another candidate. A curated counter tag
+// the item shares with an enemy adds TagLift against it, for items the hero
+// buys at all (ADR-0011). Every candidate answers an enemy: one with no lift
+// against any is dropped.
 func SituationalCandidates(ds Dataset, hero int, enemies []int, core []PhaseItems) []Candidate {
 	inCore := map[int]bool{}
 	for _, p := range core {
@@ -233,6 +244,21 @@ func SituationalCandidates(ds Dataset, hero int, enemies []int, core []PhaseItem
 			pool[id] = true
 		}
 	}
+	// Tagged answers to an enemy, among the items the hero buys at all.
+	tagged := map[int]map[int][]string{} // item → enemy → tags
+	for id := range own {
+		for _, e := range enemies {
+			for _, tag := range ds.ItemTags[id] {
+				if slices.Contains(ds.HeroTags[e], tag) {
+					if tagged[id] == nil {
+						tagged[id] = map[int][]string{}
+					}
+					tagged[id][e] = append(tagged[id][e], tag)
+					pool[id] = true
+				}
+			}
+		}
+	}
 	for _, m := range byEnemy {
 		for id, s := range m {
 			if s >= minCandidateUse {
@@ -262,13 +288,15 @@ func SituationalCandidates(ds Dataset, hero int, enemies []int, core []PhaseItem
 		c := Candidate{Item: it, Affinity: own[id], Lift: map[int]float64{}}
 		best := 0.0
 		for _, e := range enemies {
-			if l := byEnemy[e][id] - base[id]; l > 0 {
+			l := max(byEnemy[e][id]-base[id], 0) + TagLift*float64(len(tagged[id][e]))
+			if l > 0 {
 				c.Lift[e] = l
 				if l > best {
 					best, c.Enemy = l, e
 				}
 			}
 		}
+		c.Tags = tagged[id][c.Enemy]
 		if c.Enemy == 0 {
 			continue
 		}

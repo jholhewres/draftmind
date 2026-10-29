@@ -21,6 +21,8 @@ type HeroBuild struct {
 	Patch  string             `json:"patch"`
 	Source string             `json:"source"`
 	Core   []items.PhaseItems `json:"core"`
+	// Builds are the stored builds per position (ADR-0011).
+	Builds []Build `json:"builds"`
 }
 
 // BuildDataset loads the current patch's items, every hero's item
@@ -32,7 +34,8 @@ func (s *Store) BuildDataset(ctx context.Context, enemies []int) (string, items.
 
 // buildDataset loads the build data; only > 0 reads that hero's popularity alone.
 func (s *Store) buildDataset(ctx context.Context, enemies []int, only int) (string, items.Dataset, error) {
-	ds := items.Dataset{Items: map[int]items.Item{}, Popularity: map[int]map[string][]items.Count{}, Counters: map[int][]int{}, Names: map[int]string{}}
+	ds := items.Dataset{Items: map[int]items.Item{}, Popularity: map[int]map[string][]items.Count{}, Counters: map[int][]int{}, Names: map[int]string{},
+		ItemTags: map[int][]string{}, HeroTags: map[int][]string{}}
 	var patch string
 	err := pgx.BeginTxFunc(ctx, s.pool, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly}, func(tx pgx.Tx) error {
 		var patchID int
@@ -85,6 +88,29 @@ func (s *Store) buildDataset(ctx context.Context, enemies []int, only int) (stri
 		}); err != nil {
 			return fmt.Errorf("hero names: %w", err)
 		}
+		// Counter tags (ADR-0011).
+		rows, err = tx.Query(ctx, `SELECT item_id, tag FROM item_tag WHERE patch_id = $1 ORDER BY 1, 2`, patchID)
+		if err != nil {
+			return fmt.Errorf("item tags: %w", err)
+		}
+		var id int
+		var tag string
+		if _, err := pgx.ForEachRow(rows, []any{&id, &tag}, func() error {
+			ds.ItemTags[id] = append(ds.ItemTags[id], tag)
+			return nil
+		}); err != nil {
+			return fmt.Errorf("item tags: %w", err)
+		}
+		rows, err = tx.Query(ctx, `SELECT hero_id, tag FROM hero_tag WHERE patch_id = $1 AND hero_id = ANY($2::integer[]) ORDER BY 1, 2`, patchID, enemies)
+		if err != nil {
+			return fmt.Errorf("hero tags: %w", err)
+		}
+		if _, err := pgx.ForEachRow(rows, []any{&id, &tag}, func() error {
+			ds.HeroTags[id] = append(ds.HeroTags[id], tag)
+			return nil
+		}); err != nil {
+			return fmt.Errorf("hero tags: %w", err)
+		}
 		// The heroes that beat each enemy: their record against it.
 		rows, err = tx.Query(ctx, `
 			SELECT opponent_id, hero_id, games, wins FROM hero_matchup
@@ -136,5 +162,9 @@ func (s *Store) HeroBuild(ctx context.Context, slug string) (HeroBuild, error) {
 	if err != nil {
 		return HeroBuild{}, err
 	}
-	return HeroBuild{Patch: patch, Source: BuildSource, Core: items.Core(ds, heroID)}, nil
+	builds, err := s.HeroBuilds(ctx, heroID)
+	if err != nil {
+		return HeroBuild{}, err
+	}
+	return HeroBuild{Patch: patch, Source: BuildSource, Core: items.Core(ds, heroID), Builds: builds}, nil
 }

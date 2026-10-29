@@ -16,6 +16,15 @@ make dev
 
 `make help` lists every target.
 
+## Curated data
+
+`api/data/item_counters.json` holds the counter tags (ADR-0011): which items answer which tag, the tags a hero brings by slug, and the tags each dotaconstants role brings. It is the only place these opinions live; never hardcode them in Go.
+
+- Use dotaconstants item keys and hero slugs; names the current patch lacks are skipped.
+- Tags are lower-case words with underscores.
+- Bump `version` on every change, then run `make sync` (or `go -C api run ./cmd/draftmind sync builds`) to load it.
+- Explain the change in the pull request: these tags bias the situational items every player sees.
+
 ## Tests
 
 Run these before opening a pull request; CI runs the same:

@@ -65,6 +65,8 @@ type Facts interface {
 	HeroDetail(ctx context.Context, slug, lang string) (catalog.HeroDetail, error)
 	DraftDataset(ctx context.Context, enemies []int) (patch string, ds draft.Dataset, err error)
 	Names(ctx context.Context) (catalog.Names, error)
+	// HeroBuilds are the hero's stored builds on the current patch (ADR-0011).
+	HeroBuilds(ctx context.Context, hero int) ([]catalog.Build, error)
 }
 
 // Coach answers a player's messages during a match.
@@ -351,6 +353,24 @@ func (c *Coach) facts(ctx context.Context, s Session, sit Situation, heroes []ca
 		situational = append(situational, x)
 	}
 	plan["situational"] = situational
+	// The stored builds for the player's position: the only builds the
+	// writer may cite besides the session's own plan.
+	builds, err := c.Facts.HeroBuilds(ctx, s.HeroID)
+	if err != nil {
+		return f, err
+	}
+	stored := []map[string]any{}
+	for _, b := range builds {
+		if b.Position != s.Role {
+			continue
+		}
+		byPhase := map[string][]string{}
+		for _, it := range b.Items {
+			allow(it.Name)
+			byPhase[it.Phase] = append(byPhase[it.Phase], it.Name)
+		}
+		stored = append(stored, map[string]any{"source": b.Source, "items": byPhase})
+	}
 	allow(sit.Items...)
 	allow(sit.Abilities...)
 	f.data = map[string]any{
@@ -359,6 +379,7 @@ func (c *Coach) facts(ctx context.Context, s Session, sit Situation, heroes []ca
 		"enemies":             list(s.Enemies),
 		"matchups":            matchups,
 		"item_plan":           plan,
+		"stored_builds":       stored,
 		"situation":           map[string]any{"category": sit.Category, "summary": sit.Summary},
 		"mentioned_heroes":    mentioned,
 		"mentioned_items":     sit.Items,
@@ -437,3 +458,51 @@ func cut(s string, n int) string {
 }
 
 func round1(x float64) float64 { return math.Round(x*10) / 10 }
+
+// ReasonQuick marks a template answer to a quick action, with no model call.
+const ReasonQuick = "quick"
+
+// QuickItems answers the "items now?" quick action from the session's item
+// plan alone, with no Jev or writer call (ADR-0011): the situational items
+// most urgent first, then the next core items not yet started. The UI words
+// the template; the cards are the answer.
+func QuickItems(s Session, emit Emit) Reply {
+	r := Reply{Kind: "answer", Category: "items", Priority: "medium", Source: SourceQuick, TextSource: writer.SourceTemplate, Reason: ReasonQuick}
+	rank := map[string]int{"now": 0, "soon": 1, "": 2, "later": 3}
+	sit := slices.Clone(s.ItemPlan.Situational)
+	slices.SortStableFunc(sit, func(a, b items.Situational) int { return rank[a.Urgency] - rank[b.Urgency] })
+	seen := map[int]bool{}
+	add := func(it items.Item) {
+		if !seen[it.ID] && len(r.Items) < QuickCards {
+			seen[it.ID] = true
+			r.Items = append(r.Items, items.Card{ID: it.ID, Key: it.Key, Name: it.Name, Cost: it.Cost, Img: it.Img})
+		}
+	}
+	for _, it := range sit {
+		if it.Urgency != "later" {
+			add(it.Item)
+		}
+	}
+	for _, p := range s.ItemPlan.Core {
+		if p.Phase == "mid" || p.Phase == "late" {
+			for _, it := range p.Items {
+				add(it.Item)
+			}
+		}
+	}
+	for _, it := range sit {
+		add(it.Item)
+	}
+	if len(sit) > 0 && sit[0].Urgency == "now" {
+		r.Priority = "high"
+	}
+	emit("decision", map[string]string{"category": r.Category, "priority": r.Priority, "source": r.Source})
+	emit("answer", r)
+	return r
+}
+
+// QuickCards is how many items a quick answer shows.
+const QuickCards = 4
+
+// SourceQuick is the decision source of a quick action: the code alone.
+const SourceQuick = "code"

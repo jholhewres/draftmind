@@ -8,6 +8,7 @@ import {
   type MatchMessage,
   type MatchSession,
   type Priority,
+  type QuickAction,
 } from '../api'
 import { useI18n } from '../i18n'
 import type { MessageKey } from '../locales/en'
@@ -32,8 +33,14 @@ const priorityLabel: Record<Priority, MessageKey> = {
 
 type Line = Omit<MatchMessage, 'id'> & { key: string }
 
-// One tap sends the chip's own words as the player's message.
-const quickActions: MessageKey[] = ['coach.quick.lane', 'coach.quick.items', 'coach.quick.teamfight', 'coach.quick.objective']
+// One tap sends the chip's own words as the player's message; a chip with an
+// action is answered by the server's code, with no model call.
+const quickActions: { key: MessageKey; action?: QuickAction }[] = [
+  { key: 'coach.quick.lane' },
+  { key: 'coach.quick.items', action: 'items' },
+  { key: 'coach.quick.teamfight' },
+  { key: 'coach.quick.objective' },
+]
 
 // How far below the window's bottom the chat's end may sit while the player
 // still counts as reading the newest message.
@@ -103,6 +110,7 @@ export default function CoachChat({ session }: { session: MatchSession }) {
 
   const coachText = (l: Omit<Line, 'key'>) => {
     if (l.kind === 'followup') return t('coach.followup')
+    if (!l.text && l.reason === 'quick') return t(l.items?.length ? 'coach.quickItems' : 'coach.quickItemsNone')
     return l.text || t('coach.template')
   }
 
@@ -142,11 +150,11 @@ export default function CoachChat({ session }: { session: MatchSession }) {
       })
   }
 
-  const say = (raw: string) => {
+  const say = (raw: string, action?: QuickAction) => {
     const msg = raw.trim()
     if (!msg || pending) return false
     setLines((cur) => [...cur, { key: `p${Date.now()}`, author: 'player', kind: 'text', text: msg }])
-    turn({ run: (onEvent, signal) => sendMatchMessage(session.id, msg, locale, persona, onEvent, signal), spoken: false })
+    turn({ run: (onEvent, signal) => sendMatchMessage(session.id, msg, locale, persona, onEvent, signal, action), spoken: false })
     return true
   }
 
@@ -244,9 +252,9 @@ export default function CoachChat({ session }: { session: MatchSession }) {
       )}
       <div className="composer">
         <div className="quick-actions" role="group" aria-label={t('coach.quick')}>
-          {quickActions.map((k) => (
-            <button key={k} type="button" className="chip" disabled={pending} onClick={() => say(t(k))}>
-              {t(k)}
+          {quickActions.map(({ key, action }) => (
+            <button key={key} type="button" className="chip" disabled={pending} onClick={() => say(t(key), action)}>
+              {t(key)}
             </button>
           ))}
         </div>
