@@ -2,7 +2,7 @@ import { expect, portraitsLoaded, test } from './fixtures.ts'
 import heroes from './fixtures/heroes.json' with { type: 'json' }
 
 const tabs = ['Draft', 'Coach', 'Heroes', 'Patches']
-const note = 'Not affiliated with or endorsed by Valve. Dota 2 is a Valve trademark. Never reads or changes the game client.'
+const note = 'Not affiliated with or endorsed by Valve. Dota 2 is a Valve trademark. Reads only what you type, say, photograph or share; never touches the game client.'
 
 test('The tab bar switches between Draft, Coach, Heroes and Patches and marks the current tab with aria-current', async ({
   page,

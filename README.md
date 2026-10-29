@@ -21,11 +21,12 @@
 
 Photograph the pick screen and Draftmind reads the draft, suggests heroes, then items, and keeps coaching until the match ends, by text or push-to-talk voice. It also has a guide page per hero and a patches tab.
 
-> Draftmind is an independent fan tool, not affiliated with or endorsed by Valve Corporation. Dota 2 and its hero names, portraits and game data are trademarks and copyrighted material of Valve. Draftmind runs on a separate device or browser tab and never reads, modifies or overlays the game client: its only inputs are what the player types, says or photographs. See [NOTICE](NOTICE).
+> Draftmind is an independent fan tool, not affiliated with or endorsed by Valve Corporation. Dota 2 and its hero names, portraits and game data are trademarks and copyrighted material of Valve. Draftmind runs on a separate device or browser tab and never reads, modifies or overlays the game client: its only inputs are what the player types, says, photographs or, on a PC, the game window they choose to share; nothing touches the game client. See [NOTICE](NOTICE).
 
 ## Features
 
 - **Draft read from a photo.** A phone photo or screenshot of the pick screen becomes both teams' picks, with a confidence per slot; any slot can be fixed in one tap. The reader uses TypeSafe's Jev image questions (a beta feature) and falls back to a vision model ([ADR-0006](docs/adr/0006-photo-read-with-jev.md)).
+- **Live draft from a shared window.** On a PC, share the game window and each pick is read on its own: the browser checks the portraits every 2 s for free and sends one frame only when a slot changes. A Live bar shows the read count and cost, with a Stop button; no frame is stored ([ADR-0013](docs/adr/0013-live-screen-read.md)).
 - **Counter suggestions.** Code ranks every legal hero by matchups, synergy, role fit and patch win rate; the Jev decision model chooses among the top candidates. The ranking shows first and is refined in place.
 - **Streaming tips.** A short written reason per suggestion, streamed as it is written, built only from the decided result.
 - **Item build** for the locked hero against the enemy lineup.

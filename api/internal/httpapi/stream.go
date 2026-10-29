@@ -36,6 +36,9 @@ type readEvent struct {
 	Patch string `json:"patch"`
 	photo.Read
 	Draft seatedDraft `json:"draft"`
+	// Cost of the read in USD as the providers report it, so the live read
+	// can show what a session spent; omitted when none reported one.
+	Cost *float64 `json:"cost,omitempty"`
 }
 
 type rankingEvent struct {
@@ -156,7 +159,7 @@ func (s *Server) streamRead(w http.ResponseWriter, r *http.Request, readLim *lim
 		return nil, status, err
 	}
 	read = photo.FlagUncalibrated(read, q.Get("mode"))
-	return &readEvent{Patch: patch, Read: read, Draft: seat(read, team, role)}, http.StatusOK, nil
+	return &readEvent{Patch: patch, Read: read, Draft: seat(read, team, role), Cost: read.Cost}, http.StatusOK, nil
 }
 
 // seat places the player in a read draft as the photo screen does: their

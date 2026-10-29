@@ -165,7 +165,8 @@ const asRead = (body: Partial<DraftRead>): DraftRead => ({
 })
 
 // The draft a photo shows, with the draft the server seated the player in.
-export type StreamRead = DraftRead & { draft: DraftInput }
+// cost is the read's USD cost when the providers reported one.
+export type StreamRead = DraftRead & { draft: DraftInput; cost?: number }
 
 export type StreamEvent =
   | { type: 'read'; read: StreamRead }
@@ -193,7 +194,7 @@ function asEvent(name: string, data: string): StreamEvent | null {
     case 'read': {
       const d = (body.draft ?? {}) as Partial<DraftInput>
       const draft = { allies: ids(d.allies), enemies: ids(d.enemies), bans: ids(d.bans), role: d.role ?? 0 }
-      return { type: 'read', read: { ...asRead(body as Partial<DraftRead>), draft } }
+      return { type: 'read', read: { ...asRead(body as Partial<DraftRead>), draft, cost: typeof body.cost === 'number' ? body.cost : undefined } }
     }
     case 'ranking':
       return {

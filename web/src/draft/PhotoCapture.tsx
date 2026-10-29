@@ -1,11 +1,24 @@
+import { useState } from 'react'
 import { useI18n } from '../i18n'
+import { canShareScreen, NotAWindow, shareWindow } from './share'
 
-type Props = { onPhoto: (photo: File) => void }
+type Props = { onPhoto: (photo: File) => void; onLive?: (stream: MediaStream) => void }
 
 // The Draft tab's first screen: photograph the pick screen, pick a photo
 // from the gallery, or build the draft by hand.
-export default function PhotoCapture({ onPhoto }: Props) {
+export default function PhotoCapture({ onPhoto, onLive }: Props) {
   const { t } = useI18n()
+  const [shareError, setShareError] = useState<string | null>(null)
+  const live = onLive && canShareScreen()
+  const share = () => {
+    setShareError(null)
+    shareWindow()
+      .then(onLive)
+      .catch((e: unknown) => {
+        if (e instanceof NotAWindow) setShareError(t('live.notWindow'))
+        else if (!(e instanceof DOMException && e.name === 'NotAllowedError')) setShareError(t('live.error'))
+      })
+  }
   const take = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     e.target.value = '' // the same photo may be chosen again
@@ -15,6 +28,14 @@ export default function PhotoCapture({ onPhoto }: Props) {
     <section className="screen photo-capture">
       <h1>{t('photo.title')}</h1>
       <p className="muted lead">{t('photo.lead')}</p>
+      {live && (
+        <button type="button" className="live-start" onClick={share}>
+          <span className="live-dot" aria-hidden="true" />
+          <span className="live-start-text">{t('live.start')}</span>
+          <span className="muted camera-hint">{t('live.startHint')}</span>
+        </button>
+      )}
+      {shareError && <p role="alert">{shareError}</p>}
       <label className="camera">
         <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={take} />
         <span className="corner tl" aria-hidden="true" />
@@ -51,7 +72,7 @@ export default function PhotoCapture({ onPhoto }: Props) {
         <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         </svg>
-        {t('photo.privacy')}
+        {t(live ? 'live.privacy' : 'photo.privacy')}
       </p>
     </section>
   )

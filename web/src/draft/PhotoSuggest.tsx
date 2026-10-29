@@ -16,6 +16,8 @@ type Props = {
   // Downscales the photo and strips its metadata before upload.
   prepare?: (photo: File) => Promise<Blob>
   onNewPhoto: () => void
+  // Each read of a photo, for a live session's count and cost.
+  onRead?: (read: StreamRead) => void
 }
 
 type Team = 'radiant' | 'dire'
@@ -47,7 +49,7 @@ const heroIds = (slots: Slots, at: number[]) => at.flatMap((i) => (slots[i].stat
 // below. One stream reads the photo and ranks the draft the server seats
 // the player in; fixing a slot, the team or the position streams the new
 // draft, and the list updates in place.
-export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto }: Props) {
+export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto, onRead: onReadProp }: Props) {
   const { t, locale } = useI18n()
   const [catalog, setCatalog] = useState<HeroCatalog | null>(null)
   const [slots, setSlots] = useState<Slots | null>(null)
@@ -67,7 +69,9 @@ export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto
 
   // The photo is read once, with the team, position and language set when
   // its upload starts.
-  const [photoRequest, setPhotoRequest] = useState<StreamRequest | null>(null)
+  // Kept with its photo, so a new live frame never re-reads the last one.
+  const [prepared, setPrepared] = useState<{ photo: File; req: StreamRequest } | null>(null)
+  const photoRequest = prepared?.photo === photo ? prepared.req : null
   const [prepareError, setPrepareError] = useState<string | null>(null)
   const atUpload = useRef({ team, role, lang: locale as string, mode })
   useEffect(() => {
@@ -76,7 +80,7 @@ export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto
   useEffect(() => {
     let live = true
     prepare(photo)
-      .then((image) => live && setPhotoRequest({ kind: 'photo', image, ...atUpload.current }))
+      .then((image) => live && setPrepared({ photo, req: { kind: 'photo', image, ...atUpload.current } }))
       .catch((e: unknown) => live && setPrepareError(e instanceof Error ? e.message : String(e)))
     return () => {
       live = false
@@ -85,10 +89,18 @@ export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto
 
   // The draft the photo's stream ranked, while the screen still shows it.
   const [seated, setSeated] = useState<DraftInput | null>(null)
+  // The photo the player last edited the draft on; a new live frame is
+  // followed again until they edit it too.
+  const [editedOn, setEditedOn] = useState<File | null>(null)
+  const readProp = useRef(onReadProp)
+  useEffect(() => {
+    readProp.current = onReadProp
+  })
   const onRead = useCallback((read: StreamRead) => {
     setSlots([...read.radiant, ...read.dire])
     setLayout(read.layout)
     setSeated(read.draft)
+    readProp.current?.(read)
   }, [])
 
   const { own, you, allyAt, enemyAt } = useMemo(() => seats(slots, team), [slots, team])
@@ -100,13 +112,17 @@ export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto
   const draftRequest = useMemo((): StreamRequest | null => (input ? { kind: 'draft', draft: input, lang: locale } : null), [input, locale])
   // Any change the player makes streams the new draft; going back to the
   // seated draft never reads the photo again.
-  const followsPhoto = !input || (seated !== null && sameDraft(input, seated))
-  const changeTeam = () => {
+  const followsPhoto = !input || editedOn !== photo || (seated !== null && sameDraft(input, seated))
+  const edited = () => {
     setSeated(null)
+    setEditedOn(photo)
+  }
+  const changeTeam = () => {
+    edited()
     setTeam((s) => (s === 'radiant' ? 'dire' : 'radiant'))
   }
   const changeRole = (r: number) => {
-    setSeated(null)
+    edited()
     setRole(r)
   }
   const ranking = useSuggestStream(followsPhoto ? photoRequest : draftRequest, onRead)
@@ -133,7 +149,7 @@ export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto
   }
 
   const set = (i: number, s: ReadSlot) => {
-    setSeated(null)
+    edited()
     setSlots((cur) => cur && cur.map((old, j) => (j === i ? s : old)))
   }
   const pickingSide = picking !== null && enemyAt.includes(picking) ? 'enemy' : 'ally'

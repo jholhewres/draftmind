@@ -1,7 +1,7 @@
 import { expect, imagesLoaded, test } from './fixtures.ts'
 
 const note =
-  "Draftmind is an independent tool. It has no relation to Valve Corporation or the game and is not endorsed by them; Dota 2 is a trademark of Valve. Draftmind runs on a separate device or browser tab: it never reads the game's memory, injects into the client or draws an overlay over the game. Its only inputs are what you type, say or photograph. Hero names and images belong to their owners."
+  "Draftmind is an independent tool. It has no relation to Valve Corporation or the game and is not endorsed by them; Dota 2 is a trademark of Valve. Draftmind runs on a separate device or browser tab: it never reads the game's memory, injects into the client or draws an overlay over the game. Its only inputs are what you type, say or photograph, and, on PC, the game window you choose to share. Hero names and images belong to their owners."
 
 test('The three sections and the sign-in call to action render', async ({ page, escaped }) => {
   await page.goto('/')
