@@ -116,8 +116,8 @@ func New(baseURL, apiKey, model string, log Logger) *Writer {
 }
 
 const tipInstructions = "You write one short tip for a player choosing a hero in a 5v5 hero draft, from the facts given " +
-	"and nothing else. Write in the language whose BCP 47 tag is %s. At most 140 characters, one or two sentences, plain " +
-	"text, no quotes, no markdown. Name only the heroes in the facts, exactly as written there. Never name an item, an " +
+	"and nothing else. Write in the language whose BCP 47 tag is %s. One sentence of at most 140 characters that starts " +
+	"with the hero's name; plain text, no quotes, no markdown. Name only the heroes in the facts, exactly as written there. Never name an item, an " +
 	"ability or any other hero. Say why the hero fits: its win-rate deltas in points against the enemies, with the games " +
 	"behind them, its patch win rate and how its roles fit the position."
 
@@ -149,7 +149,10 @@ func (w *Writer) Tip(ctx context.Context, b Brief) Tip {
 		}
 	}
 	if w.Log != nil {
-		w.Log.Record(context.WithoutCancel(ctx), call)
+		// The tip is ready; a slow database must not hold the stream long.
+		logCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 2*time.Second)
+		w.Log.Record(logCtx, call)
+		cancel()
 	}
 	return tip
 }
@@ -202,7 +205,7 @@ func (w *Writer) complete(ctx context.Context, b Brief, call *Call) (string, err
 		return "", fmt.Errorf("writer: %w", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("writer: HTTP %d: %s", resp.StatusCode, snippet(raw))
+		return "", fmt.Errorf("writer: HTTP %d: %s", resp.StatusCode, snippet(w.redact(raw)))
 	}
 	var out struct {
 		Model   string `json:"model"`
@@ -218,19 +221,20 @@ func (w *Writer) complete(ctx context.Context, b Brief, call *Call) (string, err
 		} `json:"usage"`
 	}
 	if err := json.Unmarshal(raw, &out); err != nil {
-		return "", fmt.Errorf("writer: answer is not JSON: %s", snippet(raw))
+		return "", fmt.Errorf("writer: answer is not JSON: %s", snippet(w.redact(raw)))
 	}
 	call.AnsweredModel, call.InputTokens, call.OutputTokens, call.Cost = out.Model, out.Usage.PromptTokens, out.Usage.CompletionTokens, out.Usage.Cost
 	if len(out.Choices) == 0 || out.Choices[0].Message.Content == nil {
-		return "", fmt.Errorf("writer: no text: %s", snippet(raw))
+		return "", fmt.Errorf("writer: no text: %s", snippet(w.redact(raw)))
 	}
 	return strings.Trim(strings.TrimSpace(*out.Choices[0].Message.Content), `"“”`), nil
 }
 
 // Check holds a tip to the facts it was written from: it must have text,
-// fit in MaxTip, name no known hero or ability outside allowed, and hold no
-// other capitalised word past a sentence's start, which is how a name the
-// database lacks (an item, an old hero) shows in en and pt-BR text.
+// fit in MaxTip, name no known hero or ability outside allowed (in any
+// case), and hold no other capitalised word. The writer is asked for one
+// sentence that starts with the hero's name, so a capital anywhere else is
+// a name the database may lack (an item, an old hero) and fails the tip.
 func Check(text string, allowed, known []string) error {
 	text = strings.TrimSpace(text)
 	switch n := utf8.RuneCountInString(text); {
@@ -244,24 +248,25 @@ func Check(text string, allowed, known []string) error {
 	slices.SortFunc(names, func(a, b string) int { return len(b) - len(a) })
 	masked := text
 	for _, name := range names {
-		masked = replaceWord(masked, name, "#")
+		masked = replaceWord(masked, name, mask)
 	}
+	lower := strings.ToLower(masked)
 	for _, name := range known {
-		if name != "" && indexWord(masked, name) >= 0 {
+		if name != "" && indexWord(lower, strings.ToLower(name)) >= 0 {
 			return fmt.Errorf("names %q, which is not in the result", name)
 		}
 	}
-	start := true
 	for _, word := range strings.Fields(masked) {
-		core := strings.TrimLeftFunc(word, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) })
-		if r, _ := utf8.DecodeRuneInString(core); unicode.IsUpper(r) && !start {
+		core := strings.TrimLeftFunc(word, isNotWord)
+		if r, _ := utf8.DecodeRuneInString(core); unicode.IsUpper(r) {
 			return fmt.Errorf("names %q, which is not in the result", strings.TrimRightFunc(core, isNotWord))
 		}
-		end := strings.TrimRight(word, `"')]»”’`)
-		start = strings.HasSuffix(end, ".") || strings.HasSuffix(end, "!") || strings.HasSuffix(end, "?") || strings.HasSuffix(end, ":")
 	}
 	return nil
 }
+
+// mask stands in for an allowed name; it is not a letter or a digit.
+const mask = "\u2063"
 
 func isNotWord(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) }
 
@@ -284,13 +289,21 @@ func indexWord(s, name string) int {
 }
 
 func replaceWord(s, name, with string) string {
-	if name == "" {
+	if name == "" || strings.Contains(name, with) {
 		return s
 	}
 	for i := indexWord(s, name); i >= 0; i = indexWord(s, name) {
 		s = s[:i] + with + s[i+len(name):]
 	}
 	return s
+}
+
+// redact takes the API key out of a provider's answer before it is logged.
+func (w *Writer) redact(b []byte) []byte {
+	if w.APIKey == "" {
+		return b
+	}
+	return bytes.ReplaceAll(b, []byte(w.APIKey), []byte("<REDACTED>"))
 }
 
 func roundEnemies(es []Enemy) []Enemy {

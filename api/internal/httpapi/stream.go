@@ -225,7 +225,6 @@ type tipRun struct {
 	srv    *Server
 	ctx    context.Context
 	out    *eventStream
-	ds     draft.Dataset
 	d      draft.Draft
 	lang   string
 	names  func() (vocabulary, error) // loaded once, on the first tip
@@ -241,7 +240,7 @@ func (s *Server) newTipRun(ctx context.Context, out *eventStream, ds draft.Datas
 		heroes[h.ID] = h
 	}
 	return &tipRun{
-		srv: s, ctx: ctx, out: out, ds: ds, d: d, lang: lang, heroes: heroes, started: map[int]bool{},
+		srv: s, ctx: ctx, out: out, d: d, lang: lang, heroes: heroes, started: map[int]bool{},
 		names: sync.OnceValues(func() (vocabulary, error) {
 			n, err := s.catalog.Names(ctx)
 			if err != nil {

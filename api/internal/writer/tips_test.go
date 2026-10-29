@@ -118,9 +118,8 @@ func TestCheckAllowsTheResultsNamesAndPlainSentences(t *testing.T) {
 	b := brief()
 	for _, text := range []string{
 		"Juggernaut beats Axe by 5 points.",
-		"Strong pick. Axe loses to Juggernaut here!",
-		"Bom contra Axe: +5 pontos em 4.000 partidas.",
-		"Juggernaut's spin beats Axe.",
+		"Juggernaut vai bem contra Axe: +5 pontos em 4.000 partidas.",
+		"Juggernaut's spin beats Axe, and Lina is close to even.",
 	} {
 		if err := Check(text, b.Allowed, b.Known); err != nil {
 			t.Errorf("%q: %v", text, err)
@@ -131,6 +130,10 @@ func TestCheckAllowsTheResultsNamesAndPlainSentences(t *testing.T) {
 		strings.Repeat("a", MaxTip+1),
 		"Juggernaut is strong in the MMR climb.",
 		"Juggernaut. Earthshaker is weak.",
+		"Mirana is weaker than Juggernaut here.",
+		"Juggernaut beats Axe. Mirana does too.",
+		"Juggernaut beats Axe: Battle Fury helps.",
+		"Juggernaut beats Axe with mana break.",
 	} {
 		if err := Check(text, b.Allowed, b.Known); err == nil {
 			t.Errorf("%q passed", text)
