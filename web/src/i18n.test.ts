@@ -14,9 +14,10 @@ test('a Portuguese browser picks pt-BR', () => {
   expect(pickLocale(['fr-FR', 'PT-br'])).toBe('pt-BR')
 })
 
-test('an unsupported browser language falls back to English', () => {
-  expect(pickLocale(['fr-FR', 'de'])).toBe('en')
-  expect(pickLocale([])).toBe('en')
+test('an en-* browser gets English and any other language gets pt-BR', () => {
+  expect(pickLocale(['en-GB'])).toBe('en')
+  expect(pickLocale(['fr-FR', 'de'])).toBe('pt-BR')
+  expect(pickLocale([])).toBe('pt-BR')
 })
 
 test('translate fills the variables of a message', () => {

@@ -11,12 +11,17 @@ export function missingKeys(source: Record<string, string>, target: Record<strin
 
 export type Locale = keyof typeof catalogs
 
+// The catalog a missing message falls back to.
 export const fallbackLocale: Locale = 'en'
+// The UI language when no browser language has a catalog.
+export const defaultLocale: Locale = 'pt-BR'
 const locales = Object.keys(catalogs) as Locale[]
 const primary = (tag: string) => tag.toLowerCase().split('-')[0]
 
+export const isLocale = (v: unknown): v is Locale => locales.includes(v as Locale)
+
 // The first browser language with a catalog, by exact tag and then by
-// primary language (pt-PT gets pt-BR); English when none matches.
+// primary language (pt-PT gets pt-BR); pt-BR when none matches.
 export function pickLocale(languages: readonly string[]): Locale {
   for (const lang of languages) {
     const exact = locales.find((l) => l.toLowerCase() === lang.toLowerCase())
@@ -24,7 +29,27 @@ export function pickLocale(languages: readonly string[]): Locale {
     const near = locales.find((l) => primary(l) === primary(lang))
     if (near) return near
   }
-  return fallbackLocale
+  return defaultLocale
+}
+
+// The UI language picked in this browser; it wins over the browser's own.
+const storageKey = 'draftmind.locale'
+
+export function storedLocale(): Locale | null {
+  try {
+    const v = window.localStorage.getItem(storageKey)
+    return isLocale(v) ? v : null
+  } catch {
+    return null // storage is blocked
+  }
+}
+
+export function storeLocale(l: Locale) {
+  try {
+    window.localStorage.setItem(storageKey, l)
+  } catch {
+    // kept until the page reloads
+  }
 }
 
 export type Vars = Record<string, string | number>
@@ -36,9 +61,18 @@ export function translate(locale: Locale, key: MessageKey, vars?: Vars): string 
   return vars ? msg.replace(/\{(\w+)\}/g, (m, name: string) => (Object.hasOwn(vars, name) ? String(vars[name]) : m)) : msg
 }
 
-export type I18n = { locale: Locale; t: (key: MessageKey, vars?: Vars) => string }
+export type I18n = {
+  locale: Locale
+  t: (key: MessageKey, vars?: Vars) => string
+  // Switches the UI language and keeps the choice in this browser.
+  setLocale: (l: Locale) => void
+}
 
-export const i18nFor = (locale: Locale): I18n => ({ locale, t: (key, vars) => translate(locale, key, vars) })
+export const i18nFor = (locale: Locale, setLocale: (l: Locale) => void = () => {}): I18n => ({
+  locale,
+  t: (key, vars) => translate(locale, key, vars),
+  setLocale,
+})
 
 // English until an I18nProvider says otherwise.
 export const I18nContext = createContext<I18n>(i18nFor(fallbackLocale))

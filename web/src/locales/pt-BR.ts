@@ -251,6 +251,7 @@ export const ptBR: Messages = {
   'coach.priority.low': 'prioridade baixa',
   'coach.priority.medium': 'prioridade média',
   'coach.priority.high': 'prioridade alta',
+  'app.language': 'Idioma',
   'account.signIn': 'Entrar',
   'account.open': 'Conta',
   'signin.back': 'Voltar',

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchSyncStatus, type SyncStatus } from '../api'
 import { useI18n, type Locale } from '../i18n'
+import LanguageSwitch from './LanguageSwitch'
 
 // "3 hours ago" in the UI language, in the largest unit that fits.
 function since(at: number, now: number, locale: Locale): string {
@@ -12,8 +13,9 @@ function since(at: number, now: number, locale: Locale): string {
   return rtf.format(-Math.round(hours / 24), 'day')
 }
 
-// The trademark note, and the current patch with how long ago it was synced.
-export default function Footer() {
+// The trademark note, the current patch with how long ago it was synced,
+// and the language switch.
+export default function Footer({ signedIn }: { signedIn: boolean }) {
   const { t, locale } = useI18n()
   const [status, setStatus] = useState<SyncStatus | null>(null)
   // When the status arrived: the age is read against it, not each render.
@@ -46,6 +48,7 @@ export default function Footer() {
       <p className="status" role="status">
         {line}
       </p>
+      <LanguageSwitch signedIn={signedIn} />
     </footer>
   )
 }

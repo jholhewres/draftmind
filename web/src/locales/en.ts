@@ -250,6 +250,7 @@ export const en = {
   'coach.priority.low': 'low priority',
   'coach.priority.medium': 'medium priority',
   'coach.priority.high': 'high priority',
+  'app.language': 'Language',
   'account.signIn': 'Sign in',
   'account.open': 'Account',
   'signin.back': 'Back',

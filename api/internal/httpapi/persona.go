@@ -3,15 +3,18 @@ package httpapi
 import (
 	"context"
 	"net/http"
+	"slices"
 
 	"github.com/jholhewres/draftmind/api/internal/auth"
 	"github.com/jholhewres/draftmind/api/internal/persona"
 )
 
-// Personas keeps each signed-in player's coach persona.
+// Personas keeps each signed-in player's coach persona and UI language.
 type Personas interface {
 	Get(ctx context.Context, userID int64) (persona.Persona, error)
 	Save(ctx context.Context, userID int64, p persona.Persona) error
+	UILanguage(ctx context.Context, userID int64) (string, error)
+	SaveUILanguage(ctx context.Context, userID int64, lang string) error
 }
 
 // WithPersonas keeps signed-in players' personas; without it every coach
@@ -88,4 +91,49 @@ func (s *Server) savePersona(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, p)
+}
+
+type uiLanguage struct {
+	Language string `json:"language"`
+}
+
+// myLanguage serves GET /api/me/language: the UI language the signed-in
+// player picked, or "" before they pick one.
+func (s *Server) myLanguage(w http.ResponseWriter, r *http.Request) {
+	u, ok := auth.UserFrom(r.Context())
+	if !ok || s.personas == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "settings are not kept"})
+		return
+	}
+	lang, err := s.personas.UILanguage(r.Context(), u.ID)
+	if err != nil {
+		s.log.Error("ui language", "err", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "could not load the settings"})
+		return
+	}
+	writeJSON(w, http.StatusOK, uiLanguage{Language: lang})
+}
+
+// saveLanguage serves PUT /api/me/language: one of persona.UILanguages.
+func (s *Server) saveLanguage(w http.ResponseWriter, r *http.Request) {
+	u, ok := auth.UserFrom(r.Context())
+	if !ok || s.personas == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "settings are not kept"})
+		return
+	}
+	var body uiLanguage
+	if err := decodeOne(w, r, &body, 1<<8); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	if !slices.Contains(persona.UILanguages, body.Language) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "language must be en or pt-BR"})
+		return
+	}
+	if err := s.personas.SaveUILanguage(r.Context(), u.ID, body.Language); err != nil {
+		s.log.Error("save ui language", "err", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "could not save the settings"})
+		return
+	}
+	writeJSON(w, http.StatusOK, body)
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { fetchAccount, type Account } from './api'
+import { fetchAccount, fetchUILanguage, saveUILanguage, type Account } from './api'
 import SignIn from './auth/SignIn'
 import Landing from './landing/Landing'
 import CoachTab from './coach/CoachTab'
@@ -9,13 +9,13 @@ import HeroPage from './heroes/HeroPage'
 import PatchesPage from './patches/PatchesPage'
 import PersonaProvider from './settings/PersonaProvider'
 import PersonaSettings from './settings/PersonaSettings'
-import { useI18n } from './i18n'
+import { isLocale, storedLocale, useI18n } from './i18n'
 import { useRoute } from './shell/route'
 import Footer from './shell/Footer'
 import TabBar from './shell/TabBar'
 
 export default function App() {
-  const { t } = useI18n()
+  const { t, setLocale } = useI18n()
   const { tab, hero, manual, signin, landing, coach, settings } = useRoute()
   // undefined while checked; a failed check reads as a visitor.
   const [account, setAccount] = useState<Account | null | undefined>(undefined)
@@ -30,6 +30,22 @@ export default function App() {
       })
     return () => ctrl.abort()
   }, [])
+
+  // A signed-in player's saved UI language follows them to this device; one
+  // picked here before they had saved any is kept as theirs.
+  const signedIn = !!account
+  useEffect(() => {
+    if (!signedIn) return
+    const ctrl = new AbortController()
+    fetchUILanguage(ctrl.signal)
+      .then((lang) => {
+        if (isLocale(lang)) return setLocale(lang)
+        const kept = storedLocale()
+        if (kept) return saveUILanguage(kept)
+      })
+      .catch(() => {})
+    return () => ctrl.abort()
+  }, [signedIn, setLocale])
 
   if (signin) return <SignIn token={signin.token} failed={signin.failed} account={account} onAccount={onAccount} />
   // The root is the landing page for a visitor and Draft once signed in.
@@ -69,7 +85,7 @@ export default function App() {
               <PatchesPage />
             )}
           </main>
-          <Footer />
+          <Footer signedIn={signedIn} />
         </div>
       </div>
     </PersonaProvider>

@@ -27,6 +27,8 @@ var (
 	Languages   = []string{"auto", "en", "pt-BR"}
 	Verbosities = []string{"short", "normal"}
 	Focuses     = []string{"laning", "teamfights", "items", "macro"}
+	// UILanguages are the app's catalogs, for the player's UI language.
+	UILanguages = []string{"en", "pt-BR"}
 )
 
 // Default is the coach before the player changes anything.
@@ -124,6 +126,27 @@ func (s *Store) Save(ctx context.Context, userID int64, p Persona) error {
 		userID, p.Tone, p.Language, p.Verbosity, p.Focus)
 	if err != nil {
 		return fmt.Errorf("save coach persona: %w", err)
+	}
+	return nil
+}
+
+// UILanguage is the UI language the user picked, or "" before they pick one.
+func (s *Store) UILanguage(ctx context.Context, userID int64) (string, error) {
+	var lang string
+	err := s.pool.QueryRow(ctx, `SELECT coalesce(ui_language, '') FROM app_user WHERE id = $1`, userID).Scan(&lang)
+	if err != nil {
+		return "", fmt.Errorf("ui language: %w", err)
+	}
+	return lang, nil
+}
+
+// SaveUILanguage stores the user's UI language, one of UILanguages.
+func (s *Store) SaveUILanguage(ctx context.Context, userID int64, lang string) error {
+	if !slices.Contains(UILanguages, lang) {
+		return fmt.Errorf("language must be one of %v", UILanguages)
+	}
+	if _, err := s.pool.Exec(ctx, `UPDATE app_user SET ui_language = $2 WHERE id = $1`, userID, lang); err != nil {
+		return fmt.Errorf("save ui language: %w", err)
 	}
 	return nil
 }

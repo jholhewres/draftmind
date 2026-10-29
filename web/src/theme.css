@@ -154,6 +154,13 @@ main { flex: 1; }
 footer { padding: 16px 0; font-size: 12px; line-height: 1.4; color: var(--muted); }
 footer p { margin: 0 0 4px; }
 
+/* PT | EN: a two-button segmented switch, in the footers and on the account screen. */
+.lang-switch { display: inline-flex; margin-top: 8px; border: 1px solid var(--border-strong); border-radius: 8px; overflow: hidden; }
+.lang-switch button { min-width: 44px; min-height: 32px; padding: 4px 12px; border: 0; background: transparent; color: var(--muted); font-family: inherit; font-size: 12px; font-weight: 600; line-height: 1; letter-spacing: 0.06em; cursor: pointer; }
+.lang-switch button + button { border-left: 1px solid var(--border-strong); }
+.lang-switch button[aria-pressed='true'] { background: var(--gold); color: var(--gold-text); }
+.lang-switch button:focus-visible { outline: 2px solid var(--gold-light); outline-offset: -2px; }
+
 /* Desktop: left rail and a centered column. */
 @media (min-width: 1024px) {
   .app { padding-bottom: 0; padding-left: var(--rail); }
@@ -491,6 +498,7 @@ footer p { margin: 0 0 4px; }
 .signin-or { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--muted); }
 .signin-or span { flex: 1; height: 1px; background: var(--border); }
 .signin-foot { padding: 16px 24px 24px; text-align: center; }
+.signin-foot .lang-switch { display: flex; width: max-content; margin: 12px auto 0; }
 
 /* Landing page, after the prototype's Landing: the visitor's entry at the root. */
 .landing { min-height: 100dvh; display: flex; flex-direction: column; background: var(--bg); }
@@ -536,6 +544,7 @@ footer p { margin: 0 0 4px; }
 .landing-foot { margin-top: auto; padding: 24px 20px 32px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; font-size: 13px; line-height: 1.5; }
 .landing-foot p { margin: 0; }
 .landing-foot nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.landing-foot .lang-switch { align-self: flex-start; margin-top: 0; }
 
 @media (min-width: 1024px) {
   .landing-hero { min-height: min(760px, 88dvh); background-position: center; }

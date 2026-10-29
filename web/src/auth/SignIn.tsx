@@ -11,6 +11,7 @@ import {
   type Account,
 } from '../api'
 import { useI18n } from '../i18n'
+import LanguageSwitch from '../shell/LanguageSwitch'
 
 type Props = {
   token: string | null
@@ -224,7 +225,10 @@ export default function SignIn({ token, failed, account, onAccount }: Props) {
           </>
         )}
       </main>
-      <footer className="signin-foot">{t('app.trademark')}</footer>
+      <footer className="signin-foot">
+        {t('app.trademark')}
+        <LanguageSwitch signedIn={!!account} />
+      </footer>
     </div>
   )
 }

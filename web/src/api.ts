@@ -551,6 +551,18 @@ export async function savePersona(p: Persona): Promise<void> {
   if (!res.ok) throw new Error(`/api/me/persona: HTTP ${res.status}`)
 }
 
+// The UI language the signed-in player picked, or '' before they pick one.
+export async function fetchUILanguage(signal?: AbortSignal): Promise<string> {
+  const res = await fetch('/api/me/language', { signal })
+  if (!res.ok) throw new Error(`/api/me/language: HTTP ${res.status}`)
+  return ((await res.json()) as { language: string }).language
+}
+
+export async function saveUILanguage(language: string): Promise<void> {
+  const res = await fetch('/api/me/language', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ language }) })
+  if (!res.ok) throw new Error(`/api/me/language: HTTP ${res.status}`)
+}
+
 // The signed-in account: an e-mail address, a SteamID or both.
 export type Account = { email?: string; steamId?: string }
 

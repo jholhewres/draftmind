@@ -147,3 +147,31 @@ func TestTwoPersonasGivenTheSameMatchGetTheSamePicksAndItems(t *testing.T) {
 		t.Fatalf("items differ by persona:\n%s\n%s", ia, ib)
 	}
 }
+
+func TestTheUILanguageIsKeptForTheSignedInPlayer(t *testing.T) {
+	srv, pool := buildPatchesPool(t)
+	h, signIn := accounts(t, srv, pool)
+	phone := signIn("player@example.com")
+
+	if rec := send(h, http.MethodPut, "/api/me/language", `{"language":"en"}`); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("visitor: %d, want 401", rec.Code)
+	}
+	if rec := send(h, http.MethodGet, "/api/me/language", "", phone); rec.Body.String() != "{\"language\":\"\"}\n" {
+		t.Fatalf("before saving: %d %s, want no language", rec.Code, rec.Body)
+	}
+	if rec := send(h, http.MethodPut, "/api/me/language", `{"language":"en"}`, phone); rec.Code != http.StatusOK {
+		t.Fatalf("save: %d %s", rec.Code, rec.Body)
+	}
+	for _, bad := range []string{`{"language":"fr"}`, `{"language":"auto"}`, `{}`} {
+		if rec := send(h, http.MethodPut, "/api/me/language", bad, phone); rec.Code != http.StatusBadRequest {
+			t.Errorf("%s: %d, want 400", bad, rec.Code)
+		}
+	}
+	// A new device finds it; another player has none.
+	if rec := send(h, http.MethodGet, "/api/me/language", "", signIn("player@example.com")); rec.Body.String() != "{\"language\":\"en\"}\n" {
+		t.Fatalf("new device: %d %s, want en", rec.Code, rec.Body)
+	}
+	if rec := send(h, http.MethodGet, "/api/me/language", "", signIn("other@example.com")); rec.Body.String() != "{\"language\":\"\"}\n" {
+		t.Fatalf("other player: %s, want no language", rec.Body)
+	}
+}

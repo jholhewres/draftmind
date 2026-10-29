@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { fetchHeroes, heroImageBase, type Hero } from '../api'
 import { useI18n } from '../i18n'
 import type { MessageKey } from '../locales/en'
+import LanguageSwitch from '../shell/LanguageSwitch'
 
 // The Radiant and Dire art behind the hero section, from the game's CDN.
 export const heroArt = 'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/home/radiant_dire5.jpg'
@@ -112,6 +113,7 @@ export default function Landing() {
           <a href="#/patches">{t('nav.patches')}</a>
           <a href="#/signin">{t('account.signIn')}</a>
         </nav>
+        <LanguageSwitch signedIn={false} />
       </footer>
     </div>
   )
