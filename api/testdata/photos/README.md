@@ -6,11 +6,13 @@
 
 **These photos are synthetic, not real photos of the game.** Each one renders a 1920x1080 pick screen whose top bar holds ten hero portraits from the image CDN (five per team either side of a clock, some slots still empty), with the hero grid below as a distractor, then "photographs" it: a perspective tilt, a dark bezel, blur, glare, screen-door moiré, a colour cast, sensor noise and JPEG compression. Some are framed on the hero bar, some show the whole monitor.
 
-They were built by `~/jhol/scripts/draftmind/a4-photos/make_fixtures.py` (seed 20261028) from the current patch's heroes:
+They are built by [`scripts/fixtures/make_fixtures.py`](../../../scripts/fixtures/make_fixtures.py) (seed 20261028) from the current patch's heroes. It needs Python 3 with Pillow and numpy, `psql` and a synced database (`make sync`); the same heroes table gives the same files:
 
 ```sh
-python3 -I ~/jhol/scripts/draftmind/a4-photos/make_fixtures.py <repo>
+python3 -I scripts/fixtures/make_fixtures.py
 ```
+
+The end-screen fixture (`api/internal/photo/testdata/endscreen.jpg`, also `web/e2e/fixtures/end-screen.jpg`) is drawn by [`scripts/fixtures/make_endscreen.py`](../../../scripts/fixtures/make_endscreen.py).
 
 The layout of the top bar is invented, so the Jev reader's layout constants (`api/internal/photo/jev.go`) are calibrated on it. Real photos will tell whether they hold.
 
