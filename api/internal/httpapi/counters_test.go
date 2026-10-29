@@ -75,6 +75,17 @@ func TestCountersComeFromTheCurrentPatchMatchups(t *testing.T) {
 	if c.GoodAgainst[0].Slug != "hero4" || c.GoodAgainst[0].Img != "/h4.png" {
 		t.Fatalf("counter hero %+v", c.GoodAgainst[0].Hero)
 	}
+	// Each side stops at the top n.
+	top2, err := catalog.NewStore(pool).HeroCounters(context.Background(), "antimage", 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ids := side(top2.GoodAgainst).ids; !slices.Equal(ids, []int{4, 2}) {
+		t.Fatalf("top 2 good against %v, want [4 2]", ids)
+	}
+	if ids := side(top2.BadAgainst).ids; !slices.Equal(ids, []int{8, 6}) {
+		t.Fatalf("top 2 bad against %v, want [8 6]", ids)
+	}
 }
 
 func TestCountersMarkLowSampleMatchups(t *testing.T) {
