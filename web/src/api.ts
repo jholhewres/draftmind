@@ -361,6 +361,55 @@ export type MatchSession = {
   bans: number[]
   itemPlan: Omit<Build, 'patch' | 'popularitySource'>
   messages: MatchMessage[]
+  result?: MatchResult
+}
+
+export type Outcome = 'win' | 'loss'
+
+// How a match ended, as the player tells it before confirming.
+export type ResultFill = { result?: Outcome; durationS?: number; kills?: number; deaths?: number; assists?: number }
+
+// The result the player confirmed, with the coach's notes.
+export type MatchResult = ResultFill & { result: Outcome; source: 'tap' | 'message' | 'photo'; notes: string[]; endedAt: string }
+
+// One ended match in the player's history.
+export type PastMatch = ResultFill & { id: string; heroId: number; role: number; result: Outcome; endedAt: string }
+
+const matchPath = (id: string, rest: string) => `/api/match/${encodeURIComponent(id)}/${rest}`
+
+// Reads a message such as "we lost" into a result; null when it does not say.
+export async function parseEndMessage(id: string, text: string, signal?: AbortSignal): Promise<Outcome | null> {
+  const path = matchPath(id, 'end/parse')
+  const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }), signal })
+  if (res.status === 422) return null
+  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
+  return ((await res.json()) as { result: Outcome }).result
+}
+
+// Reads a photo of the end screen into the result, duration and KDA it shows.
+export async function readEndScreen(id: string, image: Blob, signal?: AbortSignal): Promise<ResultFill> {
+  const path = matchPath(id, 'end/read')
+  const form = new FormData()
+  form.append('image', image, 'end.jpg')
+  const res = await fetch(path, { method: 'POST', body: form, signal })
+  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
+  return (await res.json()) as ResultFill
+}
+
+// Saves the confirmed result; the answer carries the coach's notes.
+export async function saveMatchResult(id: string, r: ResultFill & { result: Outcome; source: MatchResult['source'] }, lang: string): Promise<MatchResult> {
+  const path = matchPath(id, `result?${new URLSearchParams({ lang })}`)
+  const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(r) })
+  if (!res.ok) throw new Error(`/api/match/result: HTTP ${res.status}`)
+  return (await res.json()) as MatchResult
+}
+
+// The signed-in player's ended matches, newest first; null for a visitor.
+export async function fetchMyMatches(signal?: AbortSignal): Promise<PastMatch[] | null> {
+  const res = await fetch('/api/me/matches', { signal })
+  if (res.status === 401) return null
+  if (!res.ok) throw new Error(`/api/me/matches: HTTP ${res.status}`)
+  return (await res.json()) as PastMatch[]
 }
 
 export type MatchStart = { hero: number; role: number; allies: number[]; enemies: number[]; bans: number[] }

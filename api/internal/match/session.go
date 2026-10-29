@@ -31,6 +31,7 @@ type Session struct {
 	ItemPlan  items.Build `json:"itemPlan"`
 	CreatedAt time.Time   `json:"createdAt"`
 	Messages  []Message   `json:"messages"`
+	Result    *Result     `json:"result,omitempty"` // set once the player confirmed how it ended
 }
 
 // Message is one chat line.
@@ -93,10 +94,19 @@ func (s *Store) Get(ctx context.Context, id string) (Session, error) {
 		return out, ErrNotFound
 	}
 	var plan []byte
+	var res struct {
+		outcome, source *string
+		notes           []string
+		endedAt         *time.Time
+	}
+	r := &Result{}
 	err := s.pool.QueryRow(ctx, `
-		SELECT m.id::text, p.name, m.hero_id, m.role, m.allies, m.enemies, m.bans, m.item_plan, m.created_at
-		FROM match_session m JOIN patch p ON p.id = m.patch_id WHERE m.id = $1`, id).
-		Scan(&out.ID, &out.Patch, &out.HeroID, &out.Role, &out.Allies, &out.Enemies, &out.Bans, &plan, &out.CreatedAt)
+		SELECT m.id::text, m.user_id, p.name, m.hero_id, m.role, m.allies, m.enemies, m.bans, m.item_plan, m.created_at,
+			r.result, r.duration_s, r.kills, r.deaths, r.assists, r.source, r.notes, m.ended_at
+		FROM match_session m JOIN patch p ON p.id = m.patch_id
+		LEFT JOIN match_result r ON r.session_id = m.id WHERE m.id = $1`, id).
+		Scan(&out.ID, &out.UserID, &out.Patch, &out.HeroID, &out.Role, &out.Allies, &out.Enemies, &out.Bans, &plan, &out.CreatedAt,
+			&res.outcome, &r.DurationS, &r.Kills, &r.Deaths, &r.Assists, &res.source, &res.notes, &res.endedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return out, ErrNotFound
 	}
@@ -105,6 +115,13 @@ func (s *Store) Get(ctx context.Context, id string) (Session, error) {
 	}
 	if err := json.Unmarshal(plan, &out.ItemPlan); err != nil {
 		return out, fmt.Errorf("match session item plan: %w", err)
+	}
+	if res.outcome != nil {
+		r.Outcome, r.Source, r.Notes = *res.outcome, *res.source, res.notes
+		if res.endedAt != nil {
+			r.EndedAt = *res.endedAt
+		}
+		out.Result = r
 	}
 	rows, err := s.pool.Query(ctx, `
 		SELECT id, author, kind, text, situation, coalesce(category, ''), coalesce(priority, ''), coalesce(source, ''),

@@ -19,10 +19,14 @@ export type SignInRoute = { token: string | null; failed: boolean }
 
 // landing is the root ("#/" or no hash): the landing page for a visitor,
 // Draft for a signed-in player.
-export type Route = { tab: Tab; hero: string | null; manual: boolean; signin?: SignInRoute; landing?: true }
+// coach is a screen of the Coach tab past the match itself: its end, or the history.
+export type CoachView = 'end' | 'history'
+
+export type Route = { tab: Tab; hero: string | null; manual: boolean; signin?: SignInRoute; landing?: true; coach?: CoachView }
 
 // "#/heroes" names the Heroes tab and "#/heroes/<slug>" a hero in it;
-// "#/draft/manual" is the draft board built by hand. "#/signin" is the
+// "#/draft/manual" is the draft board built by hand; "#/coach/end" ends the
+// match and "#/coach/history" lists the player's matches. "#/signin" is the
 // sign-in screen, outside the tabs: "#/signin/link/<token>" an e-mailed
 // link, "#/signin/failed" a Steam sign-in that did not finish. A query
 // after "?" is the screen's own. An empty hash is the root (landing); an
@@ -33,7 +37,9 @@ export function routeFromHash(hash: string): Route {
     return { tab: 'draft', hero: null, manual: false, signin: { token: sub === 'link' && arg ? arg : null, failed: sub === 'failed' } }
   if (id === '') return { tab: 'draft', hero: null, manual: false, landing: true }
   if (!isTab(id)) return { tab: 'draft', hero: null, manual: false }
-  return { tab: id, hero: id === 'heroes' && sub ? decodeSlug(sub) : null, manual: id === 'draft' && sub === 'manual' }
+  const route: Route = { tab: id, hero: id === 'heroes' && sub ? decodeSlug(sub) : null, manual: id === 'draft' && sub === 'manual' }
+  if (id === 'coach' && (sub === 'end' || sub === 'history')) route.coach = sub
+  return route
 }
 
 // A malformed percent sequence opens the hero list rather than throwing.

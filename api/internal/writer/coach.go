@@ -174,12 +174,18 @@ func (w *Writer) record(ctx context.Context, c Call) {
 // room for a few sentences: a capital is allowed only where a sentence
 // starts, so any other capitalised word is a name the facts lack.
 func CheckAnswer(text string, allowed, known []string) error {
+	return checkSentences(text, MaxAnswer, allowed, known)
+}
+
+// checkSentences holds text of at most limit characters to the allowed
+// names, with capitals only where a sentence starts.
+func checkSentences(text string, limit int, allowed, known []string) error {
 	text = strings.TrimSpace(text)
 	switch n := utf8.RuneCountInString(text); {
 	case n == 0:
 		return errors.New("no text")
-	case n > MaxAnswer:
-		return fmt.Errorf("%d characters, over %d", n, MaxAnswer)
+	case n > limit:
+		return fmt.Errorf("%d characters, over %d", n, limit)
 	}
 	masked, err := maskAndMatch(text, allowed, known)
 	if err != nil {

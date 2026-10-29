@@ -54,8 +54,12 @@ type Server struct {
 	matches Matches
 	coach   Replier
 	stt     match.Transcriber
-	auth    *auth.Service
-	log     *slog.Logger
+
+	resultParser ResultParser
+	endReader    photo.EndReader
+	noter        Noter
+	auth         *auth.Service
+	log          *slog.Logger
 
 	suggestLimit, readLimit Limit
 	voiceLimit              Limit
@@ -139,6 +143,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/match/{id}", s.getMatch)
 	mux.Handle("POST /api/match/{id}/messages", suggest.wrap(http.HandlerFunc(s.matchMessage)))
 	mux.Handle("POST /api/match/{id}/voice", newLimiter(s.voiceLimit, s.now).wrap(http.HandlerFunc(s.matchVoice)))
+	mux.Handle("POST /api/match/{id}/end/parse", suggest.wrap(http.HandlerFunc(s.parseResult)))
+	mux.Handle("POST /api/match/{id}/end/read", read.wrap(http.HandlerFunc(s.readEnd)))
+	mux.Handle("POST /api/match/{id}/result", suggest.wrap(http.HandlerFunc(s.saveResult)))
+	mux.Handle("GET /api/me/matches", s.requireUser(http.HandlerFunc(s.myMatches)))
 	if s.auth != nil {
 		s.auth.Mount(mux, newLimiter(s.mailIPLimit, s.now).wrap, newLimiter(s.mailLimit, s.now).take)
 	} else {

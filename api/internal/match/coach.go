@@ -70,6 +70,7 @@ type Coach struct {
 	Jev   Asker // nil: the parse's category stands
 	Write Answerer
 	Facts Facts
+	Note  Noter // nil: no end-of-match notes
 }
 
 // Reply is the coach's turn: an answer, or a follow-up question when the

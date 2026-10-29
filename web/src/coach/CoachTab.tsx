@@ -4,7 +4,10 @@ import { useI18n } from '../i18n'
 import type { MessageKey } from '../locales/en'
 import BuildCard from './BuildCard'
 import CoachChat from './CoachChat'
+import History from './History'
+import MatchEnd from './MatchEnd'
 import MatchTimer from './MatchTimer'
+import type { CoachView } from '../shell/route'
 import { saveSessionId, savedSessionId } from './session'
 
 const position: Record<number, MessageKey> = {
@@ -18,8 +21,9 @@ const position: Record<number, MessageKey> = {
 type State = { status: 'loading' } | { status: 'none' } | { status: 'error'; error: string } | { status: 'ready'; session: MatchSession }
 
 // The Coach tab: the match the player started on the Draft tab, restored
-// from the id kept in localStorage after a reload.
-export default function CoachTab() {
+// from the id kept in localStorage after a reload; view opens its end or
+// the player's history.
+export default function CoachTab({ view, signedIn }: { view?: CoachView; signedIn: boolean }) {
   const { t } = useI18n()
   const [id] = useState(savedSessionId)
   const [state, setState] = useState<State>(id ? { status: 'loading' } : { status: 'none' })
@@ -49,6 +53,11 @@ export default function CoachTab() {
   }, [id])
 
   const byId = useMemo(() => new Map(heroes.map((h) => [h.id, h])), [heroes])
+  if (view === 'history') return <History byId={byId} />
+  if (state.status === 'ready' && view === 'end') {
+    const s = state.session
+    return <MatchEnd key={s.id} session={s} heroName={byId.get(s.heroId)?.name ?? `#${s.heroId}`} signedIn={signedIn} />
+  }
   if (state.status !== 'ready') {
     return (
       <section className="screen">
@@ -62,6 +71,9 @@ export default function CoachTab() {
         ) : (
           <p className="muted">{t('coach.empty')}</p>
         )}
+        <a className="end-link" href="#/coach/history">
+          {t('history.title')}
+        </a>
       </section>
     )
   }
@@ -75,6 +87,9 @@ export default function CoachTab() {
           <h1>{t('coach.title', { hero: hero?.name ?? `#${s.heroId}`, position: t(position[s.role] ?? 'nav.coach') })}</h1>
           <MatchTimer id={s.id} />
         </div>
+        <a className="chip end-match" href="#/coach/end">
+          {t('end.open')}
+        </a>
       </header>
       <div className="coach-body">
         <BuildCard build={s.itemPlan} byId={byId} />

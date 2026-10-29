@@ -60,24 +60,14 @@ func (s *Server) readDraft(w http.ResponseWriter, r *http.Request) {
 // readPhoto reads the draft in an uploaded photo, holding one of the
 // server's read slots while it does; a busy server sets Retry-After on w.
 func (s *Server) readPhoto(ctx context.Context, w http.ResponseWriter, data []byte) (string, photo.Read, int, error) {
-	// Taken once the upload is in, so a slow upload holds no slot.
-	select {
-	case s.reads <- struct{}{}:
-		defer func() { <-s.reads }()
-	default:
-		w.Header().Set("Retry-After", "2")
-		return "", photo.Read{}, http.StatusServiceUnavailable, errors.New("too many photos at once; try again shortly")
+	release, ok := s.takeReadSlot(w)
+	if !ok {
+		return "", photo.Read{}, http.StatusServiceUnavailable, errBusy
 	}
-	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
-	if err != nil || (format != "jpeg" && format != "png") {
-		return "", photo.Read{}, http.StatusBadRequest, errors.New("the photo must be a JPEG or PNG image")
-	}
-	if cfg.Width > maxPhotoSide || cfg.Height > maxPhotoSide {
-		return "", photo.Read{}, http.StatusRequestEntityTooLarge, errors.New("the photo is larger than 2048 px on a side")
-	}
-	img, _, err := image.Decode(bytes.NewReader(data))
+	defer release()
+	img, status, err := decodePhoto(data)
 	if err != nil {
-		return "", photo.Read{}, http.StatusBadRequest, errors.New("the photo could not be decoded")
+		return "", photo.Read{}, status, err
 	}
 	patch, heroes, err := s.catalog.Heroes(ctx)
 	if err != nil {
@@ -96,6 +86,36 @@ func (s *Server) readPhoto(ctx context.Context, w http.ResponseWriter, data []by
 	}
 	s.log.Info("draft read", attrs...)
 	return patch, read, http.StatusOK, nil
+}
+
+var errBusy = errors.New("too many photos at once; try again shortly")
+
+// takeReadSlot takes one of the server's read slots, taken once the upload
+// is in so a slow upload holds none; a busy server sets Retry-After on w.
+func (s *Server) takeReadSlot(w http.ResponseWriter) (release func(), ok bool) {
+	select {
+	case s.reads <- struct{}{}:
+		return func() { <-s.reads }, true
+	default:
+		w.Header().Set("Retry-After", "2")
+		return nil, false
+	}
+}
+
+// decodePhoto decodes an uploaded JPEG or PNG of at most maxPhotoSide.
+func decodePhoto(data []byte) (image.Image, int, error) {
+	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
+	if err != nil || (format != "jpeg" && format != "png") {
+		return nil, http.StatusBadRequest, errors.New("the photo must be a JPEG or PNG image")
+	}
+	if cfg.Width > maxPhotoSide || cfg.Height > maxPhotoSide {
+		return nil, http.StatusRequestEntityTooLarge, errors.New("the photo is larger than 2048 px on a side")
+	}
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		return nil, http.StatusBadRequest, errors.New("the photo could not be decoded")
+	}
+	return img, http.StatusOK, nil
 }
 
 // photoUpload reads the multipart field "image" into memory, at most

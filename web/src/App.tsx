@@ -13,7 +13,7 @@ import TabBar from './shell/TabBar'
 
 export default function App() {
   const { t } = useI18n()
-  const { tab, hero, manual, signin, landing } = useRoute()
+  const { tab, hero, manual, signin, landing, coach } = useRoute()
   const [health, setHealth] = useState<Health | null>(null)
   const [error, setError] = useState<string | null>(null)
   // undefined while checked; a failed check reads as a visitor.
@@ -70,7 +70,7 @@ export default function App() {
           ) : tab === 'draft' ? (
             <DraftTab manual={manual} />
           ) : tab === 'coach' ? (
-            <CoachTab />
+            <CoachTab view={coach} signedIn={!!account} />
           ) : (
             <PatchesPage />
           )}

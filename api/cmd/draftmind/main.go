@@ -72,7 +72,8 @@ func run(ctx context.Context, cmd string, log *slog.Logger) error {
 			srv.WithPhotoReader(readers.chain(cfg.PhotoReader))
 			w := writer.New(cfg.OpenRouterBaseURL, cfg.OpenRouterAPIKey, cfg.WriterModel, writer.NewPGLog(pool, log))
 			srv.WithWriter(w)
-			srv.WithCoach(&match.Coach{Parse: w, Jev: jev, Write: w, Facts: cat})
+			coach := &match.Coach{Parse: w, Jev: jev, Write: w, Facts: cat, Note: w}
+			srv.WithCoach(coach).WithNoter(coach).WithResultParser(w).WithEndReader(readers.vision)
 			srv.WithTranscriber(writer.New(cfg.OpenRouterBaseURL, cfg.OpenRouterAPIKey, cfg.STTModel, writer.NewPGLog(pool, log)))
 			go warmPortraits(ctx, cat, readers.jev.Portraits, log)
 		} else {

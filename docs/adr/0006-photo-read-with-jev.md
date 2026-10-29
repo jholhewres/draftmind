@@ -39,3 +39,9 @@ Photo to first suggestion through the API (read, then suggest): p50 2.1–2.3 s,
 - How the Jev reader works: a Box question finds the clock between the teams; code walks outward from it, finds each portrait by correlating small normalized thumbnails of the current patch's portraits (cached under `DATA_DIR`, outside git), numbers each one by its distance from the clock and shortlists the 5 best-fitting heroes; one choice question per slot, in parallel, picks among their portraits, with `empty` and `other` options. A slot stands only when Jev's pick has probability ≥ 0.5 and its portrait also fits the slot by the code's measure (correlation ≥ 0.75); anything else is flagged.
 - The top bar's shape (slot size and gap relative to the clock) is calibrated on the synthetic layout; recheck it with real photos.
 - Jev photo calls go over HTTP/1.1, one connection each, without a hedge: over HTTP/2 the ten slot uploads queue on one connection and miss the 3 s deadline.
+
+## Amendment · 2026-10-29 (B4): the end-of-match screen
+
+- The end screen is read by the **vision model alone** (`photo.EndReader`, `Vision.ReadEnd`), not by Jev. It is text and numbers (the winner banner, the duration, a row's K/D/A), which a vision model reads in one call; Jev's Box and Choice questions are built for picking among portraits. One live read of the synthetic fixture (`api/internal/photo/testdata/endscreen.jpg`) was right on every field in 2.9 s for $0.0005.
+- The model only reads: the winner, the duration as shown, and the row of the player's hero (its team and K/D/A). Code turns winner and team into win or loss, parses the duration and drops a count outside 0–999; whatever it cannot tell stays blank for the player.
+- Nothing is saved until the player confirms; the photo is never stored. The fixture is drawn by a helper script (no real end screens yet); recheck with real photos.

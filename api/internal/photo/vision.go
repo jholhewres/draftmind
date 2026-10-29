@@ -61,43 +61,53 @@ func (v *Vision) Read(ctx context.Context, img image.Image, heroes []catalog.Her
 		names[i] = h.Name
 	}
 	slices.Sort(names)
+	raw, err := v.ask(ctx, img, visionPrompt+strings.Join(names, ", "), "draft", visionSchema, 800)
+	if err != nil {
+		return Read{}, err
+	}
+	return v.parse(raw, heroes)
+}
+
+// ask sends img with the prompt and returns the provider's body, the
+// answer held to schema.
+func (v *Vision) ask(ctx context.Context, img image.Image, prompt, name string, schema map[string]any, maxTokens int) ([]byte, error) {
 	photo := encodeJPEG(toRGB(img).forJev(), qualityPhoto) // the same size limits suit the vision model
 	body, err := json.Marshal(map[string]any{
 		"model": v.Model,
 		"messages": []any{map[string]any{"role": "user", "content": []any{
-			map[string]any{"type": "text", "text": visionPrompt + strings.Join(names, ", ")},
+			map[string]any{"type": "text", "text": prompt},
 			map[string]any{"type": "image_url", "image_url": map[string]string{"url": "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(photo)}},
 		}}},
-		"response_format": map[string]any{"type": "json_schema", "json_schema": map[string]any{"name": "draft", "strict": true, "schema": visionSchema}},
+		"response_format": map[string]any{"type": "json_schema", "json_schema": map[string]any{"name": name, "strict": true, "schema": schema}},
 		"temperature":     0,
-		"max_tokens":      800,
+		"max_tokens":      maxTokens,
 		"reasoning":       map[string]any{"effort": "minimal"},
 		"provider":        map[string]any{"data_collection": "deny", "require_parameters": true, "zdr": true},
 		"usage":           map[string]any{"include": true},
 	})
 	if err != nil {
-		return Read{}, err
+		return nil, err
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(v.BaseURL, "/")+"/v1/chat/completions", bytes.NewReader(body))
 	if err != nil {
-		return Read{}, err
+		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+v.APIKey)
 	req.Header.Set("Content-Type", "application/json")
 	start := time.Now()
 	resp, err := v.HTTP.Do(req)
 	if err != nil {
-		return Read{}, fmt.Errorf("photo: vision: %w", err)
+		return nil, fmt.Errorf("photo: vision: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	raw, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
-		return Read{}, fmt.Errorf("photo: vision: %w", err)
+		return nil, fmt.Errorf("photo: vision: %w", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return Read{}, fmt.Errorf("photo: vision: HTTP %d after %v: %s", resp.StatusCode, time.Since(start).Round(time.Millisecond), v.snippet(raw))
+		return nil, fmt.Errorf("photo: vision: HTTP %d after %v: %s", resp.StatusCode, time.Since(start).Round(time.Millisecond), v.snippet(raw))
 	}
-	return v.parse(raw, heroes)
+	return raw, nil
 }
 
 func (v *Vision) parse(raw []byte, heroes []catalog.Hero) (Read, error) {
