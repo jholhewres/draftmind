@@ -16,7 +16,8 @@ export async function shareWindow(): Promise<MediaStream> {
     monitorTypeSurfaces: 'exclude',
   } as DisplayMediaStreamOptions)
   const surface = stream.getVideoTracks()[0]?.getSettings().displaySurface
-  if (surface && surface !== 'window') {
+  // A browser that does not say what was shared is not trusted with it.
+  if (surface !== 'window') {
     stream.getTracks().forEach((t) => t.stop())
     throw new NotAWindow()
   }

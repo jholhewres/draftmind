@@ -21,7 +21,9 @@ function useLiveFrames(stream: MediaStream, onFrame: (f: File) => void, onEnd: (
     frameRef.current = onFrame
     endRef.current = onEnd
   })
+  const stopping = useRef(0)
   useEffect(() => {
+    window.clearTimeout(stopping.current)
     const video = document.createElement('video')
     video.muted = true
     video.srcObject = stream
@@ -50,6 +52,9 @@ function useLiveFrames(stream: MediaStream, onFrame: (f: File) => void, onEnd: (
       window.clearInterval(timer)
       track?.removeEventListener('ended', ended)
       video.srcObject = null
+      // Leaving the live screen, by Stop or by another tab, ends the share;
+      // deferred so a remount of the same screen (StrictMode) keeps it.
+      stopping.current = window.setTimeout(() => stream.getTracks().forEach((t) => t.stop()), 0)
     }
   }, [stream])
 }
