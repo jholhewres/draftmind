@@ -90,11 +90,12 @@ const (
 	ReasonError         = "error"
 	ReasonUnavailable   = "unavailable"
 	ReasonFewCandidates = "few_candidates"
-	ReasonLowConfidence = "low_confidence" // an answer below MinConfidence; Jev's answers are only logged
 )
 
-// MinConfidence is the least confidence each of Jev's answers needs to
-// replace the code order (ADR-0003: shadow below it).
+// MinConfidence is the least confidence Jev's enemy choice needs to replace
+// the code's enemy for an item (ADR-0003: shadow below it). Urgency is a
+// score over four ordered levels, whose confidence runs lower by nature (0.1
+// to 0.4 on the live 7.41 calls), so its most likely level always stands.
 const MinConfidence = 0.4
 
 // Build is a hero's build against a lineup.
@@ -356,11 +357,6 @@ func Decide(ctx context.Context, jev Asker, ds Dataset, hero int, enemies []int)
 	if err != nil {
 		return fallback(ReasonError)
 	}
-	for _, a := range res.Answers {
-		if a.Confidence < MinConfidence {
-			return fallback(ReasonLowConfidence)
-		}
-	}
 	type picked struct {
 		Situational
 		level, order int
@@ -372,9 +368,13 @@ func Decide(ctx context.Context, jev Asker, ds Dataset, hero int, enemies []int)
 		if level <= 0 {
 			continue
 		}
-		enemy, ok := byName[res.Answers[key+"_enemy"].Choice]
+		choice := res.Answers[key+"_enemy"]
+		enemy, ok := byName[choice.Choice]
 		if !ok {
 			return fallback(ReasonError)
+		}
+		if choice.Confidence < MinConfidence {
+			enemy = c.Enemy
 		}
 		kept = append(kept, picked{Situational{Item: c.Item, EnemyID: enemy, Urgency: Urgencies[level], Score: pct(c.Score)}, level, i})
 	}

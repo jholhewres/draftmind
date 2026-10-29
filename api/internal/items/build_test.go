@@ -45,6 +45,7 @@ func lineup() Dataset {
 type fakeJev struct {
 	enemy   map[string]string // item key → enemy name
 	urgency map[string]int    // item key → level
+	unsure  map[string]bool   // item key → enemy chosen at low confidence
 	err     error
 	asked   decision.Request
 }
@@ -59,7 +60,11 @@ func (f *fakeJev) Ask(_ context.Context, req decision.Request) (decision.Result,
 		item, kind, _ := strings.Cut(strings.TrimPrefix(name, "item_"), "_")
 		switch kind {
 		case "enemy":
-			res.Answers[name] = decision.Answer{Type: "choice", Choice: f.enemy[item], Confidence: 0.8}
+			conf := 0.8
+			if f.unsure[item] {
+				conf = 0.2
+			}
+			res.Answers[name] = decision.Answer{Type: "choice", Choice: f.enemy[item], Confidence: conf}
 		case "urgency":
 			probs := map[string]float64{}
 			for i := range q.Criteria.([]any) {
@@ -93,6 +98,13 @@ func TestEachSituationalItemCitesTheEnemyHeroThatTriggersIt(t *testing.T) {
 	opts := jev.asked.Questions["item_100_enemy"].Criteria.(map[string]any)
 	if _, ok := opts["Viper"]; ok || len(opts) != 2 {
 		t.Fatalf("Eul's enemy options %v, want Lion and Pudge only", opts)
+	}
+
+	// An unsure enemy choice keeps the code's enemy; the urgency stands.
+	jev = &fakeJev{enemy: map[string]string{"100": "Pudge", "108": "Viper"}, urgency: map[string]int{"100": 3, "108": 1}, unsure: map[string]bool{"100": true}}
+	b = Decide(context.Background(), jev, ds, 10, []int{20, 21, 22})
+	if got := cited(b); b.Source != SourceJev || got["cyclone"] != 20 || got["ultimate_scepter"] != 21 {
+		t.Fatalf("build %s cites %v, want cyclone → 20 (code) and ultimate_scepter → 21", b.Source, got)
 	}
 
 	// Jev fails: the code order stands, each item citing the enemy whose
