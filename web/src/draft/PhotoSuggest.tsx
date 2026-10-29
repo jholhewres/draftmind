@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { fetchHeroes, type DraftInput, type HeroCatalog, type ReadSlot, type StreamRead, type StreamRequest } from '../api'
+import { fetchHeroes, pooledModes, type DraftInput, type HeroCatalog, type ReadSlot, type StreamRead, type StreamRequest } from '../api'
 import { useI18n } from '../i18n'
 import HeroPicker from './HeroPicker'
 import { prepareImage } from './prepare'
 import { sideLabel } from './labels'
 import { Row, SlotButton } from './slots'
 import RoleOptions from './RoleOptions'
+import { useGameMode } from './mode'
 import { useStartMatch } from '../coach/useStartMatch'
 import SuggestionList from './Suggestions'
 import { useSuggestStream } from './useSuggestStream'
@@ -53,6 +54,8 @@ export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto
   const [team, setTeam] = useState<Team>('radiant')
   const [role, setRole] = useState(1)
   const [picking, setPicking] = useState<number | null>(null)
+  const [mode] = useGameMode()
+  const [layout, setLayout] = useState<string | undefined>(undefined)
 
   useEffect(() => {
     const ctrl = new AbortController()
@@ -66,9 +69,9 @@ export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto
   // its upload starts.
   const [photoRequest, setPhotoRequest] = useState<StreamRequest | null>(null)
   const [prepareError, setPrepareError] = useState<string | null>(null)
-  const atUpload = useRef({ team, role, lang: locale as string })
+  const atUpload = useRef({ team, role, lang: locale as string, mode })
   useEffect(() => {
-    atUpload.current = { team, role, lang: locale }
+    atUpload.current = { team, role, lang: locale, mode }
   })
   useEffect(() => {
     let live = true
@@ -84,13 +87,15 @@ export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto
   const [seated, setSeated] = useState<DraftInput | null>(null)
   const onRead = useCallback((read: StreamRead) => {
     setSlots([...read.radiant, ...read.dire])
+    setLayout(read.layout)
     setSeated(read.draft)
   }, [])
 
   const { own, you, allyAt, enemyAt } = useMemo(() => seats(slots, team), [slots, team])
   const input = useMemo(
-    () => (slots ? { allies: heroIds(slots, allyAt), enemies: heroIds(slots, enemyAt), bans: [], role } : null),
-    [slots, allyAt, enemyAt, role],
+    // A photo carries no offered pool, so a pooled mode ranks as the default.
+    () => (slots ? { allies: heroIds(slots, allyAt), enemies: heroIds(slots, enemyAt), bans: [], role, mode: pooledModes.includes(mode) ? 'all_pick_ranked' : mode } : null),
+    [slots, allyAt, enemyAt, role, mode],
   )
   const draftRequest = useMemo((): StreamRequest | null => (input ? { kind: 'draft', draft: input, lang: locale } : null), [input, locale])
   // Any change the player makes streams the new draft; going back to the
@@ -171,6 +176,7 @@ export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto
                 <Row side="enemy" title={t('photo.enemy')}>
                   {enemyAt.map((i) => slotAt('enemy', i))}
                 </Row>
+                {layout === 'uncalibrated' && <p className="unread-note">{t('mode.uncalibrated')}</p>}
                 {unread > 0 && (
                   <p className="unread-note">{t(new Intl.PluralRules(locale).select(unread) === 'one' ? 'photo.unread.one' : 'photo.unread.other', { count: unread })}</p>
                 )}

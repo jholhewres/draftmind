@@ -53,6 +53,9 @@ type suggestBody struct {
 	Reason      string             `json:"reason"`
 	Confidence  *float64           `json:"confidence"`
 	Suggestions []draft.Suggestion `json:"suggestions"`
+	Bans        []draft.Suggestion `json:"bans"`
+	Mode        string             `json:"mode"`
+	Stats       string             `json:"stats"`
 	Error       string             `json:"error"`
 }
 
@@ -215,5 +218,33 @@ func TestDraftSuggestFallsBackToTheCodeRankingWhenJevIsLate(t *testing.T) {
 	}
 	if outcome != "timeout" || !hedged {
 		t.Fatalf("logged outcome %q hedged %t, want a hedged timeout", outcome, hedged)
+	}
+}
+
+func TestDraftSuggestFollowsTheGameMode(t *testing.T) {
+	pool := seedDraft(t)
+	// Captains Mode: hero 8 beats our Axe (2), so it is the ban to make.
+	code, body := suggest(t, pool, `{"mode": "captains_mode", "allies": [2], "role": 1}`)
+	if code != http.StatusOK || len(body.Bans) == 0 || body.Bans[0].HeroID != 8 || body.Stats != draft.StatsRanked || body.Mode != "captains_mode" {
+		t.Fatalf("captains mode: %d %+v, want hero 8 as the first ban from ranked stats", code, body)
+	}
+	// Single Draft ranks only the three heroes offered.
+	_, body = suggest(t, pool, `{"mode": "single_draft", "pool": [1, 5, 7], "role": 1}`)
+	got := map[int]bool{}
+	for _, s := range body.Suggestions {
+		got[s.HeroID] = true
+	}
+	if len(got) != 3 || !got[1] || !got[5] || !got[7] || body.Bans != nil {
+		t.Fatalf("single draft suggests %+v, want 1, 5 and 7 and no bans", body.Suggestions)
+	}
+	// All Random suggests nobody.
+	if _, body = suggest(t, pool, `{"mode": "all_random", "role": 1}`); len(body.Suggestions) != 0 {
+		t.Fatalf("all random suggests %+v", body.Suggestions)
+	}
+	// Ability Draft is not a hero draft; a pooled mode needs its pool.
+	for _, bad := range []string{`{"mode": "ability_draft", "role": 1}`, `{"mode": "random_draft", "role": 1}`} {
+		if code, body := suggest(t, pool, bad); code != http.StatusBadRequest {
+			t.Fatalf("%s: %d %+v, want 400", bad, code, body)
+		}
 	}
 }

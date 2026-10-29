@@ -17,7 +17,7 @@ var pubBrackets = []string{"1", "2", "3", "4", "5", "6", "7", "8"}
 // their pub picks and wins, and every hero's record against the enemies.
 // The patch is empty until the first sync.
 func (s *Store) DraftDataset(ctx context.Context, enemies []int) (string, draft.Dataset, error) {
-	ds := draft.Dataset{Matchups: map[draft.Pair]draft.Record{}, Stats: map[int]draft.Record{}}
+	ds := draft.Dataset{Matchups: map[draft.Pair]draft.Record{}, Stats: map[int]draft.Record{}, TurboStats: map[int]draft.Record{}}
 	var patch string
 	err := pgx.BeginTxFunc(ctx, s.pool, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly}, func(tx pgx.Tx) error {
 		rows, err := tx.Query(ctx, `
@@ -51,6 +51,20 @@ func (s *Store) DraftDataset(ctx context.Context, enemies []int) (string, draft.
 			return nil
 		}); err != nil {
 			return fmt.Errorf("hero stats: %w", err)
+		}
+
+		rows, err = tx.Query(ctx, `
+			SELECT st.hero_id, st.picks, st.wins FROM hero_stat st
+			JOIN patch p ON p.id = st.patch_id AND p.is_current
+			WHERE st.bracket = 'turbo' AND st.picks > 0`)
+		if err != nil {
+			return fmt.Errorf("turbo stats: %w", err)
+		}
+		if _, err := pgx.ForEachRow(rows, []any{&id, &r.Games, &r.Wins}, func() error {
+			ds.TurboStats[id] = r
+			return nil
+		}); err != nil {
+			return fmt.Errorf("turbo stats: %w", err)
 		}
 
 		rows, err = tx.Query(ctx, `

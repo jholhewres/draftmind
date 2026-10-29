@@ -123,6 +123,10 @@ type Build struct {
 	Situational []Situational `json:"situational"`
 	Source      string        `json:"source"`
 	Reason      string        `json:"reason,omitempty"`
+	// Mode is the game mode the build is for; Data is DataGeneral when the
+	// item data is not that mode's own.
+	Mode string `json:"mode,omitempty"`
+	Data string `json:"data,omitempty"`
 }
 
 // Asker asks the decision model.
@@ -438,3 +442,17 @@ func argmax(probs map[string]float64, n int) int {
 
 // pct turns a share into points, one decimal.
 func pct(x float64) float64 { return float64(int(x*1000+0.5)) / 10 }
+
+// DataGeneral labels a build whose item data is not split by its mode:
+// OpenDota item popularity mixes every mode (ADR-0012).
+const DataGeneral = "general"
+
+// ForMode labels b for a game mode: Turbo has no item data of its own, so
+// its build says it reads the general data.
+func ForMode(b Build, mode string) Build {
+	b.Mode = mode
+	if mode == "turbo" {
+		b.Data = DataGeneral
+	}
+	return b
+}

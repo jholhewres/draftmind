@@ -11,7 +11,7 @@ const backgroundImage = 'https://cdn.cloudflare.steamstatic.com/apps/dota2/image
 // The landing page's hero art (see heroArt in src/landing/Landing.tsx).
 const heroArt = 'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/home/radiant_dire5.jpg'
 
-export type DraftInput = { allies: number[]; enemies: number[]; bans: number[]; role: number }
+export type DraftInput = { allies: number[]; enemies: number[]; bans: number[]; role: number; mode?: string; pool?: number[] }
 
 // The fixture ranking without the heroes the draft took, each keeping its
 // deltas against the draft's enemies only.
@@ -92,6 +92,8 @@ export const test = base.extend<Fixtures>({
       await page.route('**/api/me/language', (route) =>
         route.fulfill({ json: route.request().method() === 'PUT' ? route.request().postDataJSON() : { language: '' } }),
       )
+      // A visitor has no remembered game mode.
+      await page.route('**/api/me/mode', (route) => route.fulfill({ status: 401, json: { error: 'sign in first' } }))
       // Production today: password and Steam, no mailer for e-mail links.
       await page.route('**/api/auth/methods', (route) => route.fulfill({ json: { password: true, steam: true, emailLink: false } }))
       await page.route('**/api/heroes', (route) => route.fulfill({ path: fixture('heroes.json') }))

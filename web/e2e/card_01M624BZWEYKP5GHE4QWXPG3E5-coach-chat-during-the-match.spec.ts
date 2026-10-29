@@ -62,11 +62,11 @@ test('The match session survives a page reload', async ({ page, escaped, drafts 
   await pick(page, 'Enemies', 'Add enemy', 'Choose an enemy', 'axe', 'Axe')
   await pick(page, 'Enemies', 'Add enemy', 'Choose an enemy', 'drow', 'Drow Ranger')
   await pick(page, 'Bans', 'Add ban', 'Choose a ban', 'bane', 'Bane')
-  await expect.poll(() => drafts.at(-1)).toEqual({ allies: [], enemies: [2, 6], bans: [3], role: 1 })
+  await expect.poll(() => drafts.at(-1)).toEqual({ allies: [], enemies: [2, 6], bans: [3], role: 1, mode: 'all_pick_ranked' })
 
   await page.getByRole('button', { name: 'Pick Juggernaut and start' }).click()
   await expect(page).toHaveURL(/#\/coach$/)
-  expect(started).toEqual([{ hero: 8, allies: [], enemies: [2, 6], bans: [3], role: 1 }])
+  expect(started).toEqual([{ hero: 8, allies: [], enemies: [2, 6], bans: [3], role: 1, mode: 'all_pick_ranked' }])
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Juggernaut · Carry')
   await expect(page.getByRole('list', { name: 'Situational items' }).getByRole('listitem')).toHaveText([
     'Black King Bar4,050 goldnow · vs Axe',

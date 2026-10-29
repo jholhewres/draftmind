@@ -71,7 +71,7 @@ test('Unknown or low-confidence slots are flagged, never guessed, and fixing one
   await flagged.click()
   await page.getByRole('dialog', { name: 'Choose an enemy' }).getByRole('button', { name: 'Drow Ranger' }).click()
   await expect(enemy.getByRole('button', { name: 'Enemy: Drow Ranger' })).toBeVisible()
-  await expect.poll(() => drafts.at(-1)).toEqual({ allies: [5, 3], enemies: [2, 7, 6], bans: [], role: 1 })
+  await expect.poll(() => drafts.at(-1)).toEqual({ allies: [5, 3], enemies: [2, 7, 6], bans: [], role: 1, mode: 'all_pick_ranked' })
   await expect(page.getByText(/not read/)).toHaveCount(0)
   await expect(page.getByRole('list', { name: 'Suggestions' }).getByRole('listitem')).toHaveCount(3)
   expect(escaped).toEqual([])

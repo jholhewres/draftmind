@@ -150,3 +150,20 @@ func (s *Store) SaveUILanguage(ctx context.Context, userID int64, lang string) e
 	}
 	return nil
 }
+
+// GameMode is the game mode the user last coached a match in, or "".
+func (s *Store) GameMode(ctx context.Context, userID int64) (string, error) {
+	var mode string
+	if err := s.pool.QueryRow(ctx, `SELECT coalesce(game_mode, '') FROM app_user WHERE id = $1`, userID).Scan(&mode); err != nil {
+		return "", fmt.Errorf("game mode: %w", err)
+	}
+	return mode, nil
+}
+
+// SaveGameMode remembers the user's game mode; the column checks it.
+func (s *Store) SaveGameMode(ctx context.Context, userID int64, mode string) error {
+	if _, err := s.pool.Exec(ctx, `UPDATE app_user SET game_mode = $2 WHERE id = $1`, userID, mode); err != nil {
+		return fmt.Errorf("save game mode: %w", err)
+	}
+	return nil
+}

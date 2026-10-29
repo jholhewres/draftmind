@@ -26,6 +26,10 @@ type HeroStat struct {
 // StatBrackets are the brackets stored from /heroStats, as <bracket>_pick and <bracket>_win.
 var StatBrackets = []string{"1", "2", "3", "4", "5", "6", "7", "8", "pro"}
 
+// TurboBracket is the hero_stat bracket of /heroStats' turbo_picks and
+// turbo_wins (ADR-0012); a hero without them gets no turbo row.
+const TurboBracket = "turbo"
+
 // ParseMatchups reads a /heroes/{id}/matchups response. Opponents the patch
 // lacks are skipped.
 func ParseMatchups(b []byte, inPatch map[int]bool) ([]Matchup, error) {
@@ -84,6 +88,13 @@ func ParseHeroStats(b []byte, inPatch map[int]bool) ([]HeroStat, error) {
 				return nil, fmt.Errorf("parse heroStats: hero %d has %d wins in %d picks in bracket %s", id, s.Wins, s.Picks, br)
 			}
 			out = append(out, s)
+		}
+		var picks, wins *int
+		if json.Unmarshal(h["turbo_picks"], &picks) == nil && json.Unmarshal(h["turbo_wins"], &wins) == nil && picks != nil && wins != nil {
+			if *picks < 0 || *wins < 0 || *wins > *picks {
+				return nil, fmt.Errorf("parse heroStats: hero %d has %d turbo wins in %d picks", id, *wins, *picks)
+			}
+			out = append(out, HeroStat{HeroID: id, Bracket: TurboBracket, Picks: *picks, Wins: *wins})
 		}
 	}
 	return out, nil

@@ -15,6 +15,8 @@ type Personas interface {
 	Save(ctx context.Context, userID int64, p persona.Persona) error
 	UILanguage(ctx context.Context, userID int64) (string, error)
 	SaveUILanguage(ctx context.Context, userID int64, lang string) error
+	GameMode(ctx context.Context, userID int64) (string, error)
+	SaveGameMode(ctx context.Context, userID int64, mode string) error
 }
 
 // WithPersonas keeps signed-in players' personas; without it every coach
@@ -136,4 +138,21 @@ func (s *Server) saveLanguage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, body)
+}
+
+// myMode serves GET /api/me/mode: the game mode the signed-in player last
+// coached a match in (ADR-0012), or "" before their first.
+func (s *Server) myMode(w http.ResponseWriter, r *http.Request) {
+	u, ok := auth.UserFrom(r.Context())
+	if !ok || s.personas == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "settings are not kept"})
+		return
+	}
+	mode, err := s.personas.GameMode(r.Context(), u.ID)
+	if err != nil {
+		s.log.Error("game mode", "err", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "could not load the settings"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"mode": mode})
 }

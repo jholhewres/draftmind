@@ -49,6 +49,8 @@ type Read struct {
 	Dire     []Slot `json:"dire"`
 	Reader   string `json:"reader"`
 	Fallback string `json:"fallback,omitempty"`
+	// Layout is the pick-screen layout the read was taken on (ADR-0012).
+	Layout string `json:"layout,omitempty"`
 	// Cost in USD as the providers report it, for the bench; nil when none did.
 	Cost *float64 `json:"-"`
 }

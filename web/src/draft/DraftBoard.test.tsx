@@ -120,7 +120,7 @@ test('the draft and the position go to /api/draft/stream, and the top 5 show a c
   await pick('Bans', 'Add ban', 'earth', 'Earthshaker')
   fireEvent.click(screen.getByRole('radio', { name: 'Position 3: Offlane' }))
 
-  await waitFor(() => expect(asked.at(-1)).toEqual({ allies: [5], enemies: [2], bans: [7], role: 3 }))
+  await waitFor(() => expect(asked.at(-1)).toEqual({ allies: [5], enemies: [2], bans: [7], role: 3, mode: 'all_pick_ranked' }))
   const list = await screen.findByRole('list', { name: 'Suggestions' })
   const items = within(list).getAllByRole('listitem')
   expect(items).toHaveLength(5)

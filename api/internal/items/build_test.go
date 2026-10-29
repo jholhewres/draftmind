@@ -160,3 +160,13 @@ func TestSituationalCandidatesComeFromCounterTagsJoinedWithPopularity(t *testing
 		t.Fatalf("build cites %v, want orchid → 22", got)
 	}
 }
+
+func TestATurboBuildSaysItUsesTheGeneralItemData(t *testing.T) {
+	ds := lineup()
+	if got := ForMode(Decide(context.Background(), nil, ds, 10, []int{20}), "turbo"); got.Data != DataGeneral || got.Mode != "turbo" {
+		t.Fatalf("turbo build %+v, want general data labelled", got)
+	}
+	if got := ForMode(Decide(context.Background(), nil, ds, 10, []int{20}), "all_pick"); got.Data != "" {
+		t.Fatalf("all pick build labelled %q", got.Data)
+	}
+}

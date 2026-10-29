@@ -21,6 +21,7 @@ export default function BuildCard({ build, byId }: { build: Omit<Build, 'patch' 
       <div className="build-head">
         <h2 id="build-title">{t('build.title')}</h2>
         {build.source === 'ranking' && <span className="source-label">{t('build.ranked')}</span>}
+        {build.data === 'general' && <span className="source-label">{t('build.generalData')}</span>}
       </div>
       {build.situational.length > 0 && (
         <ul className="item-cards situational" aria-label={t('build.situational')}>

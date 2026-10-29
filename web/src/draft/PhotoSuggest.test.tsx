@@ -144,7 +144,7 @@ test('fixing an unread slot re-ranks in place: the old list stays until the new 
   fireEvent.click(within(dialog).getByRole('button', { name: 'Earthshaker' }))
 
   await waitFor(() => expect(asked).toHaveLength(2))
-  expect(asked[1]).toEqual({ allies: [1, 5], enemies: [2, 14, 7], bans: [], role: 1 })
+  expect(asked[1]).toEqual({ allies: [1, 5], enemies: [2, 14, 7], bans: [], role: 1, mode: 'all_pick_ranked' })
   expect(within(group('Enemy')).getByRole('button', { name: 'Enemy: Earthshaker' })).toBeInTheDocument()
   expect(screen.queryByText(/not read/)).not.toBeInTheDocument()
   expect(names()).toEqual(['Juggernaut', 'Mirana', 'Earthshaker']) // still the old list
@@ -168,9 +168,9 @@ test('swapping teams makes the other side your team', async () => {
   const { drafts: asked, urls } = mockApi()
   renderScreen()
   await screen.findByRole('list', { name: 'Suggestions' })
-  expect(urls[0]).toBe('/api/draft/stream?lang=en&role=1&team=radiant')
+  expect(urls[0]).toBe('/api/draft/stream?lang=en&role=1&team=radiant&mode=all_pick_ranked')
   fireEvent.click(screen.getByRole('button', { name: 'Swap teams' }))
-  await waitFor(() => expect(asked.at(-1)).toEqual({ allies: [2, 14], enemies: [1, 5], bans: [], role: 1 }))
+  await waitFor(() => expect(asked.at(-1)).toEqual({ allies: [2, 14], enemies: [1, 5], bans: [], role: 1, mode: 'all_pick_ranked' }))
   expect(urls.at(-1)).toBe('/api/draft/stream?lang=en')
 })
 

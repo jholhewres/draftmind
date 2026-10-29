@@ -38,12 +38,12 @@ export function useSuggestStream(request: StreamRequest | null, onRead?: (read: 
             readRef.current?.(ev.read)
             break
           case 'ranking':
-            setResult({ patch: ev.patch, source: 'ranking', suggestions: ev.suggestions, deciding: true })
+            setResult({ patch: ev.patch, source: 'ranking', suggestions: ev.suggestions, bans: ev.bans, stats: ev.stats, deciding: true })
             setTips(new Map())
             setError(null)
             break
           case 'decision':
-            setResult((cur) => ({ patch: cur?.patch ?? '', ...ev.decision, deciding: false }))
+            setResult((cur) => ({ patch: cur?.patch ?? '', bans: cur?.bans, stats: cur?.stats, ...ev.decision, deciding: false }))
             break
           case 'tip':
             setTips((cur) => new Map(cur).set(ev.tip.heroId, ev.tip))

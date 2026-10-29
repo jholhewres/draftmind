@@ -5,6 +5,7 @@
 package match
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -20,14 +21,16 @@ import (
 
 // Session is one match being coached.
 type Session struct {
-	ID        string      `json:"id"`
-	UserID    *int64      `json:"-"` // the signed-in player's account; nil for a visitor
-	Patch     string      `json:"patch"`
-	HeroID    int         `json:"heroId"`
-	Role      int         `json:"role"`
-	Allies    []int       `json:"allies"`
-	Enemies   []int       `json:"enemies"`
-	Bans      []int       `json:"bans"`
+	ID      string `json:"id"`
+	UserID  *int64 `json:"-"` // the signed-in player's account; nil for a visitor
+	Patch   string `json:"patch"`
+	HeroID  int    `json:"heroId"`
+	Role    int    `json:"role"`
+	Allies  []int  `json:"allies"`
+	Enemies []int  `json:"enemies"`
+	Bans    []int  `json:"bans"`
+	// Mode is the game mode (ADR-0012).
+	Mode      string      `json:"mode"`
 	ItemPlan  items.Build `json:"itemPlan"`
 	CreatedAt time.Time   `json:"createdAt"`
 	Messages  []Message   `json:"messages"`
@@ -72,10 +75,11 @@ func (s *Store) Create(ctx context.Context, in Session) (Session, error) {
 		return in, err
 	}
 	err = s.pool.QueryRow(ctx, `
-		INSERT INTO match_session (patch_id, hero_id, role, allies, enemies, bans, item_plan, user_id)
-		SELECT id, $1, $2, $3, $4, $5, $6, $7 FROM patch WHERE is_current
+		INSERT INTO match_session (patch_id, hero_id, role, allies, enemies, bans, item_plan, user_id, game_mode)
+		SELECT id, $1, $2, $3, $4, $5, $6, $7, $8 FROM patch WHERE is_current
 		RETURNING id::text, (SELECT name FROM patch WHERE is_current), created_at`,
-		in.HeroID, in.Role, in.Allies, in.Enemies, in.Bans, plan, in.UserID).Scan(&in.ID, &in.Patch, &in.CreatedAt)
+		in.HeroID, in.Role, in.Allies, in.Enemies, in.Bans, plan, in.UserID, cmp.Or(in.Mode, "all_pick_ranked")).Scan(&in.ID, &in.Patch, &in.CreatedAt)
+	in.Mode = cmp.Or(in.Mode, "all_pick_ranked")
 	if errors.Is(err, pgx.ErrNoRows) {
 		return in, errors.New("no current patch")
 	}
@@ -103,11 +107,11 @@ func (s *Store) Get(ctx context.Context, id string) (Session, error) {
 	}
 	r := &Result{}
 	err := s.pool.QueryRow(ctx, `
-		SELECT m.id::text, m.user_id, p.name, m.hero_id, m.role, m.allies, m.enemies, m.bans, m.item_plan, m.created_at,
+		SELECT m.id::text, m.user_id, p.name, m.hero_id, m.role, m.allies, m.enemies, m.bans, m.game_mode, m.item_plan, m.created_at,
 			r.result, r.duration_s, r.kills, r.deaths, r.assists, r.source, r.notes, m.ended_at
 		FROM match_session m JOIN patch p ON p.id = m.patch_id
 		LEFT JOIN match_result r ON r.session_id = m.id WHERE m.id = $1`, id).
-		Scan(&out.ID, &out.UserID, &out.Patch, &out.HeroID, &out.Role, &out.Allies, &out.Enemies, &out.Bans, &plan, &out.CreatedAt,
+		Scan(&out.ID, &out.UserID, &out.Patch, &out.HeroID, &out.Role, &out.Allies, &out.Enemies, &out.Bans, &out.Mode, &plan, &out.CreatedAt,
 			&res.outcome, &r.DurationS, &r.Kills, &r.Deaths, &r.Assists, &res.source, &res.notes, &res.endedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return out, ErrNotFound

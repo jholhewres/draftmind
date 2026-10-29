@@ -8,6 +8,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"slices"
 
 	"github.com/jholhewres/draftmind/api/internal/draft"
 )
@@ -19,6 +20,7 @@ const (
 	maxBans         = 24
 	defaultSuggests = 8
 	maxSuggests     = 50
+	maxPool         = 50 // Captains Draft offers 27, Single Draft 3, Random Draft 24
 )
 
 type suggestRequest struct {
@@ -27,11 +29,31 @@ type suggestRequest struct {
 	Bans    []int `json:"bans"`
 	Role    int   `json:"role"`
 	Limit   *int  `json:"limit"`
+	// Mode is the game mode (ADR-0012); empty is ranked All Pick.
+	Mode string `json:"mode,omitempty"`
+	// Pool is the heroes offered in Single, Random or Captains Draft.
+	Pool []int `json:"pool,omitempty"`
 }
 
 type suggestResponse struct {
 	Patch string `json:"patch"`
 	draft.Decided
+	modeInfo
+}
+
+// modeInfo says which mode a ranking followed, which stats it read, and the
+// bans to make when the mode has a ban phase.
+type modeInfo struct {
+	Mode  draft.Mode         `json:"mode"`
+	Stats string             `json:"stats"`
+	Bans  []draft.Suggestion `json:"bans,omitempty"`
+}
+
+// maxBanSuggests is how many bans a Captains draft suggests.
+const maxBanSuggests = 5
+
+func modeOf(ds draft.Dataset, d draft.Draft) modeInfo {
+	return modeInfo{Mode: d.Mode, Stats: draft.StatsFor(ds, d.Mode), Bans: draft.Bans(ds, d, maxBanSuggests)}
 }
 
 // suggest ranks every legal hero of the current patch for the draft and
@@ -53,7 +75,7 @@ func (s *Server) suggest(w http.ResponseWriter, r *http.Request) {
 	decided := draft.Decide(r.Context(), s.jev, ds, d, draft.Rank(ds, d, max(limit, draft.JevCandidates)))
 	s.logDecided(decided)
 	decided.Suggestions = decided.Suggestions[:min(limit, len(decided.Suggestions))]
-	writeJSON(w, http.StatusOK, suggestResponse{Patch: patch, Decided: decided})
+	writeJSON(w, http.StatusOK, suggestResponse{Patch: patch, Decided: decided, modeInfo: modeOf(ds, d)})
 }
 
 // decodeDraft reads exactly one valid draft from r's JSON body.
@@ -73,7 +95,12 @@ func decodeDraft(w http.ResponseWriter, r *http.Request) (suggestRequest, error)
 // loadDraft loads the current patch's ranking data for req, refusing a
 // hero the patch lacks.
 func (s *Server) loadDraft(ctx context.Context, req suggestRequest) (string, draft.Dataset, int, error) {
-	patch, ds, err := s.catalog.DraftDataset(ctx, req.Enemies)
+	// A ban is ranked against our own side, so it needs the allies' matchups.
+	against := req.Enemies
+	if m, _ := draft.ParseMode(req.Mode); m.HasBans() {
+		against = append(slices.Clone(req.Enemies), req.Allies...)
+	}
+	patch, ds, err := s.catalog.DraftDataset(ctx, against)
 	if err != nil {
 		s.log.Error("draft dataset", "err", err)
 		return "", ds, http.StatusInternalServerError, errors.New("could not load the draft data")
@@ -82,7 +109,7 @@ func (s *Server) loadDraft(ctx context.Context, req suggestRequest) (string, dra
 	for _, h := range ds.Heroes {
 		onPatch[h.ID] = true
 	}
-	for _, list := range [][]int{req.Allies, req.Enemies, req.Bans} {
+	for _, list := range [][]int{req.Allies, req.Enemies, req.Bans, req.Pool} {
 		for _, id := range list {
 			if !onPatch[id] {
 				return "", ds, http.StatusBadRequest, fmt.Errorf("unknown hero %d on the current patch", id)
@@ -111,11 +138,20 @@ func (q suggestRequest) limit() int {
 }
 
 func (q suggestRequest) draft() draft.Draft {
-	return draft.Draft{Allies: q.Allies, Enemies: q.Enemies, Bans: q.Bans, Role: q.Role}
+	m, _ := draft.ParseMode(q.Mode) // validated
+	return draft.Draft{Allies: q.Allies, Enemies: q.Enemies, Bans: q.Bans, Role: q.Role, Mode: m, Pool: q.Pool}
 }
 
 func (q suggestRequest) validate() error {
+	m, err := draft.ParseMode(q.Mode)
+	if err != nil {
+		return err
+	}
 	switch {
+	case m.Pooled() && len(q.Pool) == 0:
+		return fmt.Errorf("%s needs the heroes offered in pool", m)
+	case len(q.Pool) > maxPool:
+		return fmt.Errorf("at most %d heroes in the pool", maxPool)
 	case q.Role < 1 || q.Role > 5:
 		return errors.New("role must be 1 to 5")
 	case len(q.Allies) > maxAllies:

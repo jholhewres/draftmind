@@ -175,3 +175,21 @@ func TestTheUILanguageIsKeptForTheSignedInPlayer(t *testing.T) {
 		t.Fatalf("other player: %s, want no language", rec.Body)
 	}
 }
+
+func TestTheGameModeIsRememberedForTheSignedInPlayer(t *testing.T) {
+	srv, pool := buildPatchesPool(t)
+	h, signIn := accounts(t, srv, pool)
+	me := signIn("player@example.com")
+	if rec := send(h, http.MethodGet, "/api/me/mode", "", me); rec.Body.String() != "{\"mode\":\"\"}\n" {
+		t.Fatalf("before a match: %d %s, want no mode", rec.Code, rec.Body)
+	}
+	if rec := send(h, http.MethodPost, "/api/match", `{"hero":1,"role":2,"enemies":[2],"mode":"captains_mode"}`, me); rec.Code != http.StatusOK {
+		t.Fatalf("start: %d %s", rec.Code, rec.Body)
+	}
+	if rec := send(h, http.MethodGet, "/api/me/mode", "", me); rec.Body.String() != "{\"mode\":\"captains_mode\"}\n" {
+		t.Fatalf("after a match: %d %s, want captains_mode", rec.Code, rec.Body)
+	}
+	if rec := send(h, http.MethodPost, "/api/match", `{"hero":1,"role":2,"enemies":[2],"mode":"ability_draft"}`, me); rec.Code != http.StatusBadRequest {
+		t.Fatalf("ability draft: %d, want 400", rec.Code)
+	}
+}

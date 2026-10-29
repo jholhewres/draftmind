@@ -86,7 +86,14 @@ export async function fetchHero(slug: string, lang: string, signal?: AbortSignal
 
 // A draft as POST /api/draft/suggest takes it: hero ids per side and the
 // player's position, 1 to 5.
-export type DraftInput = { allies: number[]; enemies: number[]; bans: number[]; role: number }
+// The game modes Draftmind supports (ADR-0012); Ability Draft and custom
+// games are not a hero draft.
+export const gameModes = ['all_pick_ranked', 'all_pick', 'turbo', 'captains_mode', 'captains_draft', 'single_draft', 'random_draft', 'all_random'] as const
+export type GameMode = (typeof gameModes)[number]
+// Modes whose heroes are offered from a pool the player taps.
+export const pooledModes: readonly GameMode[] = ['single_draft', 'random_draft', 'captains_draft']
+
+export type DraftInput = { allies: number[]; enemies: number[]; bans: number[]; role: number; mode?: GameMode; pool?: number[] }
 
 // A candidate's shrunk win rate against one enemy minus 50, in points.
 export type EnemyDelta = { heroId: number; delta: number; games: number }
@@ -113,6 +120,9 @@ export type SuggestResult = {
   reason?: FallbackReason
   confidence?: number
   suggestions: Suggestion[]
+  // The bans to make, in a mode with a ban phase; the stats the ranking read.
+  bans?: Suggestion[]
+  stats?: 'ranked' | 'turbo'
 }
 
 // A top hero's tip: the writer's text, or a template the UI words from the
@@ -135,7 +145,7 @@ function asDecision(body: Partial<SuggestResult>): Omit<SuggestResult, 'patch'> 
 export type ReadSlot = { heroId?: number; status: 'hero' | 'empty' | 'unknown'; confidence: number }
 
 // The draft read from a photo, five slots a team, left to right.
-export type DraftRead = { patch: string; reader: string; fallback?: string; radiant: ReadSlot[]; dire: ReadSlot[] }
+export type DraftRead = { patch: string; reader: string; fallback?: string; layout?: string; radiant: ReadSlot[]; dire: ReadSlot[] }
 
 const asSlots = (v: unknown): ReadSlot[] =>
   Array.from({ length: 5 }, (_, i) => {
@@ -149,6 +159,7 @@ const asRead = (body: Partial<DraftRead>): DraftRead => ({
   patch: body.patch ?? '',
   reader: body.reader ?? '',
   fallback: body.fallback,
+  layout: body.layout,
   radiant: asSlots(body.radiant),
   dire: asSlots(body.dire),
 })
@@ -158,7 +169,7 @@ export type StreamRead = DraftRead & { draft: DraftInput }
 
 export type StreamEvent =
   | { type: 'read'; read: StreamRead }
-  | { type: 'ranking'; patch: string; suggestions: Suggestion[] }
+  | { type: 'ranking'; patch: string; suggestions: Suggestion[]; bans?: Suggestion[]; stats?: 'ranked' | 'turbo' }
   | { type: 'decision'; decision: Omit<SuggestResult, 'patch'> }
   | { type: 'tip'; tip: Tip }
   | { type: 'done' }
@@ -167,7 +178,7 @@ export type StreamEvent =
 // team and position. lang is the tips' language.
 export type StreamRequest =
   | { kind: 'draft'; draft: DraftInput; lang: string }
-  | { kind: 'photo'; image: Blob; team: 'radiant' | 'dire'; role: number; lang: string }
+  | { kind: 'photo'; image: Blob; team: 'radiant' | 'dire'; role: number; lang: string; mode?: GameMode }
 
 const ids = (v: unknown) => (Array.isArray(v) ? (v as number[]) : [])
 
@@ -185,7 +196,13 @@ function asEvent(name: string, data: string): StreamEvent | null {
       return { type: 'read', read: { ...asRead(body as Partial<DraftRead>), draft } }
     }
     case 'ranking':
-      return { type: 'ranking', patch: String(body.patch ?? ''), suggestions: asSuggestions(body.suggestions) }
+      return {
+        type: 'ranking',
+        patch: String(body.patch ?? ''),
+        suggestions: asSuggestions(body.suggestions),
+        bans: Array.isArray(body.bans) ? asSuggestions(body.bans) : undefined,
+        stats: body.stats === 'turbo' ? 'turbo' : body.stats === 'ranked' ? 'ranked' : undefined,
+      }
     case 'decision':
       return { type: 'decision', decision: asDecision(body as Partial<SuggestResult>) }
     case 'tip': {
@@ -208,6 +225,7 @@ export async function streamSuggestions(req: StreamRequest, onEvent: (e: StreamE
   if (req.kind === 'photo') {
     query.set('role', String(req.role))
     query.set('team', req.team)
+    if (req.mode) query.set('mode', req.mode)
     const form = new FormData()
     form.append('image', req.image, 'pick.jpg')
     init = { method: 'POST', body: form, signal }
@@ -341,6 +359,9 @@ export type Build = {
   situational: SituationalItem[]
   source: 'jev' | 'ranking'
   reason?: string
+  // The game mode; data is 'general' when the item data is not that mode's own.
+  mode?: GameMode
+  data?: 'general'
 }
 
 export async function fetchBuild(hero: number, enemies: number[], signal?: AbortSignal): Promise<Build> {
@@ -439,7 +460,7 @@ export async function fetchMyMatches(signal?: AbortSignal): Promise<PastMatch[] 
   return (await res.json()) as PastMatch[]
 }
 
-export type MatchStart = { hero: number; role: number; allies: number[]; enemies: number[]; bans: number[] }
+export type MatchStart = { hero: number; role: number; allies: number[]; enemies: number[]; bans: number[]; mode?: GameMode; pool?: number[] }
 
 export async function startMatch(req: MatchStart, signal?: AbortSignal): Promise<MatchSession> {
   const res = await fetch('/api/match', {
@@ -664,3 +685,13 @@ export async function signOut(): Promise<void> {
 
 // Sends the browser to Steam; Steam returns it to #/signin or #/signin/failed.
 export const steamSignInPath = '/api/auth/steam'
+
+// The game mode the signed-in player last coached a match in; '' before
+// their first, null for a visitor.
+export async function fetchMyMode(signal?: AbortSignal): Promise<GameMode | '' | null> {
+  const res = await fetch('/api/me/mode', { signal })
+  if (res.status === 401) return null
+  if (!res.ok) throw new Error(`/api/me/mode: HTTP ${res.status}`)
+  const { mode } = (await res.json()) as { mode: string }
+  return (gameModes as readonly string[]).includes(mode) ? (mode as GameMode) : ''
+}

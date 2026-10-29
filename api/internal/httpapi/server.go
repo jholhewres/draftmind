@@ -160,6 +160,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("PUT /api/me/persona", s.requireUser(http.HandlerFunc(s.savePersona)))
 	mux.Handle("GET /api/me/language", s.requireUser(http.HandlerFunc(s.myLanguage)))
 	mux.Handle("PUT /api/me/language", s.requireUser(http.HandlerFunc(s.saveLanguage)))
+	mux.Handle("GET /api/me/mode", s.requireUser(http.HandlerFunc(s.myMode)))
 	if s.auth != nil {
 		s.auth.Mount(mux, auth.Limits{
 			LinkIP: newLimiter(s.mailIPLimit, s.now).wrap, LinkEmail: newLimiter(s.mailLimit, s.now).take,

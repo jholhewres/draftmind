@@ -29,7 +29,7 @@ test('Picked and banned heroes never appear and the ranking is deterministic for
   await expect(page.getByRole('group', { name: 'Enemies' }).getByRole('button', { name: /^Enemy: / })).toHaveCount(2)
   await expect(page.getByRole('button', { name: 'Enemy: Drow Ranger' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Ban: Bane' })).toBeVisible()
-  await expect.poll(() => drafts.at(-1)).toEqual({ allies: [], enemies: [2, 6], bans: [3], role: 1 })
+  await expect.poll(() => drafts.at(-1)).toEqual({ allies: [], enemies: [2, 6], bans: [3], role: 1, mode: 'all_pick_ranked' })
 
   await expect(suggested(page).locator('.suggestion-name')).toHaveText([
     'Juggernaut',
@@ -55,7 +55,7 @@ test('Each suggestion lists its counter delta per enemy, and ranking the full he
 }, testInfo) => {
   await typeDraft(page)
   await page.getByRole('radio', { name: 'Position 3: Offlane' }).check()
-  await expect.poll(() => drafts.at(-1)).toEqual({ allies: [], enemies: [2, 6], bans: [3], role: 3 })
+  await expect.poll(() => drafts.at(-1)).toEqual({ allies: [], enemies: [2, 6], bans: [3], role: 3, mode: 'all_pick_ranked' })
 
   const items = suggested(page)
   await expect(items).toHaveCount(5)

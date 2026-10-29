@@ -36,12 +36,18 @@ type Dataset struct {
 	Heroes   []Hero
 	Matchups map[Pair]Record
 	Stats    map[int]Record
+	// TurboStats are the Turbo picks and wins, for a Turbo draft.
+	TurboStats map[int]Record
 }
 
 // Draft is the state of a pick: hero ids per side and the player's position.
 type Draft struct {
 	Allies, Enemies, Bans []int
 	Role                  int // 1..5
+	// Mode is the game mode; empty is ranked All Pick.
+	Mode Mode
+	// Pool is the heroes offered in a pooled mode; ignored otherwise.
+	Pool []int
 }
 
 // EnemyDelta is a candidate's shrunk win rate against one enemy, minus 50, in points.
@@ -108,37 +114,10 @@ func RoleFit(role int, roles []string) float64 {
 // so fitting first is what keeps a support off a mid's list; when fewer
 // heroes fit than are asked for, the rest fill in.
 func Rank(ds Dataset, d Draft, n int) []Suggestion {
-	taken := make(map[int]bool, len(d.Allies)+len(d.Enemies)+len(d.Bans))
-	for _, list := range [][]int{d.Allies, d.Enemies, d.Bans} {
-		for _, id := range list {
-			taken[id] = true
-		}
+	if !d.Mode.Suggests() {
+		return []Suggestion{}
 	}
-	// Summed in id order, so the score does not depend on the enemy order.
-	byID := slices.Clone(d.Enemies)
-	slices.Sort(byID)
-
-	out := make([]Suggestion, 0, len(ds.Heroes))
-	for _, h := range ds.Heroes {
-		if taken[h.ID] {
-			continue
-		}
-		s := Suggestion{HeroID: h.ID, Enemies: make([]EnemyDelta, len(d.Enemies))}
-		delta := make(map[int]float64, len(d.Enemies))
-		for i, e := range d.Enemies {
-			m := ds.Matchups[Pair{Hero: h.ID, Opponent: e}]
-			delta[e] = Delta(m.Wins, m.Games)
-			s.Enemies[i] = EnemyDelta{HeroID: e, Delta: delta[e], Games: m.Games}
-		}
-		for _, e := range byID {
-			s.Counter += delta[e]
-		}
-		st := ds.Stats[h.ID]
-		s.WinRate = 100 * ShrunkWinRate(st.Wins, st.Games)
-		s.RoleFit = RoleFit(d.Role, h.Roles)
-		s.Score = s.Counter + PatchWeight*(s.WinRate-50) + RoleWeight*s.RoleFit
-		out = append(out, s)
-	}
+	out := rankAll(ds, d)
 	slices.SortFunc(out, func(a, b Suggestion) int {
 		if fa, fb := a.RoleFit > 0, b.RoleFit > 0; fa != fb {
 			if fa {
@@ -153,6 +132,53 @@ func Rank(ds Dataset, d Draft, n int) []Suggestion {
 	})
 	if n >= 0 && n < len(out) {
 		out = out[:n]
+	}
+	return out
+}
+
+// rankAll scores every legal hero of d's pool, unsorted.
+func rankAll(ds Dataset, d Draft) []Suggestion {
+	var pool map[int]bool
+	if d.Mode.Pooled() {
+		pool = make(map[int]bool, len(d.Pool))
+		for _, id := range d.Pool {
+			pool[id] = true
+		}
+	}
+	stats := ds.Stats
+	if StatsFor(ds, d.Mode) == StatsTurbo {
+		stats = ds.TurboStats
+	}
+	taken := make(map[int]bool, len(d.Allies)+len(d.Enemies)+len(d.Bans))
+	for _, list := range [][]int{d.Allies, d.Enemies, d.Bans} {
+		for _, id := range list {
+			taken[id] = true
+		}
+	}
+	// Summed in id order, so the score does not depend on the enemy order.
+	byID := slices.Clone(d.Enemies)
+	slices.Sort(byID)
+
+	out := make([]Suggestion, 0, len(ds.Heroes))
+	for _, h := range ds.Heroes {
+		if taken[h.ID] || (pool != nil && !pool[h.ID]) {
+			continue
+		}
+		s := Suggestion{HeroID: h.ID, Enemies: make([]EnemyDelta, len(d.Enemies))}
+		delta := make(map[int]float64, len(d.Enemies))
+		for i, e := range d.Enemies {
+			m := ds.Matchups[Pair{Hero: h.ID, Opponent: e}]
+			delta[e] = Delta(m.Wins, m.Games)
+			s.Enemies[i] = EnemyDelta{HeroID: e, Delta: delta[e], Games: m.Games}
+		}
+		for _, e := range byID {
+			s.Counter += delta[e]
+		}
+		st := stats[h.ID]
+		s.WinRate = 100 * ShrunkWinRate(st.Wins, st.Games)
+		s.RoleFit = RoleFit(d.Role, h.Roles)
+		s.Score = s.Counter + PatchWeight*(s.WinRate-50) + RoleWeight*s.RoleFit
+		out = append(out, s)
 	}
 	return out
 }

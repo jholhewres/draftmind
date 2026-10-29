@@ -49,6 +49,10 @@ type startRequest struct {
 	Allies  []int `json:"allies"`
 	Enemies []int `json:"enemies"`
 	Bans    []int `json:"bans"`
+	// Mode is the game mode; empty is ranked All Pick. A signed-in player's
+	// mode is remembered for their next draft.
+	Mode string `json:"mode,omitempty"`
+	Pool []int  `json:"pool,omitempty"`
 }
 
 // startMatch serves POST /api/match: a session for the locked hero with its
@@ -63,7 +67,7 @@ func (s *Server) startMatch(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
-	draftReq := suggestRequest{Allies: nonNil(req.Allies), Enemies: nonNil(req.Enemies), Bans: nonNil(req.Bans), Role: req.Role}
+	draftReq := suggestRequest{Allies: nonNil(req.Allies), Enemies: nonNil(req.Enemies), Bans: nonNil(req.Bans), Role: req.Role, Mode: req.Mode, Pool: req.Pool}
 	if err := draftReq.validate(); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
@@ -76,18 +80,25 @@ func (s *Server) startMatch(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, status, map[string]string{"error": err.Error()})
 		return
 	}
-	_, plan, status, err := s.decideBuild(r, buildRequest{Hero: req.Hero, Enemies: draftReq.Enemies})
+	_, plan, status, err := s.decideBuild(r, buildRequest{Hero: req.Hero, Enemies: draftReq.Enemies, Mode: string(draftReq.draft().Mode)})
 	if err != nil {
 		writeJSON(w, status, map[string]string{"error": err.Error()})
 		return
 	}
 	sess, err := s.matches.Create(r.Context(), match.Session{
 		UserID: s.userID(r), HeroID: req.Hero, Role: req.Role, Allies: draftReq.Allies, Enemies: draftReq.Enemies, Bans: draftReq.Bans, ItemPlan: plan,
+		Mode: string(draftReq.draft().Mode),
 	})
 	if err != nil {
 		s.log.Error("start match", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "could not start the match"})
 		return
+	}
+	if me := s.userID(r); me != nil && s.personas != nil {
+		// Remembered for the next draft; losing it costs only a default.
+		if err := s.personas.SaveGameMode(r.Context(), *me, sess.Mode); err != nil {
+			s.log.Warn("save game mode", "err", err)
+		}
 	}
 	writeJSON(w, http.StatusOK, sess)
 }

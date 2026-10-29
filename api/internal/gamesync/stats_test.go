@@ -2,6 +2,7 @@ package gamesync
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -71,7 +72,8 @@ func TestMatchupSyncStoresMatchupsAndStatsForTheCurrentPatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Only Axe and Puck are on the patch: one matchup each way, 9 brackets each.
+	// Only Axe and Puck are on the patch: one matchup each way, 9 brackets
+	// and turbo each.
 	want := []matchupRow{{2, 13, 141, 81}, {13, 2, 141, 60}}
 	if got := matchupRows(t, pool); fmt.Sprint(got) != fmt.Sprint(want) {
 		t.Fatalf("matchups %v, want %v", got, want)
@@ -81,11 +83,18 @@ func TestMatchupSyncStoresMatchupsAndStatsForTheCurrentPatch(t *testing.T) {
 		sum(wins) FILTER (WHERE hero_id = 2 AND bracket = 'pro') FROM hero_stat`).Scan(&stats, &picks, &wins); err != nil {
 		t.Fatal(err)
 	}
-	if stats != 18 || picks != 11 || wins != 4 {
-		t.Fatalf("%d stat rows, Axe pro %d/%d, want 18 rows and 11 picks, 4 wins", stats, picks, wins)
+	if stats != 20 || picks != 11 || wins != 4 {
+		t.Fatalf("%d stat rows, Axe pro %d/%d, want 20 rows and 11 picks, 4 wins", stats, picks, wins)
 	}
-	if status, inserted, _ := syncRun(t, pool); status != "succeeded" || inserted != 20 || res.Inserted != 20 {
-		t.Fatalf("run %s with %d inserted (result %+v), want succeeded with 20", status, inserted, res)
+	var turbo string
+	if err := pool.QueryRow(ctx, `SELECT picks || '/' || wins FROM hero_stat WHERE hero_id = 2 AND bracket = 'turbo'`).Scan(&turbo); err != nil {
+		t.Fatal(err)
+	}
+	if want := axeTurbo(t); turbo != want {
+		t.Fatalf("Axe turbo %s, want %s", turbo, want)
+	}
+	if status, inserted, _ := syncRun(t, pool); status != "succeeded" || inserted != 22 || res.Inserted != 22 {
+		t.Fatalf("run %s with %d inserted (result %+v), want succeeded with 22", status, inserted, res)
 	}
 }
 
@@ -101,8 +110,8 @@ func TestMatchupSyncSecondRunChangesZeroRows(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if second.Changed() != 0 || second.Unchanged != 20 {
-		t.Fatalf("second run %+v, want 0 changed and 20 unchanged", second)
+	if second.Changed() != 0 || second.Unchanged != 22 {
+		t.Fatalf("second run %+v, want 0 changed and 22 unchanged", second)
 	}
 }
 
@@ -119,13 +128,13 @@ func TestMatchupSyncFailureKeepsSavedRowsAndMarksTheRunFailed(t *testing.T) {
 		t.Fatalf("matchups %v, want Axe's row kept", got)
 	}
 	status, inserted, errText := syncRun(t, pool)
-	if status != "failed" || inserted != 19 || errText == nil || !strings.Contains(*errText, "HTTP 503") {
-		t.Fatalf("run %s with %d inserted, error %v; want failed with the 19 saved rows and the cause", status, inserted, errText)
+	if status != "failed" || inserted != 21 || errText == nil || !strings.Contains(*errText, "HTTP 503") {
+		t.Fatalf("run %s with %d inserted, error %v; want failed with the 21 saved rows and the cause", status, inserted, errText)
 	}
 	// A later run picks up where it stopped.
 	res, err := NewSyncer(pool, nil, quietLog()).Stats(ctx, fixtureOpenDota{})
-	if err != nil || res.Inserted != 1 || res.Unchanged != 19 {
-		t.Fatalf("resumed run %+v, %v; want 1 inserted and 19 unchanged", res, err)
+	if err != nil || res.Inserted != 1 || res.Unchanged != 21 {
+		t.Fatalf("resumed run %+v, %v; want 1 inserted and 21 unchanged", res, err)
 	}
 }
 
@@ -149,3 +158,23 @@ func TestMatchupSyncDropsAnOpponentNoLongerInTheResponse(t *testing.T) {
 type emptyMatchups struct{ fixtureOpenDota }
 
 func (emptyMatchups) Matchups(context.Context, int) ([]byte, error) { return []byte("[]"), nil }
+
+// axeTurbo is Axe's turbo picks/wins in the heroStats fixture.
+func axeTurbo(t *testing.T) string {
+	t.Helper()
+	var rows []struct {
+		ID    int `json:"id"`
+		Picks int `json:"turbo_picks"`
+		Wins  int `json:"turbo_wins"`
+	}
+	if err := json.Unmarshal(readFixture(t, "opendota_herostats.json"), &rows); err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range rows {
+		if r.ID == 2 {
+			return fmt.Sprintf("%d/%d", r.Picks, r.Wins)
+		}
+	}
+	t.Fatal("no Axe in the fixture")
+	return ""
+}

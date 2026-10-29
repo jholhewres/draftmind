@@ -9,12 +9,14 @@ import (
 	"net/http"
 
 	"github.com/jholhewres/draftmind/api/internal/catalog"
+	"github.com/jholhewres/draftmind/api/internal/draft"
 	"github.com/jholhewres/draftmind/api/internal/items"
 )
 
 type buildRequest struct {
-	Hero    int   `json:"hero"`
-	Enemies []int `json:"enemies"`
+	Hero    int    `json:"hero"`
+	Enemies []int  `json:"enemies"`
+	Mode    string `json:"mode,omitempty"`
 }
 
 type buildResponse struct {
@@ -62,7 +64,7 @@ func (s *Server) decideBuild(r *http.Request, req buildRequest) (string, items.B
 			return "", items.Build{}, http.StatusBadRequest, fmt.Errorf("unknown hero %d on the current patch", id)
 		}
 	}
-	b := items.Decide(r.Context(), s.jev, ds, req.Hero, req.Enemies)
+	b := items.ForMode(items.Decide(r.Context(), s.jev, ds, req.Hero, req.Enemies), req.Mode)
 	if b.Reason == items.ReasonTimeout || b.Reason == items.ReasonError {
 		s.log.Warn("item build: kept the code order", "reason", b.Reason)
 	}
@@ -70,6 +72,9 @@ func (s *Server) decideBuild(r *http.Request, req buildRequest) (string, items.B
 }
 
 func (q buildRequest) validate() error {
+	if _, err := draft.ParseMode(q.Mode); err != nil {
+		return err
+	}
 	if q.Hero <= 0 || q.Hero > math.MaxInt32 {
 		return errors.New("hero is required")
 	}

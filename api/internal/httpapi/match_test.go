@@ -22,7 +22,7 @@ func TestTheMatchSessionSurvivesAPageReload(t *testing.T) {
 		return rec
 	}
 
-	rec := do(http.MethodPost, "/api/match", `{"hero":1,"role":2,"allies":[],"enemies":[2],"bans":[3]}`)
+	rec := do(http.MethodPost, "/api/match", `{"hero":1,"role":2,"allies":[],"enemies":[2],"bans":[3],"mode":"turbo"}`)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("start: %d %s", rec.Code, rec.Body)
 	}
@@ -46,6 +46,9 @@ func TestTheMatchSessionSurvivesAPageReload(t *testing.T) {
 	var got match.Session
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatal(err)
+	}
+	if got.Mode != "turbo" {
+		t.Fatalf("reloaded mode %q, want turbo", got.Mode)
 	}
 	if got.ID != started.ID || got.HeroID != 1 || got.Role != 2 || len(got.Enemies) != 1 || got.Enemies[0] != 2 ||
 		len(got.Bans) != 1 || len(got.ItemPlan.Situational) != 1 || got.ItemPlan.Situational[0].EnemyID != 2 {

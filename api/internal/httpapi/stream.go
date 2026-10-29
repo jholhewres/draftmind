@@ -41,6 +41,7 @@ type readEvent struct {
 type rankingEvent struct {
 	Patch       string             `json:"patch"`
 	Suggestions []draft.Suggestion `json:"suggestions"`
+	modeInfo
 }
 
 // stream serves POST /api/draft/stream: the suggestions as Server-Sent
@@ -78,7 +79,12 @@ func (s *Server) stream(readLim *limiter) http.HandlerFunc {
 				return
 			}
 			d := read.Draft
-			req = suggestRequest{Allies: d.Allies, Enemies: d.Enemies, Bans: d.Bans, Role: d.Role}
+			req = suggestRequest{Allies: d.Allies, Enemies: d.Enemies, Bans: d.Bans, Role: d.Role, Mode: q.Get("mode")}
+			if req.draft().Mode.Pooled() {
+				// The offered heroes are not on a photo of the top bar: the
+				// player taps them on the board.
+				req.Mode = ""
+			}
 			if err := req.validate(); err != nil {
 				writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 				return
@@ -103,7 +109,7 @@ func (s *Server) stream(readLim *limiter) http.HandlerFunc {
 		}
 		limit, d := req.limit(), req.draft()
 		ranked := draft.Rank(ds, d, max(limit, draft.JevCandidates))
-		out.send("ranking", rankingEvent{Patch: patch, Suggestions: ranked[:min(limit, len(ranked))]})
+		out.send("ranking", rankingEvent{Patch: patch, Suggestions: ranked[:min(limit, len(ranked))], modeInfo: modeOf(ds, d)})
 
 		// The ranking's top heroes are written while Jev decides; any hero
 		// Jev moves into the top is written once it has.
@@ -149,6 +155,7 @@ func (s *Server) streamRead(w http.ResponseWriter, r *http.Request, readLim *lim
 	if err != nil {
 		return nil, status, err
 	}
+	read = photo.FlagUncalibrated(read, q.Get("mode"))
 	return &readEvent{Patch: patch, Read: read, Draft: seat(read, team, role)}, http.StatusOK, nil
 }
 

@@ -79,6 +79,7 @@ func TestMatchupParseHeroStatsReadsEveryBracket(t *testing.T) {
 	want := []HeroStat{
 		{1, "1", 13045, 6667}, {1, "2", 46721, 23872}, {1, "3", 92990, 47507}, {1, "4", 155037, 79930},
 		{1, "5", 178789, 91448}, {1, "6", 101055, 51530}, {1, "7", 70607, 35810}, {1, "8", 0, 0}, {1, "pro", 14, 7},
+		{1, "turbo", 288950, 146562},
 	}
 	if len(am) != len(want) {
 		t.Fatalf("Anti-Mage stats %+v, want %+v", am, want)

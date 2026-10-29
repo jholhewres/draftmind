@@ -54,7 +54,7 @@ func (s *Server) readDraft(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, status, map[string]string{"error": err.Error()})
 		return
 	}
-	writeJSON(w, http.StatusOK, readResponse{Patch: patch, Read: read})
+	writeJSON(w, http.StatusOK, readResponse{Patch: patch, Read: photo.FlagUncalibrated(read, r.URL.Query().Get("mode"))})
 }
 
 // readPhoto reads the draft in an uploaded photo, holding one of the

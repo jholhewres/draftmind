@@ -23,11 +23,14 @@ type Props = SuggestStream & {
   onStart?: (heroId: number) => void
   starting?: number | null
   startError?: string | null
+  // The draft is Turbo: a ranked-stats label says Turbo data was missing.
+  turbo?: boolean
+  hasBans?: boolean
 }
 
 // The top of the ranking with each hero's counter chips, score and tip.
 // Items are keyed by hero, so a new order or a tip updates them in place.
-export default function SuggestionList({ result, error, tips, streaming, byId, onStart, starting = null, startError = null }: Props) {
+export default function SuggestionList({ result, error, tips, streaming, byId, onStart, starting = null, startError = null, turbo = false, hasBans = false }: Props) {
   const { t, locale } = useI18n()
   const name = (id: number) => byId.get(id)?.name ?? `#${id}`
 
@@ -61,6 +64,22 @@ export default function SuggestionList({ result, error, tips, streaming, byId, o
           </span>
         )}
       </div>
+      {result?.stats && (
+        <p className="muted stats-label">
+          {t(result.stats === 'turbo' ? 'mode.stats.turbo' : turbo ? 'mode.stats.turboFallback' : 'mode.stats.ranked')}
+        </p>
+      )}
+      {hasBans && result?.bans && result.bans.length > 0 && (
+        <ol className="ban-list" aria-label={t('mode.bans')}>
+          {result.bans.map((b) => (
+            <li key={b.heroId} className="ban-suggestion">
+              {byId.get(b.heroId) && <img src={heroImageBase + byId.get(b.heroId)!.img} alt="" width={64} height={36} />}
+              <span>{name(b.heroId)}</span>
+              <span className="muted">{formatScore(locale, b.counter)}</span>
+            </li>
+          ))}
+        </ol>
+      )}
       {error ? (
         <p role="alert">{t('draft.rankError', { error })}</p>
       ) : !result ? (
