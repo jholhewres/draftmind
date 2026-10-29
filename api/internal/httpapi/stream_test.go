@@ -234,10 +234,14 @@ func writerOn(t *testing.T, text map[string]string) *writer.Writer {
 
 func TestStreamTipNamingAHeroOrItemOutsideTheResultComesAsATemplate(t *testing.T) {
 	pool := seedDraft(t)
+	if _, err := pool.Exec(context.Background(), `
+		INSERT INTO item (patch_id, id, key, dname, cost) SELECT id, 1, 'blink', 'Blink Dagger', 2250 FROM patch WHERE is_current`); err != nil {
+		t.Fatal(err)
+	}
 	w := writerOn(t, map[string]string{
 		"Juggernaut":  "Juggernaut wins 5 points more against Axe.",
 		"Anti-Mage":   "Anti-Mage struggles into Axe, but Earthshaker would not.",
-		"Earthshaker": "Earthshaker, then rush a Blink Dagger.",
+		"Earthshaker": "Earthshaker beats Axe, then rush a blink dagger.", // an item in lower case
 	})
 	srv := New(fakeDB{}, catalog.NewStore(pool), quietLog()).WithWriter(w)
 	_, evs := openStream(t, srv, "", "application/json", []byte(`{"enemies": [2], "bans": [5], "role": 1}`))

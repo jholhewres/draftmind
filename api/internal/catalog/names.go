@@ -8,16 +8,17 @@ import (
 )
 
 // Names are the entity names model text is checked against: each current
-// hero's names in every language, by id; every ability's on the current
-// patch (talents left out); and every other hero the database knows, so a
-// hero off the patch is caught too.
+// hero's names in every language, by id; the current patch's abilities
+// (talents left out) and items; and every hero off the current patch, so
+// naming one is caught too. Items have English names only for now.
 type Names struct {
 	Heroes    map[int][]string
 	Abilities []string
-	Others    []string
+	Items     []string
+	OffPatch  []string
 }
 
-// Names loads the current patch's hero and ability names.
+// Names loads the names model text is checked against.
 func (s *Store) Names(ctx context.Context) (Names, error) {
 	n := Names{Heroes: map[int][]string{}}
 	err := pgx.BeginTxFunc(ctx, s.pool, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly}, func(tx pgx.Tx) error {
@@ -61,9 +62,18 @@ func (s *Store) Names(ctx context.Context) (Names, error) {
 		if err != nil {
 			return fmt.Errorf("other hero names: %w", err)
 		}
-		n.Others, err = pgx.CollectRows(rows, pgx.RowTo[string])
+		n.OffPatch, err = pgx.CollectRows(rows, pgx.RowTo[string])
 		if err != nil {
 			return fmt.Errorf("other hero names: %w", err)
+		}
+		rows, err = tx.Query(ctx, `
+			SELECT DISTINCT i.dname FROM item i JOIN patch p ON p.id = i.patch_id AND p.is_current ORDER BY 1`)
+		if err != nil {
+			return fmt.Errorf("item names: %w", err)
+		}
+		n.Items, err = pgx.CollectRows(rows, pgx.RowTo[string])
+		if err != nil {
+			return fmt.Errorf("item names: %w", err)
 		}
 		return nil
 	})

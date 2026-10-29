@@ -87,7 +87,12 @@ func runSync(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, log *sl
 	switch target {
 	case "heroes":
 		src := gamesync.NewHTTPSource(gamesync.DefaultGitHubAPI, gamesync.DefaultDotaconstantsBase, cfg.DotaconstantsRef, client)
-		_, err := gamesync.NewSyncer(pool, src, log).Heroes(ctx)
+		syncer := gamesync.NewSyncer(pool, src, log)
+		if _, err := syncer.Heroes(ctx); err != nil {
+			return err
+		}
+		// Same source, so the items come from the revision the heroes pinned.
+		_, err := syncer.Items(ctx)
 		return err
 	case "details":
 		feed := gamesync.NewHTTPFeed(gamesync.DefaultDatafeedBase, gamesync.DefaultDatafeedInterval, client)

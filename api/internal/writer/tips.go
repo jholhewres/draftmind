@@ -65,8 +65,8 @@ type Brief struct {
 	WinRate      float64
 	Enemies      []Enemy
 	// Allowed are the names in the reasons: the hero's and its enemies', in
-	// every language. Known are every hero and ability name on the current
-	// patch.
+	// every language. Known are every hero, ability and item name the
+	// database has; a tip naming one outside Allowed, in any case, fails.
 	Allowed, Known []string
 }
 
