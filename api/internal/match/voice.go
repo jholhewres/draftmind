@@ -39,6 +39,9 @@ func CheckClip(b []byte) error {
 		body := b[p+8:]
 		switch id {
 		case "fmt ":
+			if bytesPerSecond != 0 { // decoders read the first fmt chunk
+				break
+			}
 			if size < 16 || len(body) < 16 {
 				return ErrNotWAV
 			}

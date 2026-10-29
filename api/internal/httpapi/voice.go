@@ -71,8 +71,8 @@ func (s *Server) matchVoice(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "could not transcribe the clip"})
 		return
 	}
-	if r := []rune(text); len(r) > match.MaxMessage {
-		text = string(r[:match.MaxMessage])
+	if runes := []rune(text); len(runes) > match.MaxMessage {
+		text = string(runes[:match.MaxMessage])
 	}
 	s.coachTurn(w, r, sess, match.Message{Author: "player", Kind: "voice", Text: text}, lang)
 }
