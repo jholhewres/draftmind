@@ -50,7 +50,7 @@ function jpegIn(body: Buffer) {
 }
 
 async function takePhoto(page: Page) {
-  await page.goto('/')
+  await page.goto('/#/draft')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Photograph the pick')
   await page.locator('input[capture=environment]').setInputFiles(photo)
 }

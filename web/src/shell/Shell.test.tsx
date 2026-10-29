@@ -9,7 +9,7 @@ const catalog = {
 }
 
 beforeEach(() => {
-  window.location.hash = ''
+  window.location.hash = '#/draft'
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
     const body = String(input).endsWith('/api/heroes') ? catalog : { status: 'ok', database: 'up' }
     return new Response(JSON.stringify(body), { status: 200 })

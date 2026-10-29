@@ -8,7 +8,7 @@ test('The tab bar switches between Draft, Coach, Heroes and Patches and marks th
   page,
   escaped,
 }) => {
-  await page.goto('/')
+  await page.goto('/#/draft')
   const nav = page.getByRole('navigation', { name: 'Main' })
   await expect(nav.getByRole('link')).toHaveText(tabs)
   await expect(nav.getByRole('link', { name: 'Draft' })).toHaveAttribute('aria-current', 'page')
@@ -86,7 +86,7 @@ test('Visual tests match the shell and hero grid baselines at 390x844 (bottom ta
   }
   expect(escaped).toEqual([])
   await expect(page).toHaveScreenshot('shell-heroes.png')
-  await page.goto('/')
+  await page.goto('/#/draft')
   // The Draft tab opens on the photo of the pick.
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Photograph the pick')
   await expect(page).toHaveScreenshot('shell-draft.png')

@@ -8,7 +8,8 @@ const fixture = (name: string) => path.join(import.meta.dirname, 'fixtures', nam
 const imageCDN = 'https://cdn.cloudflare.steamstatic.com/**'
 
 const backgroundImage = 'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/backgrounds/**'
-const googleFonts = 'https://fonts.googleapis.com/**'
+// The landing page's hero art (see heroArt in src/landing/Landing.tsx).
+const heroArt = 'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/home/radiant_dire5.jpg'
 
 export type DraftInput = { allies: number[]; enemies: number[]; bans: number[]; role: number }
 
@@ -79,9 +80,10 @@ export const test = base.extend<Fixtures>({
         return route.fulfill({ path: fixture(`patch-${decodeURIComponent(url.pathname.split('/').at(-1)!)}.${lang}.json`) })
       })
       await page.route(imageCDN, (route) => route.fulfill({ path: fixture('hero-portrait.png') }))
-      // Plain background color and fallback fonts keep the baselines stable.
+      // A plain background color keeps the baselines stable; the fonts are
+      // self-hosted, so a font request would escape and fail the spec.
       await page.route(backgroundImage, (route) => route.fulfill({ status: 404 }))
-      await page.route(googleFonts, (route) => route.fulfill({ contentType: 'text/css', body: '' }))
+      await page.route(heroArt, (route) => route.fulfill({ path: fixture('hero-art.jpg') }))
       await provide()
     },
     { auto: true },

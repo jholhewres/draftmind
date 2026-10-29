@@ -470,3 +470,60 @@ footer p { margin: 0 0 4px; }
 .signin-or { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--muted); }
 .signin-or span { flex: 1; height: 1px; background: var(--border); }
 .signin-foot { padding: 16px 24px 24px; text-align: center; }
+
+/* Landing page, after the prototype's Landing: the visitor's entry at the root. */
+.landing { min-height: 100dvh; display: flex; flex-direction: column; background: var(--bg); }
+.landing-hero {
+  position: relative; min-height: 620px; display: flex; flex-direction: column;
+  background: var(--bg) 38% center / cover no-repeat;
+}
+.landing-hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(10, 12, 15, 0.55) 0%, rgba(10, 12, 15, 0.35) 40%, rgba(10, 12, 15, 0.92) 82%, var(--bg) 100%);
+}
+.landing-top { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; }
+.landing-top .brand { padding: 0; }
+.landing-pitch { position: relative; margin-top: auto; padding: 0 20px 36px; display: flex; flex-direction: column; gap: 16px; }
+.landing .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); }
+.landing-pitch h1 { font-size: 36px; line-height: 1.12; }
+.landing-pitch p { margin: 0; font-size: 17px; line-height: 1.45; color: #d5dae0; }
+.landing-ctas { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.landing .cta, .landing .ghost {
+  min-height: 54px; padding: 0 20px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  font: 600 17px Barlow, system-ui, sans-serif; text-decoration: none; cursor: pointer;
+}
+.landing .cta { background: var(--gold); color: var(--gold-text); border: 0; }
+.landing .ghost { background: transparent; color: var(--fg); border: 1px solid rgba(237, 239, 242, 0.35); }
+.landing .ghost.small { min-height: 40px; padding: 0 16px; border-radius: 8px; font-size: 15px; }
+.landing .cta:focus-visible, .landing .ghost:focus-visible, .landing-foot a:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; }
+.landing-section { padding: 40px 20px; display: flex; flex-direction: column; gap: 20px; }
+.landing-section + .landing-section { padding-top: 8px; }
+.landing h2 { margin: 0; font: 700 26px Cinzel, Georgia, serif; }
+.landing-steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.landing-steps li { display: flex; gap: 14px; padding: 16px; border-radius: 12px; background: var(--surface-solid); border: 1px solid var(--border); }
+.landing-steps h3 { margin: 0 0 4px; font-size: 17px; font-weight: 600; }
+.landing-steps p { margin: 0; font-size: 15px; line-height: 1.45; color: var(--muted); }
+.step-number {
+  width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; border: 1.5px solid var(--gold); color: var(--gold);
+  display: grid; place-items: center; font: 700 17px Cinzel, Georgia, serif;
+}
+.landing-portraits { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.landing-portraits img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; display: block; }
+.landing-bullets { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 15px; line-height: 1.4; color: #d5dae0; }
+.landing-bullets li { display: flex; gap: 10px; }
+.landing-bullets svg { flex-shrink: 0; margin-top: 2px; color: var(--gold); }
+.landing-foot { margin-top: auto; padding: 24px 20px 32px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; font-size: 13px; line-height: 1.5; }
+.landing-foot p { margin: 0; }
+.landing-foot nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+
+@media (min-width: 1024px) {
+  .landing-hero { min-height: min(760px, 88dvh); background-position: center; }
+  .landing-top, .landing-pitch, .landing-section, .landing-foot { width: 100%; max-width: 1080px; margin-left: auto; margin-right: auto; padding-left: 32px; padding-right: 32px; }
+  .landing-pitch { max-width: 1080px; padding-bottom: 64px; }
+  .landing-pitch > * { max-width: 620px; }
+  .landing-pitch h1 { font-size: 48px; }
+  .landing-ctas { flex-direction: row; }
+  .landing-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .landing-portraits { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .landing-section > .cta { align-self: flex-start; }
+}

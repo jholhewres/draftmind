@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchAccount, fetchHealth, type Account, type Health } from './api'
 import SignIn from './auth/SignIn'
+import Landing from './landing/Landing'
 import CoachTab from './coach/CoachTab'
 import DraftTab from './draft/DraftTab'
 import HeroGrid from './heroes/HeroGrid'
@@ -12,7 +13,7 @@ import TabBar from './shell/TabBar'
 
 export default function App() {
   const { t } = useI18n()
-  const { tab, hero, manual, signin } = useRoute()
+  const { tab, hero, manual, signin, landing } = useRoute()
   const [health, setHealth] = useState<Health | null>(null)
   const [error, setError] = useState<string | null>(null)
   // undefined while checked; a failed check reads as a visitor.
@@ -40,6 +41,9 @@ export default function App() {
   }, [])
 
   if (signin) return <SignIn token={signin.token} failed={signin.failed} account={account} onAccount={onAccount} />
+  // The root is the landing page for a visitor and Draft once signed in.
+  if (landing && account === undefined) return null
+  if (landing && account === null) return <Landing />
 
   return (
     <div className="app">

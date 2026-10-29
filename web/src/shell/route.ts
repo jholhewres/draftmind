@@ -17,7 +17,9 @@ const isTab = (id: string): id is Tab => (tabs as readonly string[]).includes(id
 // The sign-in screen: a link's token to spend, or Steam's failed return.
 export type SignInRoute = { token: string | null; failed: boolean }
 
-export type Route = { tab: Tab; hero: string | null; manual: boolean; signin?: SignInRoute }
+// landing is the root ("#/" or no hash): the landing page for a visitor,
+// Draft for a signed-in player.
+export type Route = { tab: Tab; hero: string | null; manual: boolean; signin?: SignInRoute; landing?: true }
 
 // "#/heroes" names the Heroes tab and "#/heroes/<slug>" a hero in it;
 // "#/draft/manual" is the draft board built by hand. "#/signin" is the
@@ -28,6 +30,7 @@ export function routeFromHash(hash: string): Route {
   const [id, sub, arg] = hash.replace(/^#\/?/, '').split('?')[0].split('/')
   if (id === 'signin')
     return { tab: 'draft', hero: null, manual: false, signin: { token: sub === 'link' && arg ? arg : null, failed: sub === 'failed' } }
+  if (id === '') return { tab: 'draft', hero: null, manual: false, landing: true }
   if (!isTab(id)) return { tab: 'draft', hero: null, manual: false }
   return { tab: id, hero: id === 'heroes' && sub ? decodeSlug(sub) : null, manual: id === 'draft' && sub === 'manual' }
 }

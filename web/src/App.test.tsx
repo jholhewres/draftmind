@@ -4,7 +4,7 @@ import App from './App'
 import I18nProvider from './I18nProvider'
 
 beforeEach(() => {
-  window.location.hash = ''
+  window.location.hash = '#/draft'
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
     if (String(input).startsWith('/api/heroes/')) return new Response('{}', { status: 404 })
     const body = String(input).endsWith('/api/heroes') ? { patch: '7.41', heroes: [] } : { status: 'ok', database: 'up' }
