@@ -17,6 +17,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/jholhewres/draftmind/api/internal/budget"
 )
 
 // Outcomes of a call, as logged.
@@ -249,6 +251,9 @@ type outcome struct {
 // answer is missing or mistyped, the endpoint fails or the deadline passes.
 // Each call is logged once, whatever its outcome.
 func (c *Client) Ask(ctx context.Context, req Request) (Result, error) {
+	if err := budget.Check(ctx); err != nil {
+		return Result{}, err // no call made, nothing to log
+	}
 	start := time.Now()
 	wire := wireRequest{
 		Model: c.Model, State: req.State, Questions: req.Questions,
@@ -276,6 +281,7 @@ func (c *Client) Ask(ctx context.Context, req Request) (Result, error) {
 		o.err = fmt.Errorf("decision: no answer within %v: %w", c.Deadline, ctx.Err())
 	}
 	c.record(ctx, req, logged, start, o, hedged)
+	budget.Add(ctx, o.res.Usage.Cost)
 	return o.res, o.err
 }
 

@@ -15,6 +15,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/jholhewres/draftmind/api/internal/catalog"
+
+	"github.com/jholhewres/draftmind/api/internal/budget"
 )
 
 // Vision reads the draft with a vision model on OpenRouter's chat
@@ -71,6 +73,9 @@ func (v *Vision) Read(ctx context.Context, img image.Image, heroes []catalog.Her
 // ask sends img with the prompt and returns the provider's body, the
 // answer held to schema.
 func (v *Vision) ask(ctx context.Context, img image.Image, prompt, name string, schema map[string]any, maxTokens int) ([]byte, error) {
+	if err := budget.Check(ctx); err != nil {
+		return nil, err
+	}
 	photo := encodeJPEG(toRGB(img).forJev(), qualityPhoto) // the same size limits suit the vision model
 	body, err := json.Marshal(map[string]any{
 		"model": v.Model,
@@ -106,6 +111,14 @@ func (v *Vision) ask(ctx context.Context, img image.Image, prompt, name string, 
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("photo: vision: HTTP %d after %v: %s", resp.StatusCode, time.Since(start).Round(time.Millisecond), v.snippet(raw))
+	}
+	var usage struct {
+		Usage struct {
+			Cost *float64 `json:"cost"`
+		} `json:"usage"`
+	}
+	if json.Unmarshal(raw, &usage) == nil {
+		budget.Add(ctx, usage.Usage.Cost)
 	}
 	return raw, nil
 }

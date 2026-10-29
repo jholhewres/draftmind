@@ -9,6 +9,8 @@ import (
 	"strconv"
 
 	"github.com/jholhewres/draftmind/api/internal/decision"
+
+	"github.com/jholhewres/draftmind/api/internal/budget"
 )
 
 // JevCandidates is how many of the ranking's top heroes Jev chooses among.
@@ -24,6 +26,7 @@ const (
 	ReasonUnavailable   = "unavailable"    // no decision model is configured
 	ReasonFewCandidates = "few_candidates" // nothing to choose between
 	ReasonLowConfidence = "low_confidence" // Jev answered below MinConfidence; its answer is only logged
+	ReasonBudget        = "budget"         // the model spend cap is used up
 )
 
 // MinConfidence is the least confidence Jev's choice needs to reorder the
@@ -121,6 +124,9 @@ func Decide(ctx context.Context, jev Asker, ds Dataset, d Draft, ranked []Sugges
 		State:     state,
 		Questions: map[string]decision.Question{"pick": decision.Choice(pickInstructions, options)},
 	})
+	if errors.Is(err, budget.ErrOverCap) {
+		return fallback(ReasonBudget)
+	}
 	if errors.Is(err, context.DeadlineExceeded) {
 		return fallback(ReasonTimeout)
 	}

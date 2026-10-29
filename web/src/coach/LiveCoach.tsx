@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { sendLiveFrame, type MatchMessage, type MatchSession } from '../api'
+import { sendLiveFrame, type BudgetUse, type MatchMessage, type MatchSession } from '../api'
+import BudgetMeter from '../draft/BudgetMeter'
 import { useI18n } from '../i18n'
 import { canShareScreen, NotAWindow, shareWindow } from '../draft/share'
 import { usePersona } from '../settings/persona'
@@ -20,7 +21,7 @@ function tickSeconds(): number {
   return DEFAULT_TICK_S
 }
 
-type Stats = { ticks: number; spoken: number; cost: number }
+type Stats = { ticks: number; spoken: number; cost: number; budget?: BudgetUse }
 
 // The live coach during a match (ADR-0014): with the game window shared,
 // one frame every tick goes to the server when the screen changed and looks
@@ -79,7 +80,7 @@ export default function LiveCoach({ session, onLine }: { session: MatchSession; 
               stop(stream)
               return
             }
-            setStats((s) => ({ ticks: s.ticks + 1, spoken: s.spoken + (r.message ? 1 : 0), cost: s.cost + (r.cost ?? 0) }))
+            setStats((s) => ({ ticks: s.ticks + 1, spoken: s.spoken + (r.message ? 1 : 0), cost: s.cost + (r.cost ?? 0), budget: r.budget ?? s.budget }))
             if (r.message) lineRef.current(r.message)
             // The match has a result: the coach stops looking.
             if (r.reason === 'ended') stop(stream)
@@ -118,6 +119,7 @@ export default function LiveCoach({ session, onLine }: { session: MatchSession; 
             {t('live.on')}
           </span>
           <span className="muted live-stats">{t('liveCoach.stats', { ticks: stats.ticks, spoken: stats.spoken, cost })}</span>
+          <BudgetMeter budget={stats.budget} />
           <button type="button" className="chip live-stop" onClick={() => stop()}>
             {t('live.stop')}
           </button>

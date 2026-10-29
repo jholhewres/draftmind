@@ -134,7 +134,7 @@ export default function CoachChat({ session, pushed = [] }: { session: MatchSess
     if (l.kind === 'followup') return t('coach.followup')
     if (!l.text && l.reason === 'quick') return t(l.items?.length ? 'coach.quickItems' : 'coach.quickItemsNone')
     if (!l.text && l.reason?.startsWith('live:')) return t(liveText[l.reason.slice(5)] ?? 'coach.template', { item: l.items?.[0]?.name ?? '' })
-    return l.text || t('coach.template')
+    return l.text || t(l.reason === 'budget' ? 'coach.budget' : 'coach.template')
   }
 
   // Runs one coach turn; a spoken turn adds its transcript when the server

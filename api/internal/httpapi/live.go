@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/jholhewres/draftmind/api/internal/match"
+
+	"github.com/jholhewres/draftmind/api/internal/budget"
 )
 
 // DefaultLiveLimit allows a tick every 10 s per client, with a small burst:
@@ -24,6 +26,8 @@ type liveResponse struct {
 	match.LiveDecision
 	// Message is the stored coach message when the tick spoke.
 	Message *match.Message `json:"message,omitempty"`
+	// Budget is how much of the session's model spend cap is used.
+	Budget *budgetUse `json:"budget,omitempty"`
 }
 
 // liveTick serves POST /api/match/{id}/live: one frame of the shared game
@@ -84,6 +88,9 @@ func (s *Server) liveTick(w http.ResponseWriter, r *http.Request) {
 		} else {
 			out.Message = &m
 		}
+	}
+	if spent, capUSD, ok := budget.Used(r.Context()); ok {
+		out.Budget = &budgetUse{Spent: spent, Cap: capUSD}
 	}
 	attrs := []any{"session", sess.ID, "speak", d.Speak, "event", d.Event, "reason", d.Reason}
 	if d.Cost != nil {

@@ -12,6 +12,7 @@ coverage.*
 # Web
 node_modules/
 /web/dist/
+/web/e2e-dist/
 /web/test-results/
 /web/playwright-report/
 *.tsbuildinfo

@@ -12,6 +12,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/jholhewres/draftmind/api/internal/persona"
+
+	"github.com/jholhewres/draftmind/api/internal/budget"
 )
 
 // Categories a player's message can be about; other is anything else the
@@ -149,6 +151,8 @@ func (w *Writer) Answer(ctx context.Context, b AnswerBrief) Answer {
 	call.Latency = time.Since(start)
 	a := Answer{Text: text, Source: SourceWriter}
 	switch {
+	case errors.Is(err, budget.ErrOverCap):
+		return Answer{Source: SourceTemplate, Reason: ReasonBudget}
 	case errors.Is(err, context.DeadlineExceeded):
 		call.Outcome, call.Error, a = OutcomeTimeout, err.Error(), Answer{Source: SourceTemplate, Reason: ReasonTimeout}
 	case err != nil:

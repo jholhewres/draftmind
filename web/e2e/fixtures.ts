@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { test as base, expect, type Locator, type Page } from '@playwright/test'
+import { previewURL } from '../playwright.config.ts'
 import ranking from './fixtures/suggest.json' with { type: 'json' }
 
 const fixture = (name: string) => path.join(import.meta.dirname, 'fixtures', name)
@@ -55,7 +56,7 @@ export const test = base.extend<Fixtures>({
     const escaped: string[] = []
     await page.route('**/*', (route) => {
       const url = route.request().url()
-      if (url.startsWith(baseURL!)) return route.fallback()
+      if (url.startsWith(baseURL!) || url.startsWith(previewURL)) return route.fallback()
       escaped.push(url)
       return route.abort()
     })

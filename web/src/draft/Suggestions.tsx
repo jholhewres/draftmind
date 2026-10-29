@@ -15,6 +15,7 @@ const fallbackReason: Record<FallbackReason, MessageKey> = {
   unavailable: 'draft.source.unavailable',
   few_candidates: 'draft.source.fewCandidates',
   low_confidence: 'draft.source.lowConfidence',
+  budget: 'draft.source.budget',
 }
 
 type Props = SuggestStream & {

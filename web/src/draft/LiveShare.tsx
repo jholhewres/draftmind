@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import type { StreamRead } from '../api'
+import type { BudgetUse, StreamRead } from '../api'
+import BudgetMeter from './BudgetMeter'
 import { useI18n } from '../i18n'
 import { signature, watcher } from './frameDiff'
 import PhotoSuggest from './PhotoSuggest'
@@ -65,13 +66,13 @@ function useLiveFrames(stream: MediaStream, onFrame: (f: File) => void, onEnd: (
 export default function LiveDraft({ stream, onStop }: { stream: MediaStream; onStop: () => void }) {
   const { t, locale } = useI18n()
   const [frame, setFrame] = useState<File | null>(null)
-  const [reads, setReads] = useState({ count: 0, cost: 0 })
+  const [reads, setReads] = useState<{ count: number; cost: number; budget?: BudgetUse }>({ count: 0, cost: 0 })
   const stop = () => {
     stream.getTracks().forEach((tr) => tr.stop())
     onStop()
   }
   useLiveFrames(stream, setFrame, onStop)
-  const onRead = (r: StreamRead) => setReads((c) => ({ count: c.count + 1, cost: c.cost + (r.cost ?? 0) }))
+  const onRead = (r: StreamRead) => setReads((c) => ({ count: c.count + 1, cost: c.cost + (r.cost ?? 0), budget: r.budget ?? c.budget }))
   const label = stream.getVideoTracks()[0]?.label ?? ''
   const cost = new Intl.NumberFormat(locale, { style: 'currency', currency: 'USD', maximumFractionDigits: 3 }).format(reads.cost)
 
@@ -86,6 +87,7 @@ export default function LiveDraft({ stream, onStop }: { stream: MediaStream; onS
           {label ? t('live.window', { name: label }) + ' · ' : ''}
           {t('live.reads', { count: reads.count, cost })}
         </span>
+        <BudgetMeter budget={reads.budget} />
         <button type="button" className="chip live-stop" onClick={stop}>
           {t('live.stop')}
         </button>

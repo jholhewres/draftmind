@@ -9,6 +9,8 @@ import (
 
 	"github.com/jholhewres/draftmind/api/internal/match"
 	"github.com/jholhewres/draftmind/api/internal/writer"
+
+	"github.com/jholhewres/draftmind/api/internal/budget"
 )
 
 // WithTranscriber turns voice clips into text; without it the voice route answers 503.
@@ -67,6 +69,9 @@ func (s *Server) matchVoice(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case errors.Is(err, writer.ErrNoSpeech) || (err == nil && text == ""):
 		writeJSON(w, http.StatusUnprocessableEntity, map[string]string{"error": "no speech in the clip"})
+		return
+	case errors.Is(err, budget.ErrOverCap):
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": errOverCap})
 		return
 	case err != nil:
 		if !errors.Is(err, context.Canceled) {

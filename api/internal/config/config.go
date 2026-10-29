@@ -4,8 +4,10 @@ package config
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net/netip"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -36,6 +38,8 @@ type Config struct {
 	MailFrom          string
 	WebDir            string       // the web build served at /; empty serves the API alone
 	TrustedProxies    []netip.Addr // TRUSTED_PROXY: proxies whose X-Real-IP / X-Forwarded-For is believed
+	SessionBudgetUSD  float64      // MODEL_BUDGET_SESSION_USD: model spend per match session per day; 0 is off
+	ClientBudgetUSD   float64      // MODEL_BUDGET_CLIENT_USD: model spend per client (account or IP) per day; 0 is off
 }
 
 // Load reads the environment, applying defaults where a value is optional.
@@ -100,6 +104,16 @@ func load(getenv func(string) string) (Config, error) {
 			return c, fmt.Errorf("%s must be on or off, not %q", f.key, v)
 		}
 	}
+	for _, f := range []struct {
+		key, def string
+		dst      *float64
+	}{{"MODEL_BUDGET_SESSION_USD", "0.25", &c.SessionBudgetUSD}, {"MODEL_BUDGET_CLIENT_USD", "1", &c.ClientBudgetUSD}} {
+		v, err := strconv.ParseFloat(get(f.key, f.def), 64)
+		if err != nil || v < 0 || math.IsNaN(v) || math.IsInf(v, 0) {
+			return c, fmt.Errorf("%s must be a number of USD, 0 or more", f.key)
+		}
+		*f.dst = v
+	}
 	if c.DatabaseURL == "" {
 		return c, errors.New("DATABASE_URL is required")
 	}
@@ -114,6 +128,6 @@ func load(getenv func(string) string) (Config, error) {
 
 // String describes the config without secrets.
 func (c Config) String() string {
-	return fmt.Sprintf("addr=%s public_url=%s decision_model=%s openrouter_key_set=%t smtp_set=%t sync_schedule=%t web_dir=%q trusted_proxies=%v",
-		c.HTTPAddr, c.PublicURL, c.DecisionModel, c.OpenRouterAPIKey != "", c.SMTPHost != "", c.SyncSchedule, c.WebDir, c.TrustedProxies)
+	return fmt.Sprintf("addr=%s public_url=%s decision_model=%s openrouter_key_set=%t smtp_set=%t sync_schedule=%t web_dir=%q trusted_proxies=%v budget_session_usd=%v budget_client_usd=%v",
+		c.HTTPAddr, c.PublicURL, c.DecisionModel, c.OpenRouterAPIKey != "", c.SMTPHost != "", c.SyncSchedule, c.WebDir, c.TrustedProxies, c.SessionBudgetUSD, c.ClientBudgetUSD)
 }

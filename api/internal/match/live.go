@@ -2,6 +2,7 @@ package match
 
 import (
 	"context"
+	"errors"
 	"slices"
 	"sync"
 	"time"
@@ -11,6 +12,8 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/items"
 	"github.com/jholhewres/draftmind/api/internal/persona"
 	"github.com/jholhewres/draftmind/api/internal/writer"
+
+	"github.com/jholhewres/draftmind/api/internal/budget"
 )
 
 // The live coach (ADR-0014): every tick the browser sends one frame of the
@@ -40,6 +43,7 @@ const (
 	LiveReasonSilent   = "silent"   // Jev chose silent
 	LiveReasonUnsure   = "unsure"   // Jev's pick was under LiveMinConfidence
 	LiveReasonError    = "error"    // the call failed or was late
+	LiveReasonBudget   = "budget"   // the model spend cap is used up
 	LiveReasonCooldown = "cooldown" // the same event spoke within LiveCooldown
 	LiveReasonCap      = "cap"      // an event already spoke in the last minute
 	LiveReasonTooSoon  = "too_soon" // the last tick was under LiveMinInterval ago
@@ -133,6 +137,10 @@ func (l *Live) Tick(ctx context.Context, s Session, f LiveFrame, now time.Time) 
 	defer cancel()
 	res, err := l.Jev.Ask(ctx, liveRequest(s, f))
 	d := LiveDecision{Cost: res.Usage.Cost}
+	if errors.Is(err, budget.ErrOverCap) {
+		d.Reason = LiveReasonBudget
+		return d
+	}
 	if err != nil {
 		d.Reason = LiveReasonError
 		return d

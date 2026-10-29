@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/jholhewres/draftmind/api/internal/auth"
+	"github.com/jholhewres/draftmind/api/internal/budget"
 	"github.com/jholhewres/draftmind/api/internal/catalog"
 	"github.com/jholhewres/draftmind/api/internal/draft"
 	"github.com/jholhewres/draftmind/api/internal/items"
@@ -80,6 +81,9 @@ type Server struct {
 	passwordLimit           Limit // and per address
 	now                     func() time.Time
 	reads                   chan struct{} // a slot per photo read running
+
+	meter                       *budget.Meter // model spend per session and client; nil: uncapped
+	sessionBudget, clientBudget float64
 }
 
 // New builds the server.
@@ -151,18 +155,18 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/sync/status", s.syncStatus)
 	// These spend money on model calls and need no login.
 	suggest, read := newLimiter(s.suggestLimit, s.now), newLimiter(s.readLimit, s.now)
-	mux.Handle("POST /api/draft/suggest", suggest.wrap(http.HandlerFunc(s.suggest)))
-	mux.Handle("POST /api/draft/stream", suggest.wrap(s.stream(read)))
-	mux.Handle("POST /api/draft/read", read.wrap(http.HandlerFunc(s.readDraft)))
+	mux.Handle("POST /api/draft/suggest", suggest.wrap(s.metered(http.HandlerFunc(s.suggest))))
+	mux.Handle("POST /api/draft/stream", suggest.wrap(s.metered(s.stream(read))))
+	mux.Handle("POST /api/draft/read", read.wrap(s.metered(http.HandlerFunc(s.readDraft))))
 	mux.Handle("POST /api/draft/build", suggest.wrap(http.HandlerFunc(s.build)))
 	mux.Handle("POST /api/match", suggest.wrap(http.HandlerFunc(s.startMatch)))
 	mux.HandleFunc("GET /api/match/{id}", s.getMatch)
-	mux.Handle("POST /api/match/{id}/messages", suggest.wrap(http.HandlerFunc(s.matchMessage)))
-	mux.Handle("POST /api/match/{id}/live", newLimiter(DefaultLiveLimit, s.now).wrap(http.HandlerFunc(s.liveTick)))
-	mux.Handle("POST /api/match/{id}/voice", newLimiter(s.voiceLimit, s.now).wrap(http.HandlerFunc(s.matchVoice)))
-	mux.Handle("POST /api/match/{id}/end/parse", suggest.wrap(http.HandlerFunc(s.parseResult)))
-	mux.Handle("POST /api/match/{id}/end/read", read.wrap(http.HandlerFunc(s.readEnd)))
-	mux.Handle("POST /api/match/{id}/result", suggest.wrap(http.HandlerFunc(s.saveResult)))
+	mux.Handle("POST /api/match/{id}/messages", suggest.wrap(s.metered(http.HandlerFunc(s.matchMessage))))
+	mux.Handle("POST /api/match/{id}/live", newLimiter(DefaultLiveLimit, s.now).wrap(s.metered(http.HandlerFunc(s.liveTick))))
+	mux.Handle("POST /api/match/{id}/voice", newLimiter(s.voiceLimit, s.now).wrap(s.metered(http.HandlerFunc(s.matchVoice))))
+	mux.Handle("POST /api/match/{id}/end/parse", suggest.wrap(s.metered(http.HandlerFunc(s.parseResult))))
+	mux.Handle("POST /api/match/{id}/end/read", read.wrap(s.metered(http.HandlerFunc(s.readEnd))))
+	mux.Handle("POST /api/match/{id}/result", suggest.wrap(s.metered(http.HandlerFunc(s.saveResult))))
 	mux.Handle("GET /api/me/matches", s.requireUser(http.HandlerFunc(s.myMatches)))
 	mux.Handle("GET /api/me/persona", s.requireUser(http.HandlerFunc(s.myPersona)))
 	mux.Handle("PUT /api/me/persona", s.requireUser(http.HandlerFunc(s.savePersona)))
@@ -184,7 +188,7 @@ func (s *Server) Handler() http.Handler {
 	if s.webDir != "" {
 		mux.Handle("GET /", s.web())
 	}
-	return s.realIP(mux)
+	return securityHeaders(s.realIP(mux))
 }
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {

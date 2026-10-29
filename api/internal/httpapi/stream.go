@@ -16,6 +16,8 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/draft"
 	"github.com/jholhewres/draftmind/api/internal/photo"
 	"github.com/jholhewres/draftmind/api/internal/writer"
+
+	"github.com/jholhewres/draftmind/api/internal/budget"
 )
 
 // TipHeroes is how many of the top heroes get a written tip.
@@ -39,6 +41,8 @@ type readEvent struct {
 	// Cost of the read in USD as the providers report it, so the live read
 	// can show what a session spent; omitted when none reported one.
 	Cost *float64 `json:"cost,omitempty"`
+	// Budget is how much of the model spend cap the client used.
+	Budget *budgetUse `json:"budget,omitempty"`
 }
 
 type rankingEvent struct {
@@ -159,7 +163,11 @@ func (s *Server) streamRead(w http.ResponseWriter, r *http.Request, readLim *lim
 		return nil, status, err
 	}
 	read = photo.FlagUncalibrated(read, q.Get("mode"))
-	return &readEvent{Patch: patch, Read: read, Draft: seat(read, team, role), Cost: read.Cost}, http.StatusOK, nil
+	ev := &readEvent{Patch: patch, Read: read, Draft: seat(read, team, role), Cost: read.Cost}
+	if spent, capUSD, ok := budget.Used(r.Context()); ok {
+		ev.Budget = &budgetUse{Spent: spent, Cap: capUSD}
+	}
+	return ev, http.StatusOK, nil
 }
 
 // seat places the player in a read draft as the photo screen does: their

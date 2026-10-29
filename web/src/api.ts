@@ -110,7 +110,7 @@ export type Suggestion = {
 }
 
 // Why the code ranking was kept instead of Jev's order.
-export type FallbackReason = 'timeout' | 'error' | 'unavailable' | 'few_candidates' | 'low_confidence'
+export type FallbackReason = 'timeout' | 'error' | 'unavailable' | 'few_candidates' | 'low_confidence' | 'budget'
 
 // source is 'jev' when Jev ordered the list, else the code ranking stands
 // with its reason (ADR-0003: fail open).
@@ -166,7 +166,7 @@ const asRead = (body: Partial<DraftRead>): DraftRead => ({
 
 // The draft a photo shows, with the draft the server seated the player in.
 // cost is the read's USD cost when the providers reported one.
-export type StreamRead = DraftRead & { draft: DraftInput; cost?: number }
+export type StreamRead = DraftRead & { draft: DraftInput; cost?: number; budget?: BudgetUse }
 
 export type StreamEvent =
   | { type: 'read'; read: StreamRead }
@@ -194,7 +194,9 @@ function asEvent(name: string, data: string): StreamEvent | null {
     case 'read': {
       const d = (body.draft ?? {}) as Partial<DraftInput>
       const draft = { allies: ids(d.allies), enemies: ids(d.enemies), bans: ids(d.bans), role: d.role ?? 0 }
-      return { type: 'read', read: { ...asRead(body as Partial<DraftRead>), draft, cost: typeof body.cost === 'number' ? body.cost : undefined } }
+      const b = body.budget as Partial<BudgetUse> | undefined
+      const budget = typeof b?.spent === 'number' && typeof b?.cap === 'number' ? { spent: b.spent, cap: b.cap } : undefined
+      return { type: 'read', read: { ...asRead(body as Partial<DraftRead>), draft, cost: typeof body.cost === 'number' ? body.cost : undefined, budget } }
     }
     case 'ranking':
       return {
@@ -706,7 +708,10 @@ export async function fetchMyMode(signal?: AbortSignal): Promise<GameMode | '' |
 
 // One live coach tick's outcome (ADR-0014); message is the stored coach
 // line when the tick spoke.
-export type LiveTick = { speak: boolean; event?: string; reason?: string; cost?: number; message?: MatchMessage }
+// How much of the model spend cap is used, in USD.
+export type BudgetUse = { spent: number; cap: number }
+
+export type LiveTick = { speak: boolean; event?: string; reason?: string; cost?: number; message?: MatchMessage; budget?: BudgetUse }
 
 // Sends one frame of the shared window to the live coach. 503 means the
 // live coach is off on this server.

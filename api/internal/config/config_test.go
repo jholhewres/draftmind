@@ -57,3 +57,19 @@ func TestLoadDefaultsTheWriterToAFastCheapModel(t *testing.T) {
 		t.Fatalf("writer model %q, want openai/gpt-6-luna", c.WriterModel)
 	}
 }
+
+func TestLoadReadsTheModelSpendCaps(t *testing.T) {
+	c, err := load(env(map[string]string{"DATABASE_URL": "postgres://x"}))
+	if err != nil || c.SessionBudgetUSD != 0.25 || c.ClientBudgetUSD != 1 {
+		t.Fatalf("defaults %v/%v: %v, want 0.25 and 1", c.SessionBudgetUSD, c.ClientBudgetUSD, err)
+	}
+	c, err = load(env(map[string]string{"DATABASE_URL": "postgres://x", "MODEL_BUDGET_SESSION_USD": "0.5", "MODEL_BUDGET_CLIENT_USD": "0"}))
+	if err != nil || c.SessionBudgetUSD != 0.5 || c.ClientBudgetUSD != 0 {
+		t.Fatalf("set %v/%v: %v", c.SessionBudgetUSD, c.ClientBudgetUSD, err)
+	}
+	for _, bad := range []string{"-1", "cheap", "NaN", "Inf"} {
+		if _, err := load(env(map[string]string{"DATABASE_URL": "postgres://x", "MODEL_BUDGET_SESSION_USD": bad})); err == nil {
+			t.Errorf("MODEL_BUDGET_SESSION_USD=%s accepted", bad)
+		}
+	}
+}

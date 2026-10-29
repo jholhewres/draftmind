@@ -52,3 +52,30 @@ func TestWebServesTheBuildWithSPAFallbackAndLeavesAPIAlone(t *testing.T) {
 		t.Fatalf("POST /api/health: %d, want 405", rec.Code)
 	}
 }
+
+func TestEveryResponseCarriesTheSecurityHeaders(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "index.html"), []byte("<!doctype html>app"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	h := New(fakeDB{}, nil, quietLog()).WithWeb(dir).Handler()
+	for _, path := range []string{"/", "/heroes/axe", "/api/health", "/api/nope"} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+		csp := rec.Header().Get("Content-Security-Policy")
+		for _, want := range []string{"default-src 'self'", "script-src 'self'", "style-src 'self'",
+			"img-src 'self' https://cdn.cloudflare.steamstatic.com", "font-src 'self'", "connect-src 'self'",
+			"object-src 'none'", "frame-ancestors 'none'"} {
+			if !strings.Contains(csp, want) {
+				t.Errorf("%s: CSP %q lacks %q", path, csp, want)
+			}
+		}
+		if strings.Contains(csp, "unsafe") {
+			t.Errorf("%s: CSP %q allows unsafe sources", path, csp)
+		}
+		if rec.Header().Get("X-Content-Type-Options") != "nosniff" || rec.Header().Get("Referrer-Policy") != "strict-origin-when-cross-origin" ||
+			rec.Header().Get("X-Frame-Options") != "DENY" {
+			t.Errorf("%s: headers %v", path, rec.Header())
+		}
+	}
+}

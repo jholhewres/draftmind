@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/jholhewres/draftmind/api/internal/photo"
+
+	"github.com/jholhewres/draftmind/api/internal/budget"
 )
 
 // Photo limits: the browser downscales to 1600 px, so a larger photo is
@@ -76,6 +78,9 @@ func (s *Server) readPhoto(ctx context.Context, w http.ResponseWriter, data []by
 	}
 	start := time.Now()
 	read, err := s.reader.Read(ctx, img, heroes)
+	if errors.Is(err, budget.ErrOverCap) {
+		return "", photo.Read{}, http.StatusTooManyRequests, errors.New(errOverCap)
+	}
 	if err != nil {
 		s.log.Warn("draft read failed", "err", err, "latency", time.Since(start))
 		return "", photo.Read{}, http.StatusBadGateway, errors.New("the photo could not be read; build the draft by hand")

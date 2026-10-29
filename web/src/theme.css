@@ -697,6 +697,9 @@ footer p { margin: 0 0 4px; }
 .live-tag { display: inline-flex; align-items: center; gap: 8px; color: var(--radiant); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-size: 13px; }
 .live-stats { font-size: 13px; flex: 1 1 12rem; }
 .live-stop { margin-left: auto; }
+.live-budget { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.live-budget meter { width: 64px; height: 6px; }
+.live-budget.out { color: var(--gold); }
 .live-wait { padding: 24px 16px; }
 /* Live coach bar above the build, and the tag on its chat lines (ADR-0014). */
 .coach-live { position: static; border: 1px solid var(--border); border-radius: 12px; }

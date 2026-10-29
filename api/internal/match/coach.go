@@ -15,6 +15,8 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/items"
 	"github.com/jholhewres/draftmind/api/internal/persona"
 	"github.com/jholhewres/draftmind/api/internal/writer"
+
+	"github.com/jholhewres/draftmind/api/internal/budget"
 )
 
 // Situation is a message as the coach read it: the parsed category and
@@ -118,6 +120,9 @@ func (c *Coach) Reply(ctx context.Context, s Session, text, lang string, p perso
 		r := Reply{Kind: "answer", TextSource: writer.SourceTemplate, Reason: writer.ReasonError}
 		if errors.Is(err, context.DeadlineExceeded) {
 			r.Reason = writer.ReasonTimeout
+		}
+		if errors.Is(err, budget.ErrOverCap) {
+			r.Reason = writer.ReasonBudget
 		}
 		emit("answer", r)
 		return r, nil

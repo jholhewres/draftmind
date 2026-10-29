@@ -18,6 +18,8 @@ import (
 	"time"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/jholhewres/draftmind/api/internal/budget"
 )
 
 // MaxTip is the longest tip, in characters, that stands.
@@ -35,6 +37,7 @@ const (
 	ReasonTimeout     = "timeout"     // the writer did not answer in time
 	ReasonError       = "error"       // the writer failed or answered badly
 	ReasonUnavailable = "unavailable" // no writer is configured
+	ReasonBudget      = "budget"      // the model spend cap is used up
 )
 
 // Outcomes of a call, as logged.
@@ -136,6 +139,8 @@ func (w *Writer) Tip(ctx context.Context, b Brief) Tip {
 	call.Latency = time.Since(start)
 	tip := Tip{HeroID: b.HeroID, Text: text, Source: SourceWriter}
 	switch {
+	case errors.Is(err, budget.ErrOverCap):
+		return Template(b.HeroID, ReasonBudget) // no call made, nothing to log
 	case errors.Is(err, context.DeadlineExceeded):
 		call.Outcome, call.Error, tip = OutcomeTimeout, err.Error(), Template(b.HeroID, ReasonTimeout)
 	case err != nil:
@@ -171,6 +176,9 @@ func (w *Writer) complete(ctx context.Context, b Brief, call *Call) (string, err
 // chat sends one system and one user message and returns the text answer;
 // user is a string or a list of content parts. asJSON asks for a JSON object.
 func (w *Writer) chat(ctx context.Context, system string, user any, maxTokens int, asJSON bool, call *Call) (string, error) {
+	if err := budget.Check(ctx); err != nil {
+		return "", err
+	}
 	payload := map[string]any{
 		"model": w.Model,
 		"messages": []any{
@@ -230,6 +238,7 @@ func (w *Writer) chat(ctx context.Context, system string, user any, maxTokens in
 		return "", fmt.Errorf("writer: answer is not JSON: %s", snippet(w.redact(raw)))
 	}
 	call.AnsweredModel, call.InputTokens, call.OutputTokens, call.Cost = out.Model, out.Usage.PromptTokens, out.Usage.CompletionTokens, out.Usage.Cost
+	budget.Add(ctx, out.Usage.Cost)
 	if len(out.Choices) == 0 || out.Choices[0].Message.Content == nil {
 		return "", fmt.Errorf("writer: no text: %s", snippet(w.redact(raw)))
 	}

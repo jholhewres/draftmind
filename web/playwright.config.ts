@@ -3,6 +3,8 @@ import { defineConfig, devices } from '@playwright/test'
 // Visual tests run against the Vite dev server; e2e/fixtures.ts mocks the API.
 const port = Number(process.env.E2E_PORT ?? 5179)
 const baseURL = `http://127.0.0.1:${port}`
+// The production build with the server's security headers.
+export const previewURL = `http://127.0.0.1:${port + 1}`
 
 export default defineConfig({
   testDir: './e2e',
@@ -29,9 +31,17 @@ export default defineConfig({
     { name: 'phone', use: { ...devices['Pixel 5'], viewport: { width: 390, height: 844 } } },
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
   ],
-  webServer: {
-    command: `pnpm exec vite --host 127.0.0.1 --port ${port} --strictPort`,
-    url: baseURL,
-    reuseExistingServer: false,
-  },
+  webServer: [
+    {
+      command: `pnpm exec vite --host 127.0.0.1 --port ${port} --strictPort`,
+      url: baseURL,
+      reuseExistingServer: false,
+    },
+    {
+      command: `pnpm exec vite build --outDir e2e-dist --emptyOutDir && pnpm exec vite preview --outDir e2e-dist --host 127.0.0.1 --port ${port + 1} --strictPort`,
+      url: previewURL,
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+  ],
 })

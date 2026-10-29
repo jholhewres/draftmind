@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/jholhewres/draftmind/api/internal/persona"
+
+	"github.com/jholhewres/draftmind/api/internal/budget"
 )
 
 // Results a match can end with.
@@ -100,6 +102,9 @@ func (w *Writer) Notes(ctx context.Context, b NotesBrief) Notes {
 	call.Latency, call.Output = time.Since(start), raw
 	out := Notes{Items: []string{}, Source: SourceTemplate}
 	switch {
+	case errors.Is(err, budget.ErrOverCap):
+		out.Reason = ReasonBudget
+		return out
 	case errors.Is(err, context.DeadlineExceeded):
 		call.Outcome, call.Error, out.Reason = OutcomeTimeout, err.Error(), ReasonTimeout
 	case err != nil:

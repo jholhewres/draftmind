@@ -1,0 +1,1 @@
+default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https://cdn.cloudflare.steamstatic.com; font-src 'self'; connect-src 'self'; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'

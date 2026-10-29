@@ -76,7 +76,8 @@ func run(ctx context.Context, cmd string, log *slog.Logger) error {
 		matches := match.NewStore(pool)
 		srv := httpapi.New(pool, cat, log).WithMatches(matches).WithPersonas(persona.NewStore(pool)).
 			WithWeb(cfg.WebDir).WithTrustedProxies(cfg.TrustedProxies...).
-			WithGSI(gsi.NewStore(pool), matches).WithPublicURL(cfg.PublicURL)
+			WithGSI(gsi.NewStore(pool), matches).WithPublicURL(cfg.PublicURL).
+			WithBudget(cfg.SessionBudgetUSD, cfg.ClientBudgetUSD)
 		if cfg.OpenRouterAPIKey != "" {
 			jev := decision.New(cfg.OpenRouterBaseURL, cfg.OpenRouterAPIKey, cfg.DecisionModel,
 				cfg.DecisionProvider, decision.NewPGLog(pool, log))
