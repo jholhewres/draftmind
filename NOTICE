@@ -1,0 +1,76 @@
+Draftmind
+Copyright (c) 2026 Jhol Hewres
+
+The source code in this repository is licensed under the MIT License (see
+LICENSE). The material listed below is not covered by that license and stays
+under its owners' terms.
+
+Trademark and fair play
+-----------------------
+
+Dota 2, its hero names, portraits, artwork and game data are trademarks and
+copyrighted material of Valve Corporation. Draftmind is an independent fan
+tool. It is not affiliated with, sponsored or endorsed by Valve Corporation.
+It runs on a separate device or browser tab and never reads, modifies or
+overlays the game client. The name "Draftmind" and its logo do not use the
+Valve trademark.
+
+Valve material in this repository
+---------------------------------
+
+These test fixtures are synthetic images built from hero portraits served by
+the game's public image CDN. They exist only to test the photo reader:
+
+- api/testdata/photos/synthetic-*.jpg (rendered by
+  scripts/fixtures/make_fixtures.py)
+- web/e2e/fixtures/pick-photo.jpg
+
+api/internal/photo/testdata/endscreen.jpg and web/e2e/fixtures/end-screen.jpg
+are drawn text only (hero names and numbers, rendered by
+scripts/fixtures/make_endscreen.py). The other e2e images are plain gradients.
+
+At runtime the web app loads hero portraits and artwork from the game's
+public image CDN; they are not redistributed here.
+
+Data sources
+------------
+
+Game data is synced at runtime into the operator's database; none of it is
+bundled with the code.
+
+- dotaconstants, https://github.com/odota/dotaconstants
+  MIT License, Copyright (c) 2017 The OpenDota Project.
+  Hero ids, slugs, images, items and patches.
+- OpenDota API, https://www.opendota.com / https://docs.opendota.com
+  Hero stats, matchups and item popularity. Data provided by OpenDota; use is
+  subject to the OpenDota API terms (https://www.opendota.com/api-keys).
+- The game's public data feed on dota2.com (datafeed endpoints), operated by
+  Valve Corporation. Hero details, abilities, talents and patch notes.
+
+Fonts
+-----
+
+The fonts in web/public/fonts are licensed under the SIL Open Font License,
+Version 1.1. Each license file sits next to the font files.
+
+- Cinzel, Copyright 2020 The Cinzel Project Authors
+  (https://github.com/NDISCOVER/Cinzel), web/public/fonts/cinzel-OFL.txt
+- Barlow, Copyright 2017 The Barlow Project Authors
+  (https://github.com/jpt/barlow), web/public/fonts/barlow-OFL.txt
+- Barlow Condensed, Copyright 2017 The Barlow Project Authors
+  (https://github.com/jpt/barlow), web/public/fonts/barlow-condensed-OFL.txt
+
+Dependencies
+------------
+
+Go and npm dependencies are fetched at build time and keep their own
+licenses (MIT, BSD and Apache-2.0 style; see api/go.mod and
+web/package.json). None is vendored in this repository.
+
+Model providers
+---------------
+
+Draftmind calls models through OpenRouter (https://openrouter.ai), including
+TypeSafe's Jev models. Their use is subject to each provider's terms; no
+model weights or outputs are included here beyond small recorded responses
+used as test fixtures.
