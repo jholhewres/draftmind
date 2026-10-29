@@ -1,0 +1,110 @@
+{
+ "patch": "7.41",
+ "lowSampleGames": 100,
+ "goodAgainst": [
+  {
+   "id": 1,
+   "slug": "antimage",
+   "name": "Anti-Mage",
+   "primaryAttr": "agi",
+   "attackType": "Melee",
+   "roles": [
+    "Carry",
+    "Escape",
+    "Nuker"
+   ],
+   "img": "/apps/dota2/images/dota_react/heroes/antimage.png",
+   "icon": "/apps/dota2/images/dota_react/heroes/icons/antimage.png",
+   "delta": 3.1,
+   "games": 412,
+   "lowSample": false
+  },
+  {
+   "id": 5,
+   "slug": "crystal_maiden",
+   "name": "Crystal Maiden",
+   "primaryAttr": "int",
+   "attackType": "Ranged",
+   "roles": [
+    "Support",
+    "Disabler",
+    "Nuker"
+   ],
+   "img": "/apps/dota2/images/dota_react/heroes/crystal_maiden.png",
+   "icon": "/apps/dota2/images/dota_react/heroes/icons/crystal_maiden.png",
+   "delta": 2.8,
+   "games": 305,
+   "lowSample": false
+  },
+  {
+   "id": 4,
+   "slug": "bloodseeker",
+   "name": "Bloodseeker",
+   "primaryAttr": "agi",
+   "attackType": "Melee",
+   "roles": [
+    "Carry",
+    "Disabler",
+    "Nuker"
+   ],
+   "img": "/apps/dota2/images/dota_react/heroes/bloodseeker.png",
+   "icon": "/apps/dota2/images/dota_react/heroes/icons/bloodseeker.png",
+   "delta": 1.2,
+   "games": 64,
+   "lowSample": true
+  }
+ ],
+ "badAgainst": [
+  {
+   "id": 8,
+   "slug": "juggernaut",
+   "name": "Juggernaut",
+   "primaryAttr": "agi",
+   "attackType": "Melee",
+   "roles": [
+    "Carry",
+    "Pusher",
+    "Escape"
+   ],
+   "img": "/apps/dota2/images/dota_react/heroes/juggernaut.png",
+   "icon": "/apps/dota2/images/dota_react/heroes/icons/juggernaut.png",
+   "delta": -2.4,
+   "games": 350,
+   "lowSample": false
+  },
+  {
+   "id": 7,
+   "slug": "earthshaker",
+   "name": "Earthshaker",
+   "primaryAttr": "str",
+   "attackType": "Melee",
+   "roles": [
+    "Support",
+    "Initiator",
+    "Disabler"
+   ],
+   "img": "/apps/dota2/images/dota_react/heroes/earthshaker.png",
+   "icon": "/apps/dota2/images/dota_react/heroes/icons/earthshaker.png",
+   "delta": -1.8,
+   "games": 81,
+   "lowSample": true
+  },
+  {
+   "id": 6,
+   "slug": "drow_ranger",
+   "name": "Drow Ranger",
+   "primaryAttr": "agi",
+   "attackType": "Ranged",
+   "roles": [
+    "Carry",
+    "Disabler",
+    "Pusher"
+   ],
+   "img": "/apps/dota2/images/dota_react/heroes/drow_ranger.png",
+   "icon": "/apps/dota2/images/dota_react/heroes/icons/drow_ranger.png",
+   "delta": -0.9,
+   "games": 502,
+   "lowSample": false
+  }
+ ]
+}

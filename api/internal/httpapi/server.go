@@ -33,6 +33,8 @@ type Catalog interface {
 	Patches(ctx context.Context) ([]catalog.PatchSummary, error)
 	// PatchChanges returns catalog.ErrNotFound for a patch not synced.
 	PatchChanges(ctx context.Context, name, lang string) (catalog.PatchChanges, error)
+	// HeroCounters returns catalog.ErrNotFound for a hero the current patch lacks.
+	HeroCounters(ctx context.Context, slug string, n int) (catalog.Counters, error)
 }
 
 // Server wires the routes to their dependencies.
@@ -80,6 +82,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/heroes", s.listHeroes)
 	mux.HandleFunc("GET /api/heroes/{slug}", s.heroDetail)
 	mux.HandleFunc("GET /api/heroes/{slug}/history", s.heroHistory)
+	mux.HandleFunc("GET /api/heroes/{slug}/counters", s.heroCounters)
 	mux.HandleFunc("GET /api/patches", s.listPatches)
 	mux.HandleFunc("GET /api/patches/{name}", s.patchChanges)
 	// All three spend money on model calls and need no login.

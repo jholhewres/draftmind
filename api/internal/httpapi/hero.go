@@ -27,6 +27,23 @@ func (s *Server) heroDetail(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, d)
 }
 
+// countersShown is how many heroes each side of a hero's counters lists.
+const countersShown = 5
+
+func (s *Server) heroCounters(w http.ResponseWriter, r *http.Request) {
+	c, err := s.catalog.HeroCounters(r.Context(), r.PathValue("slug"), countersShown)
+	if errors.Is(err, catalog.ErrNotFound) {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "no such hero on the current patch"})
+		return
+	}
+	if err != nil {
+		s.log.Error("hero counters", "slug", r.PathValue("slug"), "err", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "could not load the hero's counters"})
+		return
+	}
+	writeJSON(w, http.StatusOK, c)
+}
+
 // pickLang chooses a synced language: the lang query parameter, else the
 // Accept-Language header by weight, else catalog.FallbackLang. A tag
 // matches exactly or by its primary language (pt-PT gets pt-BR).

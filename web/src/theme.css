@@ -340,3 +340,20 @@ footer p { margin: 0 0 4px; }
 @media (min-width: 1024px) {
   .patch-heroes, .patch-items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
 }
+
+/* Hero counters: the heroes it beats and the heroes that beat it. */
+.counter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.counter-side { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 10px; }
+.counter-side.good { background: rgba(156, 203, 74, 0.08); border: 1px solid rgba(156, 203, 74, 0.3); }
+.counter-side.bad { background: rgba(226, 85, 62, 0.08); border: 1px solid rgba(226, 85, 62, 0.32); }
+.counter-side h3 { margin: 0; font-size: 13px; font-weight: 600; }
+.counter-side.good h3 { color: #b5db72; }
+.counter-side.bad h3 { color: #f08a76; }
+.counter-side ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.counter-side a { display: flex; align-items: center; gap: 8px; color: var(--fg); text-decoration: none; font-size: 13px; font-variant-numeric: tabular-nums; }
+.counter-side a:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.counter-side img { width: 40px; height: 22px; object-fit: cover; border-radius: 3px; flex-shrink: 0; }
+.counter-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.low-sample { opacity: 0.55; }
+.low-sample .counter-delta { text-decoration: underline dotted; }
+.counter-note { margin: 0; font-size: 12px; }

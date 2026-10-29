@@ -3,6 +3,7 @@ import { fetchHero, fetchHeroHistory, heroImageBase, type HeroDetail, type HeroH
 import { useI18n } from '../i18n'
 import { en, type MessageKey } from '../locales/en'
 import NoteList from '../patches/NoteList'
+import Counters from './Counters'
 
 const attrLabel: Record<string, MessageKey> = {
   str: 'heroes.attr.str',
@@ -88,6 +89,7 @@ function Hero({ hero }: { hero: HeroDetail }) {
         </div>
       </section>
       {hero.hype && <p className="hero-hype">{hero.hype}</p>}
+      <Counters slug={hero.slug} />
       {!hero.stats ? (
         <p className="muted">{t('hero.notSynced')}</p>
       ) : (

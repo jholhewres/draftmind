@@ -263,3 +263,18 @@ export const fetchPatches = (signal?: AbortSignal) => getJSON<{ patches: PatchSu
 
 export const fetchPatch = (name: string, lang: string, signal?: AbortSignal) =>
   getJSON<PatchChanges>(`/api/patches/${encodeURIComponent(name)}?lang=${encodeURIComponent(lang)}`, signal)
+
+// A hero's record against one opponent on the current patch: its shrunk win
+// rate minus 50, in points; lowSample under lowSampleGames games.
+export type Counter = Hero & { delta: number; games: number; lowSample: boolean }
+
+export type Counters = { patch: string; lowSampleGames: number; goodAgainst: Counter[]; badAgainst: Counter[] }
+
+// The hero's counters, or null when the current patch has no such hero.
+export async function fetchCounters(slug: string, signal?: AbortSignal): Promise<Counters | null> {
+  const path = `/api/heroes/${encodeURIComponent(slug)}/counters`
+  const res = await fetch(path, { signal })
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
+  return (await res.json()) as Counters
+}
