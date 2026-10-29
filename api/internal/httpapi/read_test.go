@@ -14,6 +14,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/jholhewres/draftmind/api/internal/catalog"
 	"github.com/jholhewres/draftmind/api/internal/photo"
@@ -178,17 +179,22 @@ func TestDraftReadRefusesAPhotoLargerThanTheBrowserSends(t *testing.T) {
 	}
 }
 
-// blockingReader holds every read until released.
+// blockingReader holds every read until released, or until the test ends.
 type blockingReader struct {
-	stubReader
 	started chan struct{}
 	release chan struct{}
 }
 
-func (b *blockingReader) Read(ctx context.Context, img image.Image, heroes []catalog.Hero) (photo.Read, error) {
+func (b *blockingReader) Name() string { return "blocking" }
+
+func (b *blockingReader) Read(ctx context.Context, _ image.Image, heroes []catalog.Hero) (photo.Read, error) {
 	b.started <- struct{}{}
-	<-b.release
-	return b.stubReader.Read(ctx, img, heroes)
+	select {
+	case <-b.release:
+	case <-ctx.Done():
+		return photo.Read{}, ctx.Err()
+	}
+	return photo.Resolve([photo.Slots]photo.Guess{}, heroes, 0.5), nil
 }
 
 func TestDraftReadRunsAFewReadsAtOnceAndTurnsAwayTheRest(t *testing.T) {
@@ -201,7 +207,11 @@ func TestDraftReadRunsAFewReadsAtOnceAndTurnsAwayTheRest(t *testing.T) {
 		go func() { codes <- upload(t, srv, "image", file).Code }()
 	}
 	for range maxConcurrentReads {
-		<-reader.started
+		select {
+		case <-reader.started:
+		case <-time.After(5 * time.Second):
+			t.Fatal("the reads did not start")
+		}
 	}
 	if rec := upload(t, srv, "image", file); rec.Code != http.StatusServiceUnavailable || rec.Header().Get("Retry-After") == "" {
 		t.Fatalf("a read past the limit: status %d, Retry-After %q", rec.Code, rec.Header().Get("Retry-After"))
