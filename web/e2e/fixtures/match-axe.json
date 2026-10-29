@@ -21,21 +21,24 @@
             "key": "tango",
             "name": "Tango",
             "cost": 90,
-            "count": 51200
+            "count": 51200,
+            "img": "/apps/dota2/images/dota_react/items/tango.png"
           },
           {
             "id": 182,
             "key": "ring_of_protection",
             "name": "Ring of Protection",
             "cost": 175,
-            "count": 30100
+            "count": 30100,
+            "img": "/apps/dota2/images/dota_react/items/ring_of_protection.png"
           },
           {
             "id": 16,
             "key": "branches",
             "name": "Iron Branch",
             "cost": 50,
-            "count": 28800
+            "count": 28800,
+            "img": "/apps/dota2/images/dota_react/items/branches.png"
           }
         ]
       },
@@ -47,14 +50,16 @@
             "key": "magic_wand",
             "name": "Magic Wand",
             "cost": 450,
-            "count": 21000
+            "count": 21000,
+            "img": "/apps/dota2/images/dota_react/items/magic_wand.png"
           },
           {
             "id": 50,
             "key": "phase_boots",
             "name": "Phase Boots",
             "cost": 1500,
-            "count": 19400
+            "count": 19400,
+            "img": "/apps/dota2/images/dota_react/items/phase_boots.png"
           }
         ]
       },
@@ -66,14 +71,16 @@
             "key": "blink",
             "name": "Blink Dagger",
             "cost": 2250,
-            "count": 18800
+            "count": 18800,
+            "img": "/apps/dota2/images/dota_react/items/blink.png"
           },
           {
             "id": 263,
             "key": "blade_mail",
             "name": "Blade Mail",
             "cost": 2100,
-            "count": 9100
+            "count": 9100,
+            "img": "/apps/dota2/images/dota_react/items/blade_mail.png"
           }
         ]
       },
@@ -85,7 +92,8 @@
             "key": "overwhelming_blink",
             "name": "Overwhelming Blink",
             "cost": 6550,
-            "count": 3900
+            "count": 3900,
+            "img": "/apps/dota2/images/dota_react/items/overwhelming_blink.png"
           }
         ]
       }
@@ -96,7 +104,8 @@
           "id": 116,
           "key": "black_king_bar",
           "name": "Black King Bar",
-          "cost": 4050
+          "cost": 4050,
+          "img": "/apps/dota2/images/dota_react/items/black_king_bar.png"
         },
         "enemyId": 5,
         "urgency": "now",
@@ -107,7 +116,8 @@
           "id": 231,
           "key": "lotus_orb",
           "name": "Lotus Orb",
-          "cost": 3850
+          "cost": 3850,
+          "img": "/apps/dota2/images/dota_react/items/lotus_orb.png"
         },
         "enemyId": 3,
         "urgency": "soon",
@@ -118,7 +128,8 @@
           "id": 102,
           "key": "force_staff",
           "name": "Force Staff",
-          "cost": 2200
+          "cost": 2200,
+          "img": "/apps/dota2/images/dota_react/items/force_staff.png"
         },
         "enemyId": 6,
         "urgency": "later",

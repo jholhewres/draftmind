@@ -17,6 +17,8 @@ type Item struct {
 	Key  string
 	Name string
 	Cost int
+	// Img is the image path on the game's image CDN; empty when none.
+	Img string
 	// Qual is dotaconstants' quality, e.g. consumable, component or epic.
 	Qual string
 	// Components are the keys of the items it is built from.
@@ -30,6 +32,7 @@ func ParseItems(b []byte) ([]Item, error) {
 		ID         int      `json:"id"`
 		DName      string   `json:"dname"`
 		Cost       *int     `json:"cost"`
+		Img        string   `json:"img"`
 		Qual       string   `json:"qual"`
 		Components []string `json:"components"`
 	}
@@ -42,7 +45,7 @@ func ParseItems(b []byte) ([]Item, error) {
 		if r.ID <= 0 || name == "" {
 			continue
 		}
-		it := Item{ID: r.ID, Key: key, Name: name, Qual: r.Qual, Components: r.Components}
+		it := Item{ID: r.ID, Key: key, Name: name, Img: strings.TrimSpace(r.Img), Qual: r.Qual, Components: r.Components}
 		if it.Components == nil {
 			it.Components = []string{}
 		}
@@ -110,12 +113,12 @@ func (s *Syncer) items(ctx context.Context) (Result, error) {
 		res.Deleted += int(del.RowsAffected())
 		for _, it := range items {
 			inserted, written, err := upsertReturning(ctx, tx, `
-				INSERT INTO item (patch_id, id, key, dname, cost, qual, components) VALUES ($1, $2, $3, $4, $5, $6, $7)
+				INSERT INTO item (patch_id, id, key, dname, cost, img, qual, components) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 				ON CONFLICT (patch_id, id) DO UPDATE SET key = EXCLUDED.key, dname = EXCLUDED.dname, cost = EXCLUDED.cost,
-					qual = EXCLUDED.qual, components = EXCLUDED.components, updated_at = now()
-				WHERE (item.key, item.dname, item.cost, item.qual, item.components)
-					IS DISTINCT FROM (EXCLUDED.key, EXCLUDED.dname, EXCLUDED.cost, EXCLUDED.qual, EXCLUDED.components)
-				RETURNING xmax = 0`, patchID, it.ID, it.Key, it.Name, it.Cost, it.Qual, it.Components)
+					img = EXCLUDED.img, qual = EXCLUDED.qual, components = EXCLUDED.components, updated_at = now()
+				WHERE (item.key, item.dname, item.cost, item.img, item.qual, item.components)
+					IS DISTINCT FROM (EXCLUDED.key, EXCLUDED.dname, EXCLUDED.cost, EXCLUDED.img, EXCLUDED.qual, EXCLUDED.components)
+				RETURNING xmax = 0`, patchID, it.ID, it.Key, it.Name, it.Cost, it.Img, it.Qual, it.Components)
 			if err != nil {
 				return fmt.Errorf("upsert item %s: %w", it.Key, err)
 			}

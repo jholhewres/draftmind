@@ -1,6 +1,7 @@
 import type { Build, Hero, Urgency } from '../api'
 import { useI18n } from '../i18n'
 import type { MessageKey } from '../locales/en'
+import ItemCard from './ItemCard'
 import PhaseList from './PhaseList'
 
 const urgencyLabel: Record<Urgency, MessageKey> = {
@@ -22,12 +23,14 @@ export default function BuildCard({ build, byId }: { build: Omit<Build, 'patch' 
         {build.source === 'ranking' && <span className="source-label">{t('build.ranked')}</span>}
       </div>
       {build.situational.length > 0 && (
-        <ul className="item-chips situational" aria-label={t('build.situational')}>
+        <ul className="item-cards situational" aria-label={t('build.situational')}>
           {build.situational.map((s) => (
-            <li key={s.item.id} className={`item-chip hot${s.urgency ? ` urgency-${s.urgency}` : ''}`}>
-              {s.urgency
-                ? t('build.vsUrgent', { item: s.item.name, urgency: t(urgencyLabel[s.urgency]), enemy: name(s.enemyId) })
-                : t('build.vs', { item: s.item.name, enemy: name(s.enemyId) })}
+            <li key={s.item.id} className={s.urgency ? `urgency-${s.urgency}` : undefined}>
+              <ItemCard
+                item={s.item}
+                hot
+                note={s.urgency ? t('build.vsEnemyUrgent', { urgency: t(urgencyLabel[s.urgency]), enemy: name(s.enemyId) }) : t('build.vsEnemy', { enemy: name(s.enemyId) })}
+              />
             </li>
           ))}
         </ul>

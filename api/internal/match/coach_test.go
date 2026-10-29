@@ -79,7 +79,13 @@ func (fakeFacts) Names(context.Context) (catalog.Names, error) {
 		Heroes:    map[int][]string{13: {"Puck"}, 14: {"Pudge"}, 47: {"Viper"}},
 		Abilities: []string{"Illusory Orb", "Phase Shift", "Poison Attack", "Viper Strike", "Meat Hook", "Rot"},
 		Items:     []string{"Bottle", "Black King Bar", "Divine Rapier", "Witch Blade"},
-		OffPatch:  []string{"Old Hero"},
+		ItemCards: []items.Card{
+			{ID: 41, Key: "bottle", Name: "Bottle", Cost: 675, Img: "/apps/dota2/images/dota_react/items/bottle.png"},
+			{ID: 116, Key: "black_king_bar", Name: "Black King Bar", Cost: 4050, Img: "/apps/dota2/images/dota_react/items/black_king_bar.png"},
+			{ID: 133, Key: "rapier", Name: "Divine Rapier", Cost: 5600, Img: "/apps/dota2/images/dota_react/items/rapier.png"},
+			{ID: 1, Key: "witch_blade", Name: "Witch Blade", Cost: 2600, Img: "/apps/dota2/images/dota_react/items/witch_blade.png"},
+		},
+		OffPatch: []string{"Old Hero"},
 	}, nil
 }
 
@@ -165,5 +171,30 @@ func TestAMessageThatCannotBeParsedGetsAFollowUpQuestionInsteadOfAGuess(t *testi
 		if m.writes != 0 || j.asked != 0 || strings.Join(ev.names, ",") != "followup" {
 			t.Fatalf("parse %q: %d answers written, Jev asked %d times, events %v; want none but the follow-up", parse, m.writes, j.asked, ev.names)
 		}
+	}
+}
+
+func TestAnAnswerCardsTheItemsItNamesThatTheCurrentPatchHas(t *testing.T) {
+	// A session from an older patch still plans Ethereal Blade, which the
+	// current patch lacks: the writer may name it, but it gets no card.
+	s := session()
+	s.ItemPlan.Situational = append(s.ItemPlan.Situational, items.Situational{Item: items.Item{ID: 9999, Name: "Ethereal Blade"}, EnemyID: 14})
+	const answer = "Buy Black King Bar soon against Viper, then Witch Blade. Ethereal Blade can wait."
+	m := &model{parse: laneParse, answer: answer}
+	c := &Coach{Parse: m.server(t), Jev: &jev{}, Facts: fakeFacts{}}
+	c.Write = c.Parse.(*writer.Writer)
+	r, err := c.Reply(context.Background(), s, "what do I buy", "en", persona.Default(), (&events{}).emit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.TextSource != writer.SourceWriter {
+		t.Fatalf("reply %+v, want the writer's text", r)
+	}
+	want := []items.Card{
+		{ID: 116, Key: "black_king_bar", Name: "Black King Bar", Cost: 4050, Img: "/apps/dota2/images/dota_react/items/black_king_bar.png"},
+		{ID: 1, Key: "witch_blade", Name: "Witch Blade", Cost: 2600, Img: "/apps/dota2/images/dota_react/items/witch_blade.png"},
+	}
+	if len(r.Items) != len(want) || r.Items[0] != want[0] || r.Items[1] != want[1] {
+		t.Fatalf("cards %+v, want %+v", r.Items, want)
 	}
 }

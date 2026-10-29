@@ -200,7 +200,7 @@ func (s *Server) coachTurn(w http.ResponseWriter, r *http.Request, sess match.Se
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 5*time.Second)
 	defer cancel()
 	m := match.Message{Author: "coach", Kind: reply.Kind, Text: reply.Text, Situation: reply.Situation,
-		Category: reply.Category, Priority: reply.Priority, Source: reply.Source, Reason: reply.Reason}
+		Category: reply.Category, Priority: reply.Priority, Source: reply.Source, Reason: reply.Reason, Items: reply.Items}
 	if _, err := s.matches.Add(ctx, sess.ID, m); err != nil {
 		s.log.Error("store coach reply", "err", err)
 	}

@@ -1,6 +1,7 @@
 import type { PhaseItems } from '../api'
 import { useI18n } from '../i18n'
 import type { MessageKey } from '../locales/en'
+import ItemCard from './ItemCard'
 
 const phaseLabel: Record<PhaseItems['phase'], MessageKey> = {
   start: 'build.phase.start',
@@ -9,7 +10,7 @@ const phaseLabel: Record<PhaseItems['phase'], MessageKey> = {
   late: 'build.phase.late',
 }
 
-// Core items by game phase as chips; empty phases are left out.
+// Core items by game phase as cards; empty phases are left out.
 export default function PhaseList({ phases, counts = false }: { phases: PhaseItems[]; counts?: boolean }) {
   const { t, locale } = useI18n()
   const num = new Intl.NumberFormat(locale)
@@ -21,10 +22,10 @@ export default function PhaseList({ phases, counts = false }: { phases: PhaseIte
           <div key={p.phase} className="phase">
             <dt>{t(phaseLabel[p.phase])}</dt>
             <dd>
-              <ul className="item-chips" aria-label={t(phaseLabel[p.phase])}>
+              <ul className="item-cards" aria-label={t(phaseLabel[p.phase])}>
                 {p.items.map((it) => (
-                  <li key={it.id} className="item-chip" title={counts ? t('build.games', { count: num.format(it.count) }) : undefined}>
-                    {it.name}
+                  <li key={it.id} title={counts ? t('build.games', { count: num.format(it.count) }) : undefined}>
+                    <ItemCard item={it} />
                   </li>
                 ))}
               </ul>

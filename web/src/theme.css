@@ -370,9 +370,22 @@ footer p { margin: 0 0 4px; }
 .phase { display: flex; flex-direction: column; gap: 4px; }
 .phase dt { font-size: 12px; font-weight: 600; color: var(--muted); }
 .phase dd { margin: 0; }
-.item-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; font-size: 13px; }
-.item-chip { padding: 4px 9px; border-radius: 6px; background: #1e242c; }
-.item-chip.hot { background: rgba(217, 174, 91, 0.14); border: 1px solid var(--gold); color: var(--gold-light); font-weight: 600; }
+.item-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.item-card {
+  display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border-radius: 8px;
+  background: #1e242c; border: 1px solid transparent;
+}
+.item-card.hot { background: rgba(217, 174, 91, 0.14); border-color: var(--gold); }
+.item-card img, .item-fallback { width: 44px; height: 32px; border-radius: 4px; flex-shrink: 0; object-fit: cover; }
+.item-fallback {
+  display: flex; align-items: center; justify-content: center; background: #2c333c; color: var(--muted);
+  font: 700 15px Barlow, system-ui, sans-serif;
+}
+.item-card-text { display: flex; flex-direction: column; line-height: 1.2; }
+.item-name { font-size: 13px; font-weight: 600; }
+.item-card.hot .item-name { color: var(--gold-light); }
+.item-cost { font-size: 12px; color: var(--gold); }
+.item-note { font-size: 12px; color: var(--muted); }
 .build-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .build-source { margin: 0; font-size: 12px; }
 .coach { display: flex; flex-direction: column; gap: 12px; }

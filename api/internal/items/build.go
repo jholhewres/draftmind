@@ -35,9 +35,20 @@ type Item struct {
 	Key  string `json:"key"`
 	Name string `json:"name"`
 	Cost int    `json:"cost"`
+	// Img is the image path on the game's image CDN; empty when none.
+	Img  string `json:"img"`
 	Qual string `json:"-"`
 	// Components are the keys of the items it is built from.
 	Components []string `json:"-"`
+}
+
+// Card is an item as the chat shows it: image, name and cost.
+type Card struct {
+	ID   int    `json:"id"`
+	Key  string `json:"key"`
+	Name string `json:"name"`
+	Cost int    `json:"cost"`
+	Img  string `json:"img"`
 }
 
 // Count is how many of a hero's games had an item in one phase.

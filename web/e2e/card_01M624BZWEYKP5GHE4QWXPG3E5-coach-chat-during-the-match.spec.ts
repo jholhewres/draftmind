@@ -69,8 +69,8 @@ test('The match session survives a page reload', async ({ page, escaped, drafts 
   expect(started).toEqual([{ hero: 8, allies: [], enemies: [2, 6], bans: [3], role: 1 }])
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Juggernaut · Carry')
   await expect(page.getByRole('list', { name: 'Situational items' }).getByRole('listitem')).toHaveText([
-    'Black King Bar now · vs Axe',
-    'Butterfly later · vs Drow Ranger',
+    'Black King Bar4,050 goldnow · vs Axe',
+    'Butterfly5,450 goldlater · vs Drow Ranger',
   ])
 
   await send(page, 'axe keeps calling me in lane')

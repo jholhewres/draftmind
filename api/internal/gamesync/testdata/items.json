@@ -1,6 +1,6 @@
 {
   "blink": { "id": 1, "img": "/apps/dota2/images/dota_react/items/blink.png", "dname": "Blink Dagger", "qual": "component", "cost": 2250, "attrib": [] },
-  "bfury": { "id": 145, "img": "/apps/dota2/images/dota_react/items/bfury.png", "dname": "Battle Fury", "qual": "epic", "cost": 4100, "created": true },
+  "bfury": { "id": 145, "img": "/apps/dota2/images/dota_react/items/bfury.png", "dname": "Battle Fury", "qual": "epic", "cost": 4100, "created": true, "components": ["quarterstaff", "broadsword", "claymore"] },
   "tango": { "id": 44, "img": "/apps/dota2/images/dota_react/items/tango.png", "dname": "Tango", "qual": "consumable", "cost": 90 },
   "recipe_unnamed": { "id": 1000, "cost": 0 },
   "aghanims_shard": { "id": 609, "dname": "Aghanim's Shard", "cost": null }

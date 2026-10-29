@@ -22,7 +22,8 @@
             "key": "tango",
             "name": "Tango",
             "cost": 90,
-            "count": 40100
+            "count": 40100,
+            "img": "/apps/dota2/images/dota_react/items/tango.png"
           }
         ]
       },
@@ -34,14 +35,16 @@
             "key": "power_treads",
             "name": "Power Treads",
             "cost": 1400,
-            "count": 30200
+            "count": 30200,
+            "img": "/apps/dota2/images/dota_react/items/power_treads.png"
           },
           {
             "id": 36,
             "key": "magic_wand",
             "name": "Magic Wand",
             "cost": 450,
-            "count": 20100
+            "count": 20100,
+            "img": "/apps/dota2/images/dota_react/items/magic_wand.png"
           }
         ]
       },
@@ -53,14 +56,16 @@
             "key": "bfury",
             "name": "Battle Fury",
             "cost": 4100,
-            "count": 21000
+            "count": 21000,
+            "img": "/apps/dota2/images/dota_react/items/bfury.png"
           },
           {
             "id": 147,
             "key": "manta",
             "name": "Manta Style",
             "cost": 4650,
-            "count": 12000
+            "count": 12000,
+            "img": "/apps/dota2/images/dota_react/items/manta.png"
           }
         ]
       },
@@ -72,7 +77,8 @@
             "key": "basher",
             "name": "Skull Basher",
             "cost": 2875,
-            "count": 6000
+            "count": 6000,
+            "img": "/apps/dota2/images/dota_react/items/basher.png"
           }
         ]
       }
@@ -83,7 +89,8 @@
           "id": 116,
           "key": "black_king_bar",
           "name": "Black King Bar",
-          "cost": 4050
+          "cost": 4050,
+          "img": "/apps/dota2/images/dota_react/items/black_king_bar.png"
         },
         "enemyId": 2,
         "urgency": "now",
@@ -94,7 +101,8 @@
           "id": 119,
           "key": "butterfly",
           "name": "Butterfly",
-          "cost": 5450
+          "cost": 5450,
+          "img": "/apps/dota2/images/dota_react/items/butterfly.png"
         },
         "enemyId": 6,
         "urgency": "later",

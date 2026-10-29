@@ -11,6 +11,7 @@ import {
 } from '../api'
 import { useI18n } from '../i18n'
 import type { MessageKey } from '../locales/en'
+import ItemCard from './ItemCard'
 import PushToTalk, { type MicNote } from './PushToTalk'
 import { canSpeak, speak } from './speech'
 import { coachLang, usePersona } from '../settings/persona'
@@ -181,6 +182,15 @@ export default function CoachChat({ session }: { session: MatchSession }) {
               </span>
             )}
             <span className="bubble-text">{l.author === 'player' ? l.text : coachText(l)}</span>
+            {l.author === 'coach' && l.items && l.items.length > 0 && (
+              <ul className="item-cards" aria-label={t('coach.items')}>
+                {l.items.map((it) => (
+                  <li key={it.id}>
+                    <ItemCard item={it} />
+                  </li>
+                ))}
+              </ul>
+            )}
             {l.author === 'coach' && l.kind === 'answer' && canSpeak() && (
               <button type="button" className="listen" onClick={() => speak(coachText(l), l.text ? lang : locale)}>
                 <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

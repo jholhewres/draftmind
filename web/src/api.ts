@@ -294,7 +294,10 @@ export async function fetchCounters(slug: string, signal?: AbortSignal): Promise
 }
 
 // An item of the current patch, with the games it was bought in.
-export type BuildItem = { id: number; key: string; name: string; cost: number; count: number }
+// An item as a card shows it; img is its path on the image CDN, empty when none.
+export type ItemCard = { id: number; key: string; name: string; cost: number; img?: string }
+
+export type BuildItem = ItemCard & { count: number }
 
 export type Phase = 'start' | 'early' | 'mid' | 'late'
 
@@ -354,6 +357,8 @@ export type MatchMessage = {
   priority?: Priority
   source?: string
   reason?: string
+  // The current-patch items a coach answer names, as cards.
+  items?: ItemCard[]
 }
 
 // A match being coached: the draft, the locked hero, its item plan and the chat.
@@ -518,6 +523,7 @@ async function readCoachTurn(body: ReadableStream<BufferSource>, onEvent: (e: Co
             category: str(body.category) as Category | undefined,
             priority: str(body.priority) as Priority | undefined,
             reason: str(body.reason),
+            items: Array.isArray(body.items) ? (body.items as ItemCard[]) : undefined,
           },
         })
         break

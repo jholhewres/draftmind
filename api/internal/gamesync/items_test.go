@@ -12,12 +12,15 @@ type itemRow struct {
 	Key  string
 	Name string
 	Cost int
+	Img  string
+	// Components are the keys of the items it is built from.
+	Components string
 }
 
 func patchItems(t *testing.T, s *Syncer) []itemRow {
 	t.Helper()
 	rows, err := s.pool.Query(context.Background(), `
-		SELECT i.id, i.key, i.dname, i.cost FROM item i JOIN patch p ON p.id = i.patch_id AND p.is_current ORDER BY i.id`)
+		SELECT i.id, i.key, i.dname, i.cost, i.img, array_to_string(i.components, ',') FROM item i JOIN patch p ON p.id = i.patch_id AND p.is_current ORDER BY i.id`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -25,7 +28,7 @@ func patchItems(t *testing.T, s *Syncer) []itemRow {
 	var out []itemRow
 	for rows.Next() {
 		var r itemRow
-		if err := rows.Scan(&r.ID, &r.Key, &r.Name, &r.Cost); err != nil {
+		if err := rows.Scan(&r.ID, &r.Key, &r.Name, &r.Cost, &r.Img, &r.Components); err != nil {
 			t.Fatal(err)
 		}
 		out = append(out, r)
@@ -44,8 +47,13 @@ func TestSyncItemsWritesTheCurrentPatchItemsOnceAndDropsRemovedOnes(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	// The unnamed recipe is left out; a missing cost is 0.
-	want := []itemRow{{1, "blink", "Blink Dagger", 2250}, {44, "tango", "Tango", 90}, {145, "bfury", "Battle Fury", 4100}, {609, "aghanims_shard", "Aghanim's Shard", 0}}
+	// The unnamed recipe is left out; a missing cost is 0 and a missing image is empty.
+	want := []itemRow{
+		{1, "blink", "Blink Dagger", 2250, "/apps/dota2/images/dota_react/items/blink.png", ""},
+		{44, "tango", "Tango", 90, "/apps/dota2/images/dota_react/items/tango.png", ""},
+		{145, "bfury", "Battle Fury", 4100, "/apps/dota2/images/dota_react/items/bfury.png", "quarterstaff,broadsword,claymore"},
+		{609, "aghanims_shard", "Aghanim's Shard", 0, "", ""},
+	}
 	if got := patchItems(t, s); len(got) != len(want) || got[0] != want[0] || got[1] != want[1] || got[2] != want[2] || got[3] != want[3] {
 		t.Fatalf("items %+v, want %+v", got, want)
 	}
@@ -64,7 +72,7 @@ func TestSyncItemsWritesTheCurrentPatchItemsOnceAndDropsRemovedOnes(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := patchItems(t, s); len(got) != 1 || got[0] != (itemRow{44, "tango", "Tango", 95}) || third.Deleted != 3 || third.Updated != 1 {
+	if got := patchItems(t, s); len(got) != 1 || got[0] != (itemRow{44, "tango", "Tango", 95, "", ""}) || third.Deleted != 3 || third.Updated != 1 {
 		t.Fatalf("after a patch: items %+v, run %+v", got, third)
 	}
 }

@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+
+	"github.com/jholhewres/draftmind/api/internal/items"
 )
 
 // Names are the entity names model text is checked against: each current
@@ -15,6 +17,8 @@ type Names struct {
 	Heroes    map[int][]string
 	Abilities []string
 	Items     []string
+	// ItemCards are the current patch's items, for the cards an answer shows.
+	ItemCards []items.Card
 	OffPatch  []string
 }
 
@@ -74,6 +78,18 @@ func (s *Store) Names(ctx context.Context) (Names, error) {
 		n.Items, err = pgx.CollectRows(rows, pgx.RowTo[string])
 		if err != nil {
 			return fmt.Errorf("item names: %w", err)
+		}
+		rows, err = tx.Query(ctx, `
+			SELECT i.id, i.key, i.dname, i.cost, i.img FROM item i JOIN patch p ON p.id = i.patch_id AND p.is_current ORDER BY i.id`)
+		if err != nil {
+			return fmt.Errorf("item cards: %w", err)
+		}
+		n.ItemCards, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (items.Card, error) {
+			var c items.Card
+			return c, row.Scan(&c.ID, &c.Key, &c.Name, &c.Cost, &c.Img)
+		})
+		if err != nil {
+			return fmt.Errorf("item cards: %w", err)
 		}
 		return nil
 	})

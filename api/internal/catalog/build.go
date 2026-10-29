@@ -42,12 +42,12 @@ func (s *Store) buildDataset(ctx context.Context, enemies []int, only int) (stri
 			}
 			return fmt.Errorf("current patch: %w", err)
 		}
-		rows, err := tx.Query(ctx, `SELECT id, key, dname, cost, qual, components FROM item WHERE patch_id = $1`, patchID)
+		rows, err := tx.Query(ctx, `SELECT id, key, dname, cost, img, qual, components FROM item WHERE patch_id = $1`, patchID)
 		if err != nil {
 			return fmt.Errorf("items: %w", err)
 		}
 		var it items.Item
-		if _, err := pgx.ForEachRow(rows, []any{&it.ID, &it.Key, &it.Name, &it.Cost, &it.Qual, &it.Components}, func() error {
+		if _, err := pgx.ForEachRow(rows, []any{&it.ID, &it.Key, &it.Name, &it.Cost, &it.Img, &it.Qual, &it.Components}, func() error {
 			ds.Items[it.ID] = it
 			it.Components = nil
 			return nil

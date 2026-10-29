@@ -29,8 +29,10 @@ api/internal/photo/testdata/endscreen.jpg and web/e2e/fixtures/end-screen.jpg
 are drawn text only (hero names and numbers, rendered by
 scripts/fixtures/make_endscreen.py). The other e2e images are plain gradients.
 
-At runtime the web app loads hero portraits and artwork from the game's
-public image CDN; they are not redistributed here.
+At runtime the web app loads hero portraits, item images and other artwork
+from the game's public image CDN (cdn.cloudflare.steamstatic.com), at the
+paths dotaconstants lists. The item art is Valve Corporation's; it is not
+redistributed here, and an item whose image fails to load shows its initial.
 
 Data sources
 ------------

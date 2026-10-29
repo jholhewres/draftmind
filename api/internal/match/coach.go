@@ -6,11 +6,13 @@ import (
 	"math"
 	"slices"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/jholhewres/draftmind/api/internal/catalog"
 	"github.com/jholhewres/draftmind/api/internal/decision"
 	"github.com/jholhewres/draftmind/api/internal/draft"
+	"github.com/jholhewres/draftmind/api/internal/items"
 	"github.com/jholhewres/draftmind/api/internal/persona"
 	"github.com/jholhewres/draftmind/api/internal/writer"
 )
@@ -86,6 +88,8 @@ type Reply struct {
 	// TextSource is writer, or template when the UI words the answer.
 	TextSource string `json:"textSource,omitempty"`
 	Reason     string `json:"reason,omitempty"`
+	// Items are the current-patch items the writer's text names, in order.
+	Items []items.Card `json:"items,omitempty"`
 }
 
 // MaxMessage is the longest player message, in characters.
@@ -147,8 +151,67 @@ func (c *Coach) Reply(ctx context.Context, s Session, text, lang string, p perso
 		Allowed: wf.allowed, Known: wf.known,
 	})
 	r.Text, r.TextSource, r.Reason = a.Text, a.Source, a.Reason
+	if r.TextSource == writer.SourceWriter {
+		r.Items = cardsIn(r.Text, names.ItemCards)
+	}
 	emit("answer", r)
 	return r, nil
+}
+
+// cardsIn returns the cards of the items text names, in the order it names
+// them, once each. Only the current patch's items have cards, so a name the
+// database lacks never gets one. Longer names win, so "Witch Blade" is not
+// also read as a shorter name inside it.
+func cardsIn(text string, cards []items.Card) []items.Card {
+	byLen := slices.Clone(cards)
+	slices.SortStableFunc(byLen, func(a, b items.Card) int { return utf8.RuneCountInString(b.Name) - utf8.RuneCountInString(a.Name) })
+	lower := strings.ToLower(text)
+	type hit struct {
+		at   int
+		card items.Card
+	}
+	var hits []hit
+	for _, c := range byLen {
+		name := strings.ToLower(c.Name)
+		if name == "" {
+			continue
+		}
+		for from := 0; ; {
+			i := strings.Index(lower[from:], name)
+			if i < 0 {
+				break
+			}
+			i += from
+			end := i + len(name)
+			from = end
+			if !wordEdge(lower, i-1) || !wordEdge(lower, end) {
+				continue
+			}
+			hits = append(hits, hit{i, c})
+			// Mask it so a shorter name inside it is not matched again.
+			lower = lower[:i] + strings.Repeat(" ", len(name)) + lower[end:]
+			break
+		}
+	}
+	slices.SortFunc(hits, func(a, b hit) int { return a.at - b.at })
+	out := make([]items.Card, 0, len(hits))
+	for _, h := range hits {
+		out = append(out, h.card)
+	}
+	return out
+}
+
+// wordEdge says whether s has no letter or digit at byte i.
+func wordEdge(s string, i int) bool {
+	if i < 0 || i >= len(s) {
+		return true
+	}
+	r, _ := utf8.DecodeRuneInString(s[i:])
+	if r == utf8.RuneError {
+		// Inside a multi-byte rune: look back for its start.
+		r, _ = utf8.DecodeLastRuneInString(s[:i+1])
+	}
+	return !unicode.IsLetter(r) && !unicode.IsDigit(r)
 }
 
 // resolve keeps the mentioned names the current patch has.

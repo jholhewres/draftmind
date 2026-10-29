@@ -45,7 +45,9 @@ type Message struct {
 	Priority  string     `json:"priority,omitempty"`
 	Source    string     `json:"source,omitempty"`
 	Reason    string     `json:"reason,omitempty"`
-	CreatedAt time.Time  `json:"createdAt"`
+	// Items are the cards of the items a coach answer names.
+	Items     []items.Card `json:"items,omitempty"`
+	CreatedAt time.Time    `json:"createdAt"`
 }
 
 // ErrNotFound means no session has that id.
@@ -125,14 +127,14 @@ func (s *Store) Get(ctx context.Context, id string) (Session, error) {
 	}
 	rows, err := s.pool.Query(ctx, `
 		SELECT id, author, kind, text, situation, coalesce(category, ''), coalesce(priority, ''), coalesce(source, ''),
-			coalesce(reason, ''), created_at
+			coalesce(reason, ''), items, created_at
 		FROM (SELECT * FROM match_message WHERE session_id = $1 ORDER BY id DESC LIMIT $2) m ORDER BY id`, id, MaxMessages)
 	if err != nil {
 		return out, fmt.Errorf("match messages: %w", err)
 	}
 	out.Messages, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (Message, error) {
 		var m Message
-		err := row.Scan(&m.ID, &m.Author, &m.Kind, &m.Text, &m.Situation, &m.Category, &m.Priority, &m.Source, &m.Reason, &m.CreatedAt)
+		err := row.Scan(&m.ID, &m.Author, &m.Kind, &m.Text, &m.Situation, &m.Category, &m.Priority, &m.Source, &m.Reason, &m.Items, &m.CreatedAt)
 		return m, err
 	})
 	if err != nil {
@@ -149,10 +151,14 @@ func (s *Store) Add(ctx context.Context, sessionID string, m Message) (Message, 
 		}
 		return &s
 	}
+	var cards []items.Card
+	if len(m.Items) > 0 {
+		cards = m.Items
+	}
 	err := s.pool.QueryRow(ctx, `
-		INSERT INTO match_message (session_id, author, kind, text, situation, category, priority, source, reason)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, created_at`,
-		sessionID, m.Author, m.Kind, m.Text, m.Situation, null(m.Category), null(m.Priority), null(m.Source), null(m.Reason)).
+		INSERT INTO match_message (session_id, author, kind, text, situation, category, priority, source, reason, items)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, created_at`,
+		sessionID, m.Author, m.Kind, m.Text, m.Situation, null(m.Category), null(m.Priority), null(m.Source), null(m.Reason), cards).
 		Scan(&m.ID, &m.CreatedAt)
 	if err != nil {
 		return m, fmt.Errorf("add match message: %w", err)
