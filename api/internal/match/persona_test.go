@@ -58,7 +58,8 @@ func TestTwoPersonasGivenTheSameMatchDecideTheSameAdvice(t *testing.T) {
 		}
 	}
 	if !strings.Contains(prompts[0], "One or two short sentences") || !strings.Contains(prompts[1], "map play") ||
-		!strings.Contains(prompts[1], "pt-BR") {
+		!strings.Contains(prompts[0], "BCP 47 tag is en.") || !strings.Contains(prompts[1], "BCP 47 tag is pt-BR.") ||
+		!strings.Contains(prompts[1], "(pt-BR)") {
 		t.Errorf("writer prompts lack the verbosity, focus or language:\n%s\n%s", prompts[0], prompts[1])
 	}
 }
