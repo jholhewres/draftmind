@@ -169,8 +169,8 @@ func (w *Writer) complete(ctx context.Context, b Brief, call *Call) (string, err
 }
 
 // chat sends one system and one user message and returns the text answer;
-// asJSON asks for a JSON object.
-func (w *Writer) chat(ctx context.Context, system, user string, maxTokens int, asJSON bool, call *Call) (string, error) {
+// user is a string or a list of content parts. asJSON asks for a JSON object.
+func (w *Writer) chat(ctx context.Context, system string, user any, maxTokens int, asJSON bool, call *Call) (string, error) {
 	payload := map[string]any{
 		"model": w.Model,
 		"messages": []any{

@@ -12,6 +12,7 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/catalog"
 	"github.com/jholhewres/draftmind/api/internal/draft"
 	"github.com/jholhewres/draftmind/api/internal/items"
+	"github.com/jholhewres/draftmind/api/internal/match"
 	"github.com/jholhewres/draftmind/api/internal/photo"
 	"github.com/jholhewres/draftmind/api/internal/writer"
 )
@@ -52,10 +53,12 @@ type Server struct {
 	tips    Tipper
 	matches Matches
 	coach   Replier
+	stt     match.Transcriber
 	auth    *auth.Service
 	log     *slog.Logger
 
 	suggestLimit, readLimit Limit
+	voiceLimit              Limit
 	mailIPLimit, mailLimit  Limit // sign-in links per client IP and per address
 	now                     func() time.Time
 	reads                   chan struct{} // a slot per photo read running
@@ -63,7 +66,7 @@ type Server struct {
 
 // New builds the server.
 func New(db Pinger, cat Catalog, log *slog.Logger) *Server {
-	return &Server{db: db, catalog: cat, log: log, suggestLimit: DefaultSuggestLimit, readLimit: DefaultReadLimit,
+	return &Server{db: db, catalog: cat, log: log, suggestLimit: DefaultSuggestLimit, readLimit: DefaultReadLimit, voiceLimit: DefaultVoiceLimit,
 		mailIPLimit: DefaultMailIPLimit, mailLimit: DefaultMailLimit, now: time.Now,
 		reads: make(chan struct{}, maxConcurrentReads)}
 }
@@ -135,6 +138,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/match", suggest.wrap(http.HandlerFunc(s.startMatch)))
 	mux.HandleFunc("GET /api/match/{id}", s.getMatch)
 	mux.Handle("POST /api/match/{id}/messages", suggest.wrap(http.HandlerFunc(s.matchMessage)))
+	mux.Handle("POST /api/match/{id}/voice", newLimiter(s.voiceLimit, s.now).wrap(http.HandlerFunc(s.matchVoice)))
 	if s.auth != nil {
 		s.auth.Mount(mux, newLimiter(s.mailIPLimit, s.now).wrap, newLimiter(s.mailLimit, s.now).take)
 	} else {

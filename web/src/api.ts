@@ -342,7 +342,7 @@ export type Priority = 'low' | 'medium' | 'high'
 export type MatchMessage = {
   id: number
   author: 'player' | 'coach'
-  kind: 'text' | 'answer' | 'followup'
+  kind: 'text' | 'voice' | 'answer' | 'followup'
   text: string
   category?: Category
   priority?: Priority
@@ -401,7 +401,35 @@ export async function sendMatchMessage(
   const path = `/api/match/${encodeURIComponent(id)}/messages?${new URLSearchParams({ lang })}`
   const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }), signal })
   if (!res.ok || !res.body) throw new Error(`/api/match/messages: HTTP ${res.status}`)
-  await readEvents(res.body, (name, data) => {
+  await readCoachTurn(res.body, onEvent)
+}
+
+// A voice clip the server refused: 422 when it heard no words.
+export class VoiceError extends Error {
+  readonly status: number
+  constructor(status: number) {
+    super(`/api/match/voice: HTTP ${status}`)
+    this.status = status
+  }
+}
+
+// Sends a push-to-talk clip (16 kHz mono WAV) and streams the coach's turn
+// on its transcript; the first message event carries the transcript.
+export async function sendMatchVoice(
+  id: string,
+  wav: Blob,
+  lang: string,
+  onEvent: (e: CoachEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const path = `/api/match/${encodeURIComponent(id)}/voice?${new URLSearchParams({ lang })}`
+  const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'audio/wav' }, body: wav, signal })
+  if (!res.ok || !res.body) throw new VoiceError(res.status)
+  await readCoachTurn(res.body, onEvent)
+}
+
+async function readCoachTurn(body: ReadableStream<BufferSource>, onEvent: (e: CoachEvent) => void) {
+  await readEvents(body, (name, data) => {
     let body: Record<string, unknown>
     try {
       body = JSON.parse(data) as Record<string, unknown>

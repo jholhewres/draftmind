@@ -1,7 +1,18 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { sendMatchMessage, type Category, type MatchMessage, type MatchSession, type Priority } from '../api'
+import {
+  sendMatchMessage,
+  sendMatchVoice,
+  VoiceError,
+  type Category,
+  type CoachEvent,
+  type MatchMessage,
+  type MatchSession,
+  type Priority,
+} from '../api'
 import { useI18n } from '../i18n'
 import type { MessageKey } from '../locales/en'
+import PushToTalk, { type MicNote } from './PushToTalk'
+import { canSpeak, speak } from './speech'
 
 const categoryLabel: Record<Category, MessageKey> = {
   lane: 'coach.category.lane',
@@ -21,15 +32,32 @@ type Line = Omit<MatchMessage, 'id'> & { key: string }
 
 const lineOf = (m: MatchMessage): Line => ({ ...m, key: `m${m.id}` })
 
+const noteText: Record<MicNote | 'unheard', MessageKey> = {
+  denied: 'coach.mic.denied',
+  unsupported: 'coach.mic.unsupported',
+  short: 'coach.mic.short',
+  unheard: 'coach.mic.unheard',
+}
+
+const micIcon = (
+  <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+    <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" />
+  </svg>
+)
+
 // The chat with the coach: the player's messages, the coach's answers with
-// their category and priority, and the box to write the next one. The
-// push-to-talk button (B3) takes the slot beside the box.
+// their category and priority, and the box to write the next one, with the
+// push-to-talk button beside it. A spoken message shows its transcript and
+// the answer to it is read aloud in the UI language.
 export default function CoachChat({ session }: { session: MatchSession }) {
   const { t, locale } = useI18n()
   const [lines, setLines] = useState<Line[]>(() => session.messages.map(lineOf))
   const [text, setText] = useState('')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [note, setNote] = useState<MicNote | 'unheard' | null>(null)
+  const [voicePending, setVoicePending] = useState(false)
   const ctrl = useRef<AbortController | null>(null)
   const end = useRef<HTMLDivElement>(null)
 
@@ -38,34 +66,53 @@ export default function CoachChat({ session }: { session: MatchSession }) {
     end.current?.scrollIntoView?.({ block: 'end' })
   }, [lines, pending])
 
+  const coachText = (l: Omit<Line, 'key'>) => {
+    if (l.kind === 'followup') return t('coach.followup')
+    return l.text || t('coach.template')
+  }
+
+  // Runs one coach turn; a spoken turn adds its transcript when the server
+  // sends it and reads the answer aloud.
+  const turn = (run: (onEvent: (ev: CoachEvent) => void, signal: AbortSignal) => Promise<void>, spoken: boolean) => {
+    setPending(true)
+    setVoicePending(spoken)
+    setError(null)
+    // A note about the microphone stays while the player types instead.
+    if (spoken) setNote(null)
+    ctrl.current = new AbortController()
+    run((ev) => {
+      if (ev.type === 'message' && spoken) {
+        setVoicePending(false)
+        setLines((cur) => [...cur, lineOf(ev.message)])
+      }
+      if (ev.type === 'reply') {
+        setLines((cur) => [...cur, { ...ev.message, key: `c${Date.now()}` }])
+        if (spoken) speak(coachText(ev.message), locale)
+      }
+    }, ctrl.current.signal)
+      .catch((err: unknown) => {
+        if (ctrl.current?.signal.aborted) return
+        if (err instanceof VoiceError && err.status === 422) setNote('unheard')
+        else setError(err instanceof Error ? err.message : String(err))
+      })
+      .finally(() => {
+        setPending(false)
+        setVoicePending(false)
+      })
+  }
+
   const send = (e: FormEvent) => {
     e.preventDefault()
     const msg = text.trim()
     if (!msg || pending) return
-    const mine = `p${Date.now()}`
-    setLines((cur) => [...cur, { key: mine, author: 'player', kind: 'text', text: msg }])
+    setLines((cur) => [...cur, { key: `p${Date.now()}`, author: 'player', kind: 'text', text: msg }])
     setText('')
-    setPending(true)
-    setError(null)
-    ctrl.current = new AbortController()
-    sendMatchMessage(
-      session.id,
-      msg,
-      locale,
-      (ev) => {
-        if (ev.type === 'reply') setLines((cur) => [...cur, { ...ev.message, key: `c${Date.now()}` }])
-      },
-      ctrl.current.signal,
-    )
-      .catch((err: unknown) => {
-        if (!ctrl.current?.signal.aborted) setError(err instanceof Error ? err.message : String(err))
-      })
-      .finally(() => setPending(false))
+    turn((onEvent, signal) => sendMatchMessage(session.id, msg, locale, onEvent, signal), false)
   }
 
-  const coachText = (l: Line) => {
-    if (l.kind === 'followup') return t('coach.followup')
-    return l.text || t('coach.template')
+  const sendVoice = (wav: Blob) => {
+    if (pending) return
+    turn((onEvent, signal) => sendMatchVoice(session.id, wav, locale, onEvent, signal), true)
   }
 
   return (
@@ -78,17 +125,37 @@ export default function CoachChat({ session }: { session: MatchSession }) {
                 {t('coach.tag', { category: t(categoryLabel[l.category]), priority: t(priorityLabel[l.priority]) })}
               </span>
             )}
+            {l.kind === 'voice' && (
+              <span className="voice-tag">
+                {micIcon}
+                {t('coach.voice')}
+              </span>
+            )}
             <span className="bubble-text">{l.author === 'player' ? l.text : coachText(l)}</span>
+            {l.author === 'coach' && l.kind === 'answer' && canSpeak() && (
+              <button type="button" className="listen" onClick={() => speak(coachText(l), locale)}>
+                <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 5L6 9H2v6h4l5 4V5z" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                </svg>
+                {t('coach.listen')}
+              </button>
+            )}
           </li>
         ))}
         {pending && (
-          <li className="bubble coach pending">
-            <span className="bubble-text">{t('coach.thinking')}</span>
+          <li className={voicePending ? 'bubble mine pending' : 'bubble coach pending'}>
+            <span className="bubble-text">{t(voicePending ? 'coach.transcribing' : 'coach.thinking')}</span>
           </li>
         )}
       </ol>
       <div ref={end} />
       {error && <p role="alert">{t('coach.sendError', { error })}</p>}
+      {note && (
+        <p role="alert" className="mic-note">
+          {t(noteText[note])}
+        </p>
+      )}
       <form className="chat-input" onSubmit={send}>
         <label className="chat-field">
           <span className="sr-only">{t('coach.input')}</span>
@@ -105,7 +172,7 @@ export default function CoachChat({ session }: { session: MatchSession }) {
             <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
           </svg>
         </button>
-        <div className="ptt-slot" data-slot="push-to-talk" />
+        <PushToTalk disabled={pending} onClip={sendVoice} onNote={setNote} />
       </form>
     </section>
   )

@@ -126,12 +126,8 @@ func (s *Server) loadMatch(w http.ResponseWriter, r *http.Request) (match.Sessio
 //	followup   instead of the three above, when the message could not be read
 //	done       the stream is over
 func (s *Server) matchMessage(w http.ResponseWriter, r *http.Request) {
-	lang := r.URL.Query().Get("lang")
-	if lang == "" {
-		lang = "en"
-	}
-	if len(lang) > 35 || !langTag.MatchString(lang) {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "lang must be a language tag such as en or pt-BR"})
+	lang, ok := queryLang(w, r)
+	if !ok {
 		return
 	}
 	var req struct {
@@ -150,7 +146,26 @@ func (s *Server) matchMessage(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	mine, err := s.matches.Add(r.Context(), sess.ID, match.Message{Author: "player", Kind: "text", Text: req.Text})
+	s.coachTurn(w, r, sess, match.Message{Author: "player", Kind: "text", Text: req.Text}, lang)
+}
+
+// queryLang reads the ?lang= tag, en when absent; a bad one answers 400.
+func queryLang(w http.ResponseWriter, r *http.Request) (string, bool) {
+	lang := r.URL.Query().Get("lang")
+	if lang == "" {
+		lang = "en"
+	}
+	if len(lang) > 35 || !langTag.MatchString(lang) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "lang must be a language tag such as en or pt-BR"})
+		return "", false
+	}
+	return lang, true
+}
+
+// coachTurn stores the player's message, then streams the coach's turn on
+// its text and stores the reply.
+func (s *Server) coachTurn(w http.ResponseWriter, r *http.Request, sess match.Session, msg match.Message, lang string) {
+	mine, err := s.matches.Add(r.Context(), sess.ID, msg)
 	if err != nil {
 		s.log.Error("match message", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "could not store the message"})
@@ -161,7 +176,7 @@ func (s *Server) matchMessage(w http.ResponseWriter, r *http.Request) {
 	reply := match.Reply{Kind: "answer", TextSource: writer.SourceTemplate, Reason: writer.ReasonUnavailable}
 	if s.coach == nil {
 		out.send("answer", reply)
-	} else if reply, err = s.coach.Reply(r.Context(), sess, req.Text, lang, out.send); err != nil {
+	} else if reply, err = s.coach.Reply(r.Context(), sess, msg.Text, lang, out.send); err != nil {
 		s.log.Error("coach reply", "err", err)
 		reply = match.Reply{Kind: "answer", TextSource: writer.SourceTemplate, Reason: writer.ReasonError}
 		out.send("answer", reply)

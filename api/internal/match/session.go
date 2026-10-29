@@ -37,7 +37,7 @@ type Session struct {
 type Message struct {
 	ID        int64      `json:"id"`
 	Author    string     `json:"author"` // player or coach
-	Kind      string     `json:"kind"`   // text (player), answer or followup (coach)
+	Kind      string     `json:"kind"`   // text or voice (player), answer or followup (coach)
 	Text      string     `json:"text"`
 	Situation *Situation `json:"situation,omitempty"`
 	Category  string     `json:"category,omitempty"`

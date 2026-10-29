@@ -21,7 +21,7 @@ type Config struct {
 	PhotoJevModel     string // Jev model for photo reads; Box questions need 1.14
 	DataDir           string // local data outside git, e.g. the portrait cache
 	WriterModel       string // writes the tips (ADR-0003 step 4)
-	STTModel          string
+	STTModel          string // transcribes push-to-talk clips (ADR-0005)
 	OpenDotaAPIKey    string
 	DotaconstantsRef  string
 	PublicURL         string // where the web app is served; sign-in links and Steam return there
@@ -56,7 +56,7 @@ func load(getenv func(string) string) (Config, error) {
 		PhotoJevModel:     get("PHOTO_JEV_MODEL", "typesafe/jev-1.14"),
 		DataDir:           get("DATA_DIR", "data"),
 		WriterModel:       get("WRITER_MODEL", "openai/gpt-6-luna"),
-		STTModel:          get("STT_MODEL", ""),
+		STTModel:          get("STT_MODEL", "google/gemini-3.1-flash-lite"),
 		OpenDotaAPIKey:    get("OPENDOTA_API_KEY", ""),
 		DotaconstantsRef:  get("DOTACONSTANTS_REF", "master"),
 		PublicURL:         get("PUBLIC_URL", "http://localhost:5173"),

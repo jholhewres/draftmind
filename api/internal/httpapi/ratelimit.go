@@ -20,6 +20,8 @@ type Limit struct {
 var (
 	DefaultSuggestLimit = Limit{Burst: 30, Every: 2 * time.Second}
 	DefaultReadLimit    = Limit{Burst: 6, Every: 20 * time.Second}
+	// Voice clips: each one is a transcription and a coach turn.
+	DefaultVoiceLimit = Limit{Burst: 10, Every: 15 * time.Second}
 	// Sign-in links: per client IP, and per e-mail address so one inbox is
 	// not flooded from many addresses.
 	DefaultMailIPLimit = Limit{Burst: 5, Every: time.Minute}

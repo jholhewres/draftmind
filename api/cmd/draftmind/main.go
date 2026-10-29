@@ -73,9 +73,10 @@ func run(ctx context.Context, cmd string, log *slog.Logger) error {
 			w := writer.New(cfg.OpenRouterBaseURL, cfg.OpenRouterAPIKey, cfg.WriterModel, writer.NewPGLog(pool, log))
 			srv.WithWriter(w)
 			srv.WithCoach(&match.Coach{Parse: w, Jev: jev, Write: w, Facts: cat})
+			srv.WithTranscriber(writer.New(cfg.OpenRouterBaseURL, cfg.OpenRouterAPIKey, cfg.STTModel, writer.NewPGLog(pool, log)))
 			go warmPortraits(ctx, cat, readers.jev.Portraits, log)
 		} else {
-			log.Warn("OPENROUTER_API_KEY is not set: suggestions keep the code ranking, tips and coach answers are templates and photos cannot be read")
+			log.Warn("OPENROUTER_API_KEY is not set: suggestions keep the code ranking, tips and coach answers are templates, photos cannot be read and voice is off")
 		}
 		accounts, err := newAccounts(cfg, pool, log)
 		if err != nil {
