@@ -23,7 +23,12 @@ const (
 	ReasonError         = "error"          // Jev failed or answered badly
 	ReasonUnavailable   = "unavailable"    // no decision model is configured
 	ReasonFewCandidates = "few_candidates" // nothing to choose between
+	ReasonLowConfidence = "low_confidence" // Jev answered below MinConfidence; its answer is only logged
 )
+
+// MinConfidence is the least confidence Jev's choice needs to reorder the
+// list; below it the code order stands and Jev's answer is shadow (ADR-0003).
+const MinConfidence = 0.4
 
 // Asker asks the decision model.
 type Asker interface {
@@ -37,10 +42,16 @@ type Decided struct {
 	Reason      string       `json:"reason,omitempty"`
 	Confidence  *float64     `json:"confidence,omitempty"`
 	Suggestions []Suggestion `json:"suggestions"`
+	// Shadow is the hero Jev would have put first when its answer was below
+	// MinConfidence, for the log only.
+	Shadow int `json:"-"`
 }
 
 // positions name the player's position for Jev.
 var positions = map[int]string{1: "safe lane carry", 2: "mid lane", 3: "off lane", 4: "soft support", 5: "hard support"}
+
+// PositionName names position role (1-5), or is empty.
+func PositionName(role int) string { return positions[role] }
 
 const pickInstructions = "Which candidate should the player pick for their position in this draft? " +
 	"Each candidate lists the reasons the stats give: its win-rate delta in points against each enemy " +
@@ -125,6 +136,9 @@ func Decide(ctx context.Context, jev Asker, ds Dataset, d Draft, ranked []Sugges
 	// Stable: equal probabilities keep the code order.
 	slices.SortStableFunc(out[:len(top)], func(a, b Suggestion) int { return cmp.Compare(*b.Probability, *a.Probability) })
 	conf := pick.Confidence
+	if conf < MinConfidence {
+		return Decided{Source: SourceRanking, Reason: ReasonLowConfidence, Confidence: &conf, Suggestions: ranked, Shadow: out[0].HeroID}
+	}
 	return Decided{Source: SourceJev, Confidence: &conf, Suggestions: out}
 }
 

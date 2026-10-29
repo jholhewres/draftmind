@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -35,28 +36,47 @@ type suggestResponse struct {
 
 // suggest ranks every legal hero of the current patch for the draft and
 // lets Jev order the top of the ranking (ADR-0003); the code ranking stands,
-// labelled, when Jev fails or is late.
+// labelled, when Jev fails, is late or is unsure.
 func (s *Server) suggest(w http.ResponseWriter, r *http.Request) {
+	req, err := decodeDraft(w, r)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	patch, ds, status, err := s.loadDraft(r.Context(), req)
+	if err != nil {
+		writeJSON(w, status, map[string]string{"error": err.Error()})
+		return
+	}
+	limit := req.limit()
+	d := req.draft()
+	decided := draft.Decide(r.Context(), s.jev, ds, d, draft.Rank(ds, d, max(limit, draft.JevCandidates)))
+	s.logDecided(decided)
+	decided.Suggestions = decided.Suggestions[:min(limit, len(decided.Suggestions))]
+	writeJSON(w, http.StatusOK, suggestResponse{Patch: patch, Decided: decided})
+}
+
+// decodeDraft reads exactly one valid draft from r's JSON body.
+func decodeDraft(w http.ResponseWriter, r *http.Request) (suggestRequest, error) {
 	var req suggestRequest
 	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
-		return
+		return req, errors.New("invalid JSON: " + err.Error())
 	}
 	if _, err := dec.Token(); !errors.Is(err, io.EOF) {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: one object expected"})
-		return
+		return req, errors.New("invalid JSON: one object expected")
 	}
-	if err := req.validate(); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
-		return
-	}
-	patch, ds, err := s.catalog.DraftDataset(r.Context(), req.Enemies)
+	return req, req.validate()
+}
+
+// loadDraft loads the current patch's ranking data for req, refusing a
+// hero the patch lacks.
+func (s *Server) loadDraft(ctx context.Context, req suggestRequest) (string, draft.Dataset, int, error) {
+	patch, ds, err := s.catalog.DraftDataset(ctx, req.Enemies)
 	if err != nil {
 		s.log.Error("draft dataset", "err", err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "could not load the draft data"})
-		return
+		return "", ds, http.StatusInternalServerError, errors.New("could not load the draft data")
 	}
 	onPatch := make(map[int]bool, len(ds.Heroes))
 	for _, h := range ds.Heroes {
@@ -65,22 +85,33 @@ func (s *Server) suggest(w http.ResponseWriter, r *http.Request) {
 	for _, list := range [][]int{req.Allies, req.Enemies, req.Bans} {
 		for _, id := range list {
 			if !onPatch[id] {
-				writeJSON(w, http.StatusBadRequest, map[string]string{"error": fmt.Sprintf("unknown hero %d on the current patch", id)})
-				return
+				return "", ds, http.StatusBadRequest, fmt.Errorf("unknown hero %d on the current patch", id)
 			}
 		}
 	}
-	limit := defaultSuggests
-	if req.Limit != nil {
-		limit = *req.Limit
+	return patch, ds, http.StatusOK, nil
+}
+
+// logDecided logs why the code ranking stood, and Jev's shadow answer.
+func (s *Server) logDecided(d draft.Decided) {
+	switch d.Reason {
+	case draft.ReasonTimeout, draft.ReasonError:
+		s.log.Warn("draft suggest: kept the code ranking", "reason", d.Reason)
+	case draft.ReasonLowConfidence:
+		s.log.Info("draft suggest: Jev below the confidence floor, kept the code ranking (shadow)",
+			"confidence", *d.Confidence, "floor", draft.MinConfidence, "jev_first", d.Shadow)
 	}
-	d := draft.Draft{Allies: req.Allies, Enemies: req.Enemies, Bans: req.Bans, Role: req.Role}
-	decided := draft.Decide(r.Context(), s.jev, ds, d, draft.Rank(ds, d, max(limit, draft.JevCandidates)))
-	if decided.Source == draft.SourceRanking && decided.Reason != draft.ReasonUnavailable && decided.Reason != draft.ReasonFewCandidates {
-		s.log.Warn("draft suggest: kept the code ranking", "reason", decided.Reason)
+}
+
+func (q suggestRequest) limit() int {
+	if q.Limit != nil {
+		return *q.Limit
 	}
-	decided.Suggestions = decided.Suggestions[:min(limit, len(decided.Suggestions))]
-	writeJSON(w, http.StatusOK, suggestResponse{Patch: patch, Decided: decided})
+	return defaultSuggests
+}
+
+func (q suggestRequest) draft() draft.Draft {
+	return draft.Draft{Allies: q.Allies, Enemies: q.Enemies, Bans: q.Bans, Role: q.Role}
 }
 
 func (q suggestRequest) validate() error {

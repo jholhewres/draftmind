@@ -97,7 +97,7 @@ export type Suggestion = {
 }
 
 // Why the code ranking was kept instead of Jev's order.
-export type FallbackReason = 'timeout' | 'error' | 'unavailable' | 'few_candidates'
+export type FallbackReason = 'timeout' | 'error' | 'unavailable' | 'few_candidates' | 'low_confidence'
 
 // source is 'jev' when Jev ordered the list, else the code ranking stands
 // with its reason (ADR-0003: fail open).
@@ -109,22 +109,18 @@ export type SuggestResult = {
   suggestions: Suggestion[]
 }
 
-export async function fetchSuggestions(input: DraftInput, signal?: AbortSignal): Promise<SuggestResult> {
-  const path = '/api/draft/suggest'
-  const res = await fetch(path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-    signal,
-  })
-  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
-  const body = (await res.json()) as Partial<SuggestResult>
+// A top hero's tip: the writer's text, or a template the UI words from the
+// hero's reasons when the text failed the entity check, was late or failed.
+export type Tip = { heroId: number; source: 'writer' | 'template'; text?: string; reason?: string }
+
+const asSuggestions = (v: unknown): Suggestion[] => (Array.isArray(v) ? (v as Suggestion[]) : [])
+
+function asDecision(body: Partial<SuggestResult>): Omit<SuggestResult, 'patch'> {
   return {
-    patch: body.patch ?? '',
     source: body.source === 'jev' ? 'jev' : 'ranking',
     reason: body.reason,
     confidence: body.confidence,
-    suggestions: body.suggestions ?? [],
+    suggestions: asSuggestions(body.suggestions),
   }
 }
 
@@ -132,7 +128,7 @@ export async function fetchSuggestions(input: DraftInput, signal?: AbortSignal):
 // empty slot, or one the reader could not read, which the player picks.
 export type ReadSlot = { heroId?: number; status: 'hero' | 'empty' | 'unknown'; confidence: number }
 
-// The draft POST /api/draft/read read, five slots a team, left to right.
+// The draft read from a photo, five slots a team, left to right.
 export type DraftRead = { patch: string; reader: string; fallback?: string; radiant: ReadSlot[]; dire: ReadSlot[] }
 
 const asSlots = (v: unknown): ReadSlot[] =>
@@ -143,13 +139,94 @@ const asSlots = (v: unknown): ReadSlot[] =>
       : { status: s?.status === 'empty' ? 'empty' : 'unknown', confidence: s?.confidence ?? 0 }
   })
 
-// Sends the photo to be read; it is not kept by the server.
-export async function readDraft(image: Blob, signal?: AbortSignal): Promise<DraftRead> {
-  const path = '/api/draft/read'
-  const form = new FormData()
-  form.append('image', image, 'pick.jpg')
-  const res = await fetch(path, { method: 'POST', body: form, signal })
-  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
-  const body = (await res.json()) as Partial<DraftRead>
-  return { patch: body.patch ?? '', reader: body.reader ?? '', fallback: body.fallback, radiant: asSlots(body.radiant), dire: asSlots(body.dire) }
+const asRead = (body: Partial<DraftRead>): DraftRead => ({
+  patch: body.patch ?? '',
+  reader: body.reader ?? '',
+  fallback: body.fallback,
+  radiant: asSlots(body.radiant),
+  dire: asSlots(body.dire),
+})
+
+// The draft a photo shows, with the draft the server seated the player in.
+export type StreamRead = DraftRead & { draft: DraftInput }
+
+export type StreamEvent =
+  | { type: 'read'; read: StreamRead }
+  | { type: 'ranking'; patch: string; suggestions: Suggestion[] }
+  | { type: 'decision'; decision: Omit<SuggestResult, 'patch'> }
+  | { type: 'tip'; tip: Tip }
+  | { type: 'done' }
+
+// What POST /api/draft/stream ranks: a draft, or a photo with the player's
+// team and position. lang is the tips' language.
+export type StreamRequest =
+  | { kind: 'draft'; draft: DraftInput; lang: string }
+  | { kind: 'photo'; image: Blob; team: 'radiant' | 'dire'; role: number; lang: string }
+
+const ids = (v: unknown) => (Array.isArray(v) ? (v as number[]) : [])
+
+function asEvent(name: string, data: string): StreamEvent | null {
+  let body: Record<string, unknown>
+  try {
+    body = JSON.parse(data) as Record<string, unknown>
+  } catch {
+    return null
+  }
+  switch (name) {
+    case 'read': {
+      const d = (body.draft ?? {}) as Partial<DraftInput>
+      const draft = { allies: ids(d.allies), enemies: ids(d.enemies), bans: ids(d.bans), role: d.role ?? 0 }
+      return { type: 'read', read: { ...asRead(body as Partial<DraftRead>), draft } }
+    }
+    case 'ranking':
+      return { type: 'ranking', patch: String(body.patch ?? ''), suggestions: asSuggestions(body.suggestions) }
+    case 'decision':
+      return { type: 'decision', decision: asDecision(body as Partial<SuggestResult>) }
+    case 'tip': {
+      if (typeof body.heroId !== 'number') return null
+      const text = typeof body.text === 'string' && body.text !== '' ? body.text : undefined
+      const reason = typeof body.reason === 'string' ? body.reason : undefined
+      return { type: 'tip', tip: { heroId: body.heroId, source: body.source === 'writer' && text ? 'writer' : 'template', text, reason } }
+    }
+    case 'done':
+      return { type: 'done' }
+  }
+  return null
+}
+
+// Streams the suggestions for req over Server-Sent Events, calling onEvent
+// for each as it arrives; resolves when the stream ends.
+export async function streamSuggestions(req: StreamRequest, onEvent: (e: StreamEvent) => void, signal?: AbortSignal): Promise<void> {
+  const query = new URLSearchParams({ lang: req.lang })
+  let init: RequestInit
+  if (req.kind === 'photo') {
+    query.set('role', String(req.role))
+    query.set('team', req.team)
+    const form = new FormData()
+    form.append('image', req.image, 'pick.jpg')
+    init = { method: 'POST', body: form, signal }
+  } else {
+    init = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req.draft), signal }
+  }
+  const res = await fetch(`/api/draft/stream?${query}`, init)
+  if (!res.ok || !res.body) throw new Error(`/api/draft/stream: HTTP ${res.status}`)
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader()
+  let buf = ''
+  for (;;) {
+    const { value, done } = await reader.read()
+    if (done) return
+    buf += value.replace(/\r\n?/g, '\n')
+    for (let end = buf.indexOf('\n\n'); end >= 0; end = buf.indexOf('\n\n')) {
+      const block = buf.slice(0, end)
+      buf = buf.slice(end + 2)
+      let name = 'message'
+      const data: string[] = []
+      for (const line of block.split('\n')) {
+        if (line.startsWith('event:')) name = line.slice(6).trim()
+        else if (line.startsWith('data:')) data.push(line.slice(5).replace(/^ /, ''))
+      }
+      const ev = asEvent(name, data.join('\n'))
+      if (ev) onEvent(ev)
+    }
+  }
 }

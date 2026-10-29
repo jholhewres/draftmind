@@ -30,8 +30,13 @@ func jevServer(t *testing.T, handle func(w http.ResponseWriter, body map[string]
 	return c, &last
 }
 
-// answerWith answers the pick question with probs, named by hero.
+// answerWith answers the pick question with probs, named by hero, at confidence 0.42.
 func answerWith(probs map[string]float64) func(http.ResponseWriter, map[string]any) {
+	return answerAt(0.42, probs)
+}
+
+// answerAt answers the pick question with probs at confidence conf.
+func answerAt(conf float64, probs map[string]float64) func(http.ResponseWriter, map[string]any) {
 	return func(w http.ResponseWriter, _ map[string]any) {
 		best, top := "", -1.0
 		for k, p := range probs {
@@ -41,7 +46,7 @@ func answerWith(probs map[string]float64) func(http.ResponseWriter, map[string]a
 		}
 		ans, _ := json.Marshal(map[string]any{
 			"model":   "typesafe/jev-1.13.0",
-			"answers": map[string]any{"pick": map[string]any{"type": "choice", "choice": best, "confidence": 0.42, "probabilities": probs}},
+			"answers": map[string]any{"pick": map[string]any{"type": "choice", "choice": best, "confidence": conf, "probabilities": probs}},
 			"usage":   map[string]any{"input_tokens": 900, "output_tokens": 30},
 		})
 		_, _ = w.Write(ans)
@@ -155,5 +160,26 @@ func TestDecideWithoutJevKeepsTheRankingLabelledUnavailable(t *testing.T) {
 	one := Decide(context.Background(), nil, ds, d, ranked[:1])
 	if one.Source != SourceRanking || one.Reason != ReasonFewCandidates {
 		t.Fatalf("one candidate: source %q reason %q, want few_candidates", one.Source, one.Reason)
+	}
+}
+
+func TestDecideKeepsTheCodeOrderWhenJevIsBelowTheConfidenceFloor(t *testing.T) {
+	ds, d := pubMidDraft()
+	ranked := Rank(ds, d, -1)
+	jev, _ := jevServer(t, answerAt(0.39, evenProbs(ds, ranked[:8], map[string]float64{"Invoker": 0.6})))
+	got := Decide(context.Background(), jev, ds, d, ranked)
+	if got.Source != SourceRanking || got.Reason != ReasonLowConfidence || got.Confidence == nil || *got.Confidence != 0.39 {
+		t.Fatalf("source %q reason %q confidence %v, want the ranking kept for low confidence 0.39", got.Source, got.Reason, got.Confidence)
+	}
+	if g := ids(got.Suggestions); !slices.Equal(g, ids(ranked)) {
+		t.Fatalf("order %v, want the code order %v", g, ids(ranked))
+	}
+	if got.Shadow != 74 {
+		t.Fatalf("shadow pick %d, want Invoker (74), logged only", got.Shadow)
+	}
+	// At the floor, Jev's order stands.
+	jev, _ = jevServer(t, answerAt(0.4, evenProbs(ds, ranked[:8], map[string]float64{"Invoker": 0.6})))
+	if got := Decide(context.Background(), jev, ds, d, ranked); got.Source != SourceJev || got.Suggestions[0].HeroID != 74 {
+		t.Fatalf("at 0.4: source %q first %d, want Jev's Invoker", got.Source, got.Suggestions[0].HeroID)
 	}
 }

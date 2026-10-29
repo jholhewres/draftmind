@@ -11,6 +11,7 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/catalog"
 	"github.com/jholhewres/draftmind/api/internal/draft"
 	"github.com/jholhewres/draftmind/api/internal/photo"
+	"github.com/jholhewres/draftmind/api/internal/writer"
 )
 
 // Pinger reports whether the database answers.
@@ -25,6 +26,8 @@ type Catalog interface {
 	HeroDetail(ctx context.Context, slug, lang string) (catalog.HeroDetail, error)
 	// DraftDataset loads the current patch's ranking data for these enemies.
 	DraftDataset(ctx context.Context, enemies []int) (patch string, ds draft.Dataset, err error)
+	// Names are the current patch's hero and ability names, for the tip check.
+	Names(ctx context.Context) (catalog.Names, error)
 }
 
 // Server wires the routes to their dependencies.
@@ -33,6 +36,7 @@ type Server struct {
 	catalog Catalog
 	jev     draft.Asker
 	reader  photo.Reader
+	tips    Tipper
 	log     *slog.Logger
 
 	suggestLimit, readLimit Limit
@@ -53,15 +57,28 @@ func (s *Server) WithDecider(jev draft.Asker) *Server {
 	return s
 }
 
+// Tipper writes a hero's tip; it fails open to a template.
+type Tipper interface {
+	Tip(ctx context.Context, b writer.Brief) writer.Tip
+}
+
+// WithWriter writes the top heroes' tips in the stream; nil sends templates.
+func (s *Server) WithWriter(t Tipper) *Server {
+	s.tips = t
+	return s
+}
+
 // Handler returns the routed handler.
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", s.health)
 	mux.HandleFunc("GET /api/heroes", s.listHeroes)
 	mux.HandleFunc("GET /api/heroes/{slug}", s.heroDetail)
-	// Both spend money on model calls and need no login.
-	mux.Handle("POST /api/draft/suggest", newLimiter(s.suggestLimit, s.now).wrap(http.HandlerFunc(s.suggest)))
-	mux.Handle("POST /api/draft/read", newLimiter(s.readLimit, s.now).wrap(http.HandlerFunc(s.readDraft)))
+	// All three spend money on model calls and need no login.
+	suggest, read := newLimiter(s.suggestLimit, s.now), newLimiter(s.readLimit, s.now)
+	mux.Handle("POST /api/draft/suggest", suggest.wrap(http.HandlerFunc(s.suggest)))
+	mux.Handle("POST /api/draft/stream", suggest.wrap(s.stream(read)))
+	mux.Handle("POST /api/draft/read", read.wrap(http.HandlerFunc(s.readDraft)))
 	return mux
 }
 

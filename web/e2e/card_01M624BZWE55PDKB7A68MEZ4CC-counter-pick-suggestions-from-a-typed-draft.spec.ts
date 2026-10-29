@@ -54,7 +54,7 @@ test('Each suggestion lists its counter delta per enemy, and ranking the full he
   drafts,
 }, testInfo) => {
   await typeDraft(page)
-  await page.getByRole('radio', { name: 'Pos 3' }).check()
+  await page.getByRole('radio', { name: 'Position 3: Offlane' }).check()
   await expect.poll(() => drafts.at(-1)).toEqual({ allies: [], enemies: [2, 6], bans: [3], role: 3 })
 
   const items = suggested(page)
@@ -84,7 +84,7 @@ test.describe(() => {
     const first = page.getByRole('list', { name: 'Sugestões' }).getByRole('listitem').first()
     await expect(first.locator('.delta')).toHaveText(['▲ Axe +3,1', '▼ Drow Ranger −0,6'])
     await expect(first.locator('.score-value')).toHaveText('9,0')
-    await expect(page.getByRole('group', { name: 'Sua posição' }).getByRole('radio', { name: 'Pos 1' })).toBeChecked()
+    await expect(page.getByRole('group', { name: 'Sua posição' }).getByRole('radio', { name: 'Posição 1: Carry' })).toBeChecked()
     await imagesLoaded(page.locator('main'))
     expect(escaped).toEqual([])
     await expect(page).toHaveScreenshot('draft-suggestions-pt-br.png', { fullPage: true })

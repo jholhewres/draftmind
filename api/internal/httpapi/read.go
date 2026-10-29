@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"image"
 	_ "image/jpeg" // decoders for the formats a photo may come in
@@ -48,48 +49,53 @@ func (s *Server) readDraft(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, status, map[string]string{"error": err.Error()})
 		return
 	}
+	patch, read, status, err := s.readPhoto(r.Context(), w, data)
+	if err != nil {
+		writeJSON(w, status, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, readResponse{Patch: patch, Read: read})
+}
+
+// readPhoto reads the draft in an uploaded photo, holding one of the
+// server's read slots while it does; a busy server sets Retry-After on w.
+func (s *Server) readPhoto(ctx context.Context, w http.ResponseWriter, data []byte) (string, photo.Read, int, error) {
 	// Taken once the upload is in, so a slow upload holds no slot.
 	select {
 	case s.reads <- struct{}{}:
 		defer func() { <-s.reads }()
 	default:
 		w.Header().Set("Retry-After", "2")
-		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "too many photos at once; try again shortly"})
-		return
+		return "", photo.Read{}, http.StatusServiceUnavailable, errors.New("too many photos at once; try again shortly")
 	}
 	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
 	if err != nil || (format != "jpeg" && format != "png") {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "the photo must be a JPEG or PNG image"})
-		return
+		return "", photo.Read{}, http.StatusBadRequest, errors.New("the photo must be a JPEG or PNG image")
 	}
 	if cfg.Width > maxPhotoSide || cfg.Height > maxPhotoSide {
-		writeJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": "the photo is larger than 2048 px on a side"})
-		return
+		return "", photo.Read{}, http.StatusRequestEntityTooLarge, errors.New("the photo is larger than 2048 px on a side")
 	}
 	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "the photo could not be decoded"})
-		return
+		return "", photo.Read{}, http.StatusBadRequest, errors.New("the photo could not be decoded")
 	}
-	patch, heroes, err := s.catalog.Heroes(r.Context())
+	patch, heroes, err := s.catalog.Heroes(ctx)
 	if err != nil {
 		s.log.Error("draft read: heroes", "err", err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "could not load the heroes"})
-		return
+		return "", photo.Read{}, http.StatusInternalServerError, errors.New("could not load the heroes")
 	}
 	start := time.Now()
-	read, err := s.reader.Read(r.Context(), img, heroes)
+	read, err := s.reader.Read(ctx, img, heroes)
 	if err != nil {
 		s.log.Warn("draft read failed", "err", err, "latency", time.Since(start))
-		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "the photo could not be read; build the draft by hand"})
-		return
+		return "", photo.Read{}, http.StatusBadGateway, errors.New("the photo could not be read; build the draft by hand")
 	}
 	attrs := []any{"reader", read.Reader, "fallback", read.Fallback, "latency", time.Since(start)}
 	if read.Cost != nil {
 		attrs = append(attrs, "cost_usd", *read.Cost)
 	}
 	s.log.Info("draft read", attrs...)
-	writeJSON(w, http.StatusOK, readResponse{Patch: patch, Read: read})
+	return patch, read, http.StatusOK, nil
 }
 
 // photoUpload reads the multipart field "image" into memory, at most

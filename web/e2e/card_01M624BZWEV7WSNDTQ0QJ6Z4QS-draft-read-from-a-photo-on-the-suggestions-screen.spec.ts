@@ -1,21 +1,37 @@
 import path from 'node:path'
 import { readFileSync } from 'node:fs'
 import type { Page } from '@playwright/test'
-import { expect, imagesLoaded, test } from './fixtures.ts'
+import { expect, imagesLoaded, rankFor, sse, test, type DraftInput } from './fixtures.ts'
+import read from './fixtures/read.json' with { type: 'json' }
 
 const fixture = (name: string) => path.join(import.meta.dirname, 'fixtures', name)
 const photo = fixture('pick-photo.jpg') // 2400x1350, with EXIF (make, model, date)
 
-// The photo's bytes as POST /api/draft/read received them.
+// The photo's bytes as POST /api/draft/stream received them.
 type Upload = { body: Buffer }
 
-// Answers the read with the fixture: Crystal Maiden, you and Bane against
-// Axe, Earthshaker and one slot the reader could not read.
-async function mockRead(page: Page) {
+// The draft the server seats from the fixture read.
+const seated: DraftInput = { allies: [5, 3], enemies: [2, 7], bans: [], role: 1 }
+
+// Streams the read of the photo with the fixture: Crystal Maiden, you and
+// Bane against Axe, Earthshaker and one slot the reader could not read;
+// then the ranking of that draft. A draft sent as JSON falls through to the
+// shared mock. drafts records the seated draft as ranked.
+async function mockRead(page: Page, drafts: DraftInput[] = []) {
   const uploads: Upload[] = []
-  await page.route('**/api/draft/read', async (route) => {
+  await page.route('**/api/draft/stream**', async (route) => {
+    if (!route.request().headers()['content-type']?.startsWith('multipart/form-data')) return route.fallback()
     uploads.push({ body: route.request().postDataBuffer()! })
-    await route.fulfill({ path: fixture('read.json') })
+    drafts.push(seated)
+    const suggestions = rankFor(seated)
+    await route.fulfill(
+      sse([
+        ['read', { ...read, draft: seated }],
+        ['ranking', { patch: read.patch, suggestions }],
+        ['decision', { source: 'jev', confidence: 0.4, suggestions }],
+        ['done', {}],
+      ]),
+    )
   })
   return uploads
 }
@@ -40,7 +56,7 @@ async function takePhoto(page: Page) {
 }
 
 test('Unknown or low-confidence slots are flagged, never guessed, and fixing one re-ranks in place', async ({ page, drafts, escaped }) => {
-  await mockRead(page)
+  await mockRead(page, drafts)
   await takePhoto(page)
   const enemy = page.getByRole('group', { name: 'Enemy' })
   const flagged = enemy.getByRole('button', { name: 'Unread hero, choose' })

@@ -198,10 +198,14 @@ footer p { margin: 0 0 4px; }
 .roles { margin: 0; padding: 0; border: 0; min-width: 0; }
 .role-options { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .role-option {
-  position: relative; height: 38px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface);
-  display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px;
+  position: relative; min-height: 48px; padding: 4px 2px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; cursor: pointer;
+  text-align: center; line-height: 1.15;
 }
-.role-option input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+.role-num, .role-name { pointer-events: none; }
+.role-num { font: 600 11px 'Barlow Condensed', Barlow, system-ui, sans-serif; opacity: 0.75; }
+.role-name { font-size: 12px; overflow-wrap: anywhere; }
+.role-option input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
 .role-option:has(input:checked) { border-color: var(--gold); background: var(--gold); color: var(--gold-text); font-weight: 600; }
 .role-option:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
 .hint { margin: 0; font-size: 13px; }
@@ -216,9 +220,13 @@ footer p { margin: 0 0 4px; }
 .suggestions p { margin: 0; }
 .suggestion-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .suggestion {
-  display: flex; align-items: center; gap: 12px; padding: 6px 12px 6px 6px; border-radius: 10px;
+  display: flex; flex-direction: column; gap: 6px; padding: 6px 12px 6px 6px; border-radius: 10px;
   background: var(--surface); border: 1px solid var(--border);
 }
+.suggestion-row { display: flex; align-items: center; gap: 12px; }
+.tip { margin: 0; padding: 0 0 2px 6px; font-size: 13px; line-height: 1.4; color: var(--fg); }
+.tip.pending { color: var(--muted); font-style: italic; }
+.source-label.refining { border-color: var(--gold); color: var(--gold-light); }
 .suggestion:first-child { border-color: var(--gold); }
 .suggestion img { width: 64px; height: 36px; flex-shrink: 0; object-fit: cover; border-radius: 4px; display: block; }
 .suggestion:first-child img { width: 96px; height: 54px; border-radius: 6px; }

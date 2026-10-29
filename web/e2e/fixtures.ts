@@ -12,10 +12,25 @@ const googleFonts = 'https://fonts.googleapis.com/**'
 
 export type DraftInput = { allies: number[]; enemies: number[]; bans: number[]; role: number }
 
+// The fixture ranking without the heroes the draft took, each keeping its
+// deltas against the draft's enemies only.
+export function rankFor(draft: DraftInput) {
+  const taken = new Set([...draft.allies, ...draft.enemies, ...draft.bans])
+  return ranking.suggestions
+    .filter((s) => !taken.has(s.heroId))
+    .map((s) => ({ ...s, enemies: s.enemies.filter((e) => draft.enemies.includes(e.heroId)) }))
+}
+
+// A whole Server-Sent Events stream as one response, for route.fulfill.
+export const sse = (events: [string, unknown][]) => ({
+  contentType: 'text/event-stream',
+  body: events.map(([name, data]) => `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`).join(''),
+})
+
 type Fixtures = {
   // Requests that tried to leave the dev server unmocked; each was aborted.
   escaped: string[]
-  // Each draft POST /api/draft/suggest was asked to rank, in order.
+  // Each draft POST /api/draft/stream was asked to rank, in order.
   drafts: DraftInput[]
   mockApi: void
 }
@@ -31,19 +46,21 @@ export const test = base.extend<Fixtures>({
     })
     await provide(escaped)
   },
-  // The fixture ranking without the heroes the draft took, each keeping its
-  // deltas against the draft's enemies only, as Jev's order.
+  // Streams the fixture ranking for each draft, kept as Jev's order.
   drafts: async ({ page, escaped }, provide) => {
     void escaped
     const drafts: DraftInput[] = []
-    await page.route('**/api/draft/suggest', (route) => {
+    await page.route('**/api/draft/stream**', (route) => {
       const draft = route.request().postDataJSON() as DraftInput
       drafts.push(draft)
-      const taken = new Set([...draft.allies, ...draft.enemies, ...draft.bans])
-      const suggestions = ranking.suggestions
-        .filter((s) => !taken.has(s.heroId))
-        .map((s) => ({ ...s, enemies: s.enemies.filter((e) => draft.enemies.includes(e.heroId)) }))
-      return route.fulfill({ json: { patch: ranking.patch, source: 'jev', confidence: 0.4, suggestions } })
+      const suggestions = rankFor(draft)
+      return route.fulfill(
+        sse([
+          ['ranking', { patch: ranking.patch, suggestions }],
+          ['decision', { source: 'jev', confidence: 0.4, suggestions }],
+          ['done', {}],
+        ]),
+      )
     })
     await provide(drafts)
   },

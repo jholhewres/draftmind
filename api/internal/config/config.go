@@ -20,7 +20,7 @@ type Config struct {
 	PhotoReader       string // the default photo reader, jev or vision; the other is its fallback
 	PhotoJevModel     string // Jev model for photo reads; Box questions need 1.14
 	DataDir           string // local data outside git, e.g. the portrait cache
-	WriterModel       string
+	WriterModel       string // writes the tips (ADR-0003 step 4)
 	STTModel          string
 	OpenDotaAPIKey    string
 	DotaconstantsRef  string
@@ -49,7 +49,7 @@ func load(getenv func(string) string) (Config, error) {
 		PhotoReader:       get("PHOTO_READER", "jev"),
 		PhotoJevModel:     get("PHOTO_JEV_MODEL", "typesafe/jev-1.14"),
 		DataDir:           get("DATA_DIR", "data"),
-		WriterModel:       get("WRITER_MODEL", ""),
+		WriterModel:       get("WRITER_MODEL", "openai/gpt-6-luna"),
 		STTModel:          get("STT_MODEL", ""),
 		OpenDotaAPIKey:    get("OPENDOTA_API_KEY", ""),
 		DotaconstantsRef:  get("DOTACONSTANTS_REF", "master"),

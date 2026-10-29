@@ -1,14 +1,16 @@
 import type { Page } from '@playwright/test'
 import ranking from './fixtures/suggest.json' with { type: 'json' }
-import { expect, imagesLoaded, test } from './fixtures.ts'
+import { expect, imagesLoaded, sse, test } from './fixtures.ts'
 
 const suggestions = (page: Page) => page.getByRole('region', { name: 'Suggestions' })
 const names = (page: Page) => suggestions(page).getByRole('listitem').locator('.suggestion-name')
 
-// Answers POST /api/draft/suggest with the fixture ranking in the given
-// order and source; registered after the shared mock, so it wins.
+// Streams the fixture ranking, then body as the decision; registered after
+// the shared mock, so it wins.
 async function answer(page: Page, body: object) {
-  await page.route('**/api/draft/suggest', (route) => route.fulfill({ json: { patch: ranking.patch, ...body } }))
+  await page.route('**/api/draft/stream**', (route) =>
+    route.fulfill(sse([['ranking', ranking], ['decision', body], ['done', {}]])),
+  )
 }
 
 test('A timeout falls back to the code ranking with a label', async ({ page, escaped }) => {

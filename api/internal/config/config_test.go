@@ -47,3 +47,13 @@ func TestLoadRejectsAnUnknownPhotoReader(t *testing.T) {
 		t.Fatal("PHOTO_READER=ocr accepted")
 	}
 }
+
+func TestLoadDefaultsTheWriterToAFastCheapModel(t *testing.T) {
+	c, err := load(env(map[string]string{"DATABASE_URL": "postgres://x"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.WriterModel != "openai/gpt-6-luna" {
+		t.Fatalf("writer model %q, want openai/gpt-6-luna", c.WriterModel)
+	}
+}

@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { vi } from 'vitest'
 import DraftBoard from './DraftBoard'
 import I18nProvider from '../I18nProvider'
+import { sseResponse } from '../test/sse'
 
 const hero = (id: number, slug: string, name: string) => ({
   id,
@@ -54,12 +55,14 @@ const ranked = {
 
 type Asked = { allies: number[]; enemies: number[]; bans: number[]; role: number }
 
+// Streams the code ranking, then result as the decision.
 function mockApi(suggestStatus = 200, result: object = ranked) {
   const asked: Asked[] = []
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
-    if (String(input) === '/api/draft/suggest') {
+    if (String(input).startsWith('/api/draft/stream')) {
       asked.push(JSON.parse(String(init?.body)) as Asked)
-      return new Response(JSON.stringify(result), { status: suggestStatus })
+      if (suggestStatus !== 200) return new Response('{"error":"down"}', { status: suggestStatus })
+      return sseResponse([['ranking', { patch: ranked.patch, suggestions: ranked.suggestions }], ['decision', result], ['done']])
     }
     return new Response(JSON.stringify(catalog), { status: 200 })
   })
@@ -108,14 +111,14 @@ test('the picker leaves out heroes already in the draft, and a filled slot can b
   expect(within(group('Enemies')).getAllByRole('button', { name: 'Add enemy' })).toHaveLength(5)
 })
 
-test('the draft and the position go to /api/draft/suggest, and the top 5 show a counter chip per enemy and the score', async () => {
+test('the draft and the position go to /api/draft/stream, and the top 5 show a counter chip per enemy and the score', async () => {
   const asked = mockApi()
   render(<DraftBoard />)
   await screen.findByRole('group', { name: 'Enemies' })
   await pick('Enemies', 'Add enemy', 'axe', 'Axe')
   await pick('Allies', 'Add ally', 'crys', 'Crystal Maiden')
   await pick('Bans', 'Add ban', 'earth', 'Earthshaker')
-  fireEvent.click(screen.getByRole('radio', { name: 'Pos 3' }))
+  fireEvent.click(screen.getByRole('radio', { name: 'Position 3: Offlane' }))
 
   await waitFor(() => expect(asked.at(-1)).toEqual({ allies: [5], enemies: [2], bans: [7], role: 3 }))
   const list = await screen.findByRole('list', { name: 'Suggestions' })
@@ -128,13 +131,26 @@ test('the draft and the position go to /api/draft/suggest, and the top 5 show a 
   expect(within(items[2]).getByText('Axe 0.0')).toBeInTheDocument()
 })
 
-test('the position starts at Pos 1 and a new position asks again', async () => {
+test('the position starts at 1, Carry, and a new position asks again', async () => {
   const asked = mockApi()
   render(<DraftBoard />)
   await waitFor(() => expect(asked.at(-1)?.role).toBe(1))
-  expect(screen.getByRole('radio', { name: 'Pos 1' })).toBeChecked()
-  fireEvent.click(screen.getByRole('radio', { name: 'Pos 5' }))
+  expect(screen.getByRole('radio', { name: 'Position 1: Carry' })).toBeChecked()
+  fireEvent.click(screen.getByRole('radio', { name: 'Position 5: Hard support' }))
   await waitFor(() => expect(asked.at(-1)?.role).toBe(5))
+})
+
+test('each position button shows its number above the role name', async () => {
+  mockApi()
+  render(<DraftBoard />)
+  const options = (await screen.findByRole('group', { name: 'Your position' })).querySelectorAll('.role-option')
+  expect([...options].map((o) => [o.querySelector('.role-num')?.textContent, o.querySelector('.role-name')?.textContent])).toEqual([
+    ['1', 'Carry'],
+    ['2', 'Mid'],
+    ['3', 'Offlane'],
+    ['4', 'Support'],
+    ['5', 'Hard support'],
+  ])
 })
 
 test('a failed ranking shows an error', async () => {
@@ -158,6 +174,8 @@ test('with the browser in pt-BR, the board is in Portuguese and deltas use a dec
   expect(within(list).getByText('▲ Axe +3,1')).toBeInTheDocument()
   expect(within(list).getByText('▼ Axe −0,6')).toBeInTheDocument()
   expect(screen.getByRole('group', { name: 'Sua posição' })).toBeInTheDocument()
+  expect(screen.getByRole('radio', { name: 'Posição 4: Suporte' })).toBeInTheDocument()
+  expect(screen.getByRole('radio', { name: 'Posição 5: Hard suporte' })).toBeInTheDocument()
 })
 
 test("the code ranking kept when Jev is late carries a small label, and Jev's order carries none", async () => {
@@ -170,7 +188,15 @@ test("the code ranking kept when Jev is late carries a small label, and Jev's or
   vi.restoreAllMocks()
 
   mockApi()
-  render(<DraftBoard />)
+  const second = render(<DraftBoard />)
   await screen.findByRole('list', { name: 'Suggestions' })
+  await waitFor(() => expect(screen.queryByText('Refining…')).not.toBeInTheDocument())
   expect(screen.queryByText('Ranked from stats')).not.toBeInTheDocument()
+  second.unmount()
+  vi.restoreAllMocks()
+
+  // Below Jev's confidence floor, the code order stands with its own reason.
+  mockApi(200, { ...ranked, source: 'ranking', reason: 'low_confidence', confidence: 0.3 })
+  render(<DraftBoard />)
+  expect(await screen.findByText('Ranked from stats')).toHaveAttribute('title', 'The decision model was not sure enough, so the stats order stands.')
 })

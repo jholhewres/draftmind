@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { vi } from 'vitest'
 import PhotoSuggest from './PhotoSuggest'
+import { fedStream, sseResponse, type FedStream } from '../test/sse'
 
 const hero = (id: number, slug: string, name: string) => ({
   id,
@@ -38,31 +39,57 @@ const read = {
   dire: [slot(2), slot(14), unread, slot(), slot()],
 }
 
-const suggestion = (heroId: number, score: number) => ({ heroId, score, counter: 0, winRate: 51, roleFit: 1, enemies: [] })
+const suggestion = (heroId: number, score: number, enemies: { heroId: number; delta: number }[] = []) => ({
+  heroId,
+  score,
+  counter: 0,
+  winRate: 51,
+  roleFit: 1,
+  enemies: enemies.map((e) => ({ ...e, games: 100 })),
+})
 
 type Asked = { allies: number[]; enemies: number[]; bans: number[]; role: number }
 
-// Answers the API; each suggest answer lists ranks in order, one list per call.
-function mockApi(opts: { read?: object; readStatus?: number; ranks?: number[][] } = {}) {
-  const asked: Asked[] = []
+// The draft the server seats from the default read: the first empty radiant
+// slot is the player's.
+const seated = { allies: [1, 5], enemies: [2, 14], bans: [], role: 1 }
+
+const rankingOf = (ids: number[]) => ({ patch: '7.41', suggestions: ids.map((id, i) => suggestion(id, 9 - i)) })
+
+// Answers the API. The photo goes up once, on POST /api/draft/stream, and
+// streams its read and the ranking of the draft it seats; each later draft
+// streams the next list of ranks. drafts are the drafts ranked, in order.
+function mockApi(opts: { read?: object; draft?: Asked; readStatus?: number; ranks?: number[][]; photoStream?: FedStream } = {}) {
+  const drafts: Asked[] = []
+  const urls: string[] = []
   const uploads: FormData[] = []
   const ranks = opts.ranks ?? [[8, 9, 7]]
   let gate: (() => void) | null = null
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     const url = String(input)
-    if (url === '/api/draft/read') {
-      uploads.push(init?.body as FormData)
-      return new Response(JSON.stringify(opts.read ?? read), { status: opts.readStatus ?? 200 })
-    }
-    if (url === '/api/draft/suggest') {
-      asked.push(JSON.parse(String(init?.body)) as Asked)
-      const ids = ranks[Math.min(asked.length - 1, ranks.length - 1)]
-      if (asked.length > 1) await new Promise<void>((resolve) => (gate = resolve)) // a re-rank takes a moment
-      return new Response(JSON.stringify({ patch: '7.41', source: 'jev', suggestions: ids.map((id, i) => suggestion(id, 9 - i)) }))
+    if (url.startsWith('/api/draft/stream')) {
+      urls.push(url)
+      if (init?.body instanceof FormData) {
+        uploads.push(init.body)
+        if (opts.readStatus) return new Response(JSON.stringify({ error: 'unreadable' }), { status: opts.readStatus })
+        if (opts.photoStream) return opts.photoStream.response
+        const draft = opts.draft ?? seated
+        drafts.push(draft)
+        return sseResponse([
+          ['read', { ...(opts.read ?? read), draft }],
+          ['ranking', rankingOf(ranks[0])],
+          ['decision', { source: 'jev', confidence: 0.6, ...rankingOf(ranks[0]) }],
+          ['done'],
+        ])
+      }
+      drafts.push(JSON.parse(String(init?.body)) as Asked)
+      const ids = ranks[Math.min(drafts.length - 1, ranks.length - 1)]
+      await new Promise<void>((resolve) => (gate = resolve)) // a re-rank takes a moment
+      return sseResponse([['ranking', rankingOf(ids)], ['decision', { source: 'jev', confidence: 0.6, ...rankingOf(ids) }], ['done']])
     }
     return new Response(JSON.stringify(catalog))
   })
-  return { asked, uploads, release: () => gate?.() }
+  return { drafts, urls, uploads, release: () => gate?.() }
 }
 
 afterEach(() => vi.restoreAllMocks())
@@ -80,7 +107,7 @@ const group = (name: string) => screen.getByRole('group', { name })
 const names = () => within(screen.getByRole('list', { name: 'Suggestions' })).getAllByRole('listitem').map((li) => li.querySelector('.suggestion-name')?.textContent)
 
 test('the read draft shows as your team and the enemy, and the ranking renders as soon as the read returns', async () => {
-  const { asked } = mockApi()
+  const { drafts: asked } = mockApi()
   renderScreen()
   expect(await screen.findByRole('list', { name: 'Suggestions' })).toBeInTheDocument()
   expect(names()).toEqual(['Juggernaut', 'Mirana', 'Earthshaker'])
@@ -97,7 +124,7 @@ test('the read draft shows as your team and the enemy, and the ranking renders a
 })
 
 test('an unread slot is flagged with a + and left out of the ranking, never guessed', async () => {
-  const { asked } = mockApi()
+  const { drafts: asked } = mockApi()
   renderScreen()
   const flagged = await within(await screen.findByRole('group', { name: 'Enemy' })).findByRole('button', { name: 'Unread hero, choose' })
   expect(flagged).toHaveClass('flagged')
@@ -108,7 +135,7 @@ test('an unread slot is flagged with a + and left out of the ranking, never gues
 })
 
 test('fixing an unread slot re-ranks in place: the old list stays until the new one arrives', async () => {
-  const { asked, release } = mockApi({ ranks: [[8, 9, 7], [7, 8, 9]] })
+  const { drafts: asked, release } = mockApi({ ranks: [[8, 9, 7], [7, 8, 9]] })
   renderScreen()
   await screen.findByRole('list', { name: 'Suggestions' })
   fireEvent.click(within(group('Enemy')).getByRole('button', { name: 'Unread hero, choose' }))
@@ -117,7 +144,7 @@ test('fixing an unread slot re-ranks in place: the old list stays until the new 
   fireEvent.click(within(dialog).getByRole('button', { name: 'Earthshaker' }))
 
   await waitFor(() => expect(asked).toHaveLength(2))
-  expect(asked[1].enemies).toEqual([2, 14, 7])
+  expect(asked[1]).toEqual({ allies: [1, 5], enemies: [2, 14, 7], bans: [], role: 1 })
   expect(within(group('Enemy')).getByRole('button', { name: 'Enemy: Earthshaker' })).toBeInTheDocument()
   expect(screen.queryByText(/not read/)).not.toBeInTheDocument()
   expect(names()).toEqual(['Juggernaut', 'Mirana', 'Earthshaker']) // still the old list
@@ -138,11 +165,49 @@ test('the photo is uploaded once, as the downscaled copy, never the original fil
 })
 
 test('swapping teams makes the other side your team', async () => {
-  const { asked } = mockApi()
+  const { drafts: asked, urls } = mockApi()
   renderScreen()
   await screen.findByRole('list', { name: 'Suggestions' })
+  expect(urls[0]).toBe('/api/draft/stream?lang=en&role=1&team=radiant')
   fireEvent.click(screen.getByRole('button', { name: 'Swap teams' }))
   await waitFor(() => expect(asked.at(-1)).toEqual({ allies: [2, 14], enemies: [1, 5], bans: [], role: 1 }))
+  expect(urls.at(-1)).toBe('/api/draft/stream?lang=en')
+})
+
+test('each suggestion updates in place as the stream sends the ranking, the decision and the tips', async () => {
+  const stream = fedStream()
+  mockApi({ photoStream: stream })
+  renderScreen()
+  stream.push('read', { ...read, draft: seated })
+  stream.push('ranking', {
+    patch: '7.41',
+    suggestions: [suggestion(8, 9, [{ heroId: 2, delta: 3.1 }, { heroId: 14, delta: 1.2 }]), suggestion(9, 8), suggestion(7, 7)],
+  })
+  const list = await screen.findByRole('list', { name: 'Suggestions' })
+  expect(names()).toEqual(['Juggernaut', 'Mirana', 'Earthshaker'])
+  expect(screen.getByText('Refining…')).toBeInTheDocument()
+  expect(within(list).getAllByText('Writing a tip…')).toHaveLength(3)
+  const juggernaut = within(list).getByText('Juggernaut').closest('li')!
+
+  stream.push('decision', {
+    source: 'jev',
+    confidence: 0.6,
+    suggestions: [suggestion(7, 7), suggestion(8, 9, [{ heroId: 2, delta: 3.1 }, { heroId: 14, delta: 1.2 }]), suggestion(9, 8)],
+  })
+  await waitFor(() => expect(names()).toEqual(['Earthshaker', 'Juggernaut', 'Mirana']))
+  expect(screen.queryByText('Refining…')).not.toBeInTheDocument()
+  expect(within(list).getByText('Juggernaut').closest('li')).toBe(juggernaut) // moved, not redrawn
+
+  stream.push('tip', { heroId: 7, text: 'Earthshaker locks down Axe and Pudge.', source: 'writer' })
+  const earthshaker = await within(list).findByText('Earthshaker locks down Axe and Pudge.')
+  expect(earthshaker.closest('li')).toBe(within(list).getByText('Earthshaker').closest('li'))
+  stream.push('tip', { heroId: 8, source: 'template', reason: 'rejected' })
+  expect(await within(juggernaut).findByText('Juggernaut is strong against Axe and Pudge; 51% win rate this patch.')).toBeInTheDocument()
+  expect(within(list).getAllByText('Writing a tip…')).toHaveLength(1)
+
+  stream.push('done')
+  stream.end()
+  await waitFor(() => expect(within(list).queryByText('Writing a tip…')).not.toBeInTheDocument())
 })
 
 test('a photo that cannot be read says so and offers the board by hand', async () => {
@@ -153,12 +218,15 @@ test('a photo that cannot be read says so and offers the board by hand', async (
 })
 
 test('an unread seat on your team is yours when no slot is empty, so every read ally stays in the ranking', async () => {
-  const { asked } = mockApi({
+  const { drafts: asked, urls } = mockApi({
     read: { patch: '7.41', reader: 'jev', radiant: [unread, slot(1), slot(5), slot(7), slot(14)], dire: [slot(2), slot(), slot(), slot(), slot()] },
+    draft: { allies: [1, 5, 7, 14], enemies: [2], bans: [], role: 1 },
   })
   renderScreen()
-  await waitFor(() => expect(asked).toHaveLength(1))
-  expect(asked[0].allies).toEqual([1, 5, 7, 14])
+  await screen.findByRole('list', { name: 'Suggestions' })
+  // The screen seats the player where the server did, so it asks nothing more.
+  expect(asked).toHaveLength(1)
+  expect(urls).toHaveLength(1)
   expect(within(group('Your team')).getByText('You')).toBeInTheDocument()
   expect(within(group('Your team')).getAllByRole('button')).toHaveLength(4)
 })

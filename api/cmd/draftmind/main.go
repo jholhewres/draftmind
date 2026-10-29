@@ -20,6 +20,7 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/decision"
 	"github.com/jholhewres/draftmind/api/internal/gamesync"
 	"github.com/jholhewres/draftmind/api/internal/httpapi"
+	"github.com/jholhewres/draftmind/api/internal/writer"
 )
 
 const usage = "usage: draftmind <serve|migrate|sync heroes|sync details|sync stats|bench photo [dir]>"
@@ -64,9 +65,10 @@ func run(ctx context.Context, cmd string, log *slog.Logger) error {
 				cfg.DecisionProvider, decision.NewPGLog(pool, log)))
 			readers := newPhotoReaders(cfg, decision.NewPGLog(pool, log))
 			srv.WithPhotoReader(readers.chain(cfg.PhotoReader))
+			srv.WithWriter(writer.New(cfg.OpenRouterBaseURL, cfg.OpenRouterAPIKey, cfg.WriterModel, writer.NewPGLog(pool, log)))
 			go warmPortraits(ctx, cat, readers.jev.Portraits, log)
 		} else {
-			log.Warn("OPENROUTER_API_KEY is not set: suggestions keep the code ranking and photos cannot be read")
+			log.Warn("OPENROUTER_API_KEY is not set: suggestions keep the code ranking, tips are templates and photos cannot be read")
 		}
 		return serve(ctx, cfg, srv.Handler(), log)
 	case "bench":

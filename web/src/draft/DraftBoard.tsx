@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { fetchHeroes, type Hero, type HeroCatalog } from '../api'
+import { fetchHeroes, type Hero, type HeroCatalog, type StreamRequest } from '../api'
 import { useI18n } from '../i18n'
 import HeroPicker from './HeroPicker'
 import { sideLabel as label, type Side } from './labels'
 import { Row, SlotButton } from './slots'
+import RoleOptions from './RoleOptions'
 import SuggestionList from './Suggestions'
-import { useRanking } from './useRanking'
+import { useSuggestStream } from './useSuggestStream'
 
 type Board = { ally: (number | null)[]; enemy: (number | null)[]; ban: number[] }
 type Slot = { side: Side; index: number }
@@ -15,7 +16,6 @@ type Slot = { side: Side; index: number }
 const ALLIES = 4
 const ENEMIES = 5
 const MAX_BANS = 10
-const roles = [1, 2, 3, 4, 5]
 
 const emptyBoard = (): Board => ({ ally: Array(ALLIES).fill(null), enemy: Array(ENEMIES).fill(null), ban: [] })
 
@@ -34,7 +34,7 @@ function place(board: Board, { side, index }: Slot, id: number | null): Board {
 }
 
 export default function DraftBoard() {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [catalog, setCatalog] = useState<HeroCatalog | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [board, setBoard] = useState<Board>(emptyBoard)
@@ -56,7 +56,8 @@ export default function DraftBoard() {
     [board, role],
   )
 
-  const ranking = useRanking(input)
+  const request = useMemo((): StreamRequest => ({ kind: 'draft', draft: input, lang: locale }), [input, locale])
+  const ranking = useSuggestStream(request)
 
   const byId = useMemo(() => new Map((catalog?.heroes ?? []).map((h) => [h.id, h])), [catalog])
   const taken = new Set([...input.allies, ...input.enemies, ...input.bans])
@@ -99,17 +100,7 @@ export default function DraftBoard() {
                 {board.ban.length < MAX_BANS && slotButton('ban', board.ban.length, null)}
               </Row>
             </section>
-            <fieldset className="roles">
-              <legend className="sr-only">{t('draft.role')}</legend>
-              <div className="role-options">
-                {roles.map((r) => (
-                  <label key={r} className="role-option">
-                    <input type="radio" name="role" value={r} checked={role === r} onChange={() => setRole(r)} />
-                    {t('draft.pos', { n: r })}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
+            <RoleOptions name="role" role={role} onChange={setRole} />
             <p className="muted hint">{t('draft.hint')}</p>
           </div>
           <SuggestionList {...ranking} byId={byId} />
