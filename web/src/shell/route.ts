@@ -25,7 +25,8 @@ export type Route = { tab: Tab; hero: string | null; manual: boolean; signin?: S
 // "#/draft/manual" is the draft board built by hand. "#/signin" is the
 // sign-in screen, outside the tabs: "#/signin/link/<token>" an e-mailed
 // link, "#/signin/failed" a Steam sign-in that did not finish. A query
-// after "?" is the screen's own. An empty or unknown hash opens Draft.
+// after "?" is the screen's own. An empty hash is the root (landing); an
+// unknown one opens Draft.
 export function routeFromHash(hash: string): Route {
   const [id, sub, arg] = hash.replace(/^#\/?/, '').split('?')[0].split('/')
   if (id === 'signin')
