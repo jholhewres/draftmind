@@ -109,10 +109,19 @@ func TestDatafeedHTTPFeedAsksForTheHeroInTheLanguage(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 	feed := NewHTTPFeed(srv.URL, 0, srv.Client())
-	if _, err := feed.HeroData(context.Background(), 13, "brazilian"); err != nil {
+	ctx := context.Background()
+	if _, err := feed.HeroData(ctx, 13, "brazilian"); err != nil {
 		t.Fatal(err)
 	}
-	if want := []string{"/datafeed/herodata?hero_id=13&language=brazilian"}; !slices.Equal(got, want) {
+	if _, err := feed.PatchList(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := feed.PatchNotes(ctx, "7.41f", "brazilian"); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"/datafeed/herodata?hero_id=13&language=brazilian", "/datafeed/patchnoteslist?language=english",
+		"/datafeed/patchnotes?language=brazilian&version=7.41f"}
+	if !slices.Equal(got, want) {
 		t.Fatalf("requests %v, want %v", got, want)
 	}
 }

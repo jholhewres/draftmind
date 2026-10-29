@@ -24,7 +24,7 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/writer"
 )
 
-const usage = "usage: draftmind <serve|migrate|sync heroes|sync details|sync patchnotes [last N]|sync stats|bench photo [dir]>"
+const usage = "usage: draftmind <serve|migrate|sync heroes|sync details|sync patchnotes [N]|sync stats|bench photo [dir]>"
 
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
