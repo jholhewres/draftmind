@@ -14,7 +14,7 @@ const urgencyLabel: Record<Urgency, MessageKey> = {
 export default function BuildCard({ build, byId }: { build: Build; byId: Map<number, Hero> }) {
   const { t } = useI18n()
   const name = (id: number) => byId.get(id)?.name ?? `#${id}`
-  const late = build.core.filter((p) => p.phase !== 'start')
+  const afterStart = build.core.filter((p) => p.phase !== 'start')
   return (
     <section className="panel build-card" aria-labelledby="build-title">
       <div className="build-head">
@@ -32,7 +32,7 @@ export default function BuildCard({ build, byId }: { build: Build; byId: Map<num
           ))}
         </ul>
       )}
-      {late.some((p) => p.items.length > 0) ? <PhaseList phases={late} /> : <p className="muted">{t('build.none')}</p>}
+      {afterStart.some((p) => p.items.length > 0) ? <PhaseList phases={afterStart} /> : <p className="muted">{t('build.none')}</p>}
       <p className="muted build-source">{t('build.source')}</p>
     </section>
   )

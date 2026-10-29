@@ -27,6 +27,11 @@ type HeroBuild struct {
 // popularity and, for each enemy, the heroes that beat it. A popularity row
 // whose item is not on the current patch is never read.
 func (s *Store) BuildDataset(ctx context.Context, enemies []int) (string, items.Dataset, error) {
+	return s.buildDataset(ctx, enemies, 0)
+}
+
+// buildDataset loads the build data; only > 0 reads that hero's popularity alone.
+func (s *Store) buildDataset(ctx context.Context, enemies []int, only int) (string, items.Dataset, error) {
 	ds := items.Dataset{Items: map[int]items.Item{}, Popularity: map[int]map[string][]items.Count{}, Counters: map[int][]int{}, Names: map[int]string{}}
 	var patch string
 	err := pgx.BeginTxFunc(ctx, s.pool, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly}, func(tx pgx.Tx) error {
@@ -52,7 +57,7 @@ func (s *Store) BuildDataset(ctx context.Context, enemies []int) (string, items.
 		rows, err = tx.Query(ctx, `
 			SELECT ip.hero_id, ip.phase, ip.item_id, ip.count FROM hero_item_popularity ip
 			JOIN item i ON i.patch_id = ip.patch_id AND i.id = ip.item_id
-			WHERE ip.patch_id = $1`, patchID)
+			WHERE ip.patch_id = $1 AND ($2 = 0 OR ip.hero_id = $2)`, patchID, only)
 		if err != nil {
 			return fmt.Errorf("item popularity: %w", err)
 		}
@@ -127,7 +132,7 @@ func (s *Store) HeroBuild(ctx context.Context, slug string) (HeroBuild, error) {
 	if err != nil {
 		return HeroBuild{}, fmt.Errorf("hero %s: %w", slug, err)
 	}
-	patch, ds, err := s.BuildDataset(ctx, nil)
+	patch, ds, err := s.buildDataset(ctx, nil, heroID)
 	if err != nil {
 		return HeroBuild{}, err
 	}

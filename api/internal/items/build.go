@@ -90,7 +90,12 @@ const (
 	ReasonError         = "error"
 	ReasonUnavailable   = "unavailable"
 	ReasonFewCandidates = "few_candidates"
+	ReasonLowConfidence = "low_confidence" // an answer below MinConfidence; Jev's answers are only logged
 )
+
+// MinConfidence is the least confidence each of Jev's answers needs to
+// replace the code order (ADR-0003: shadow below it).
+const MinConfidence = 0.4
 
 // Build is a hero's build against a lineup.
 type Build struct {
@@ -268,8 +273,8 @@ const urgencyInstructions = "How urgently should the player buy %s in this match
 	"The evidence is how much of their mid and late game purchases it is for this hero, and how much more the heroes " +
 	"that beat each enemy buy it than heroes overall, in percentage points."
 
-const enemyInstructions = "Which enemy hero does %s answer best? Each option gives how much more the heroes " +
-	"that beat that enemy buy it than heroes overall, in percentage points."
+const enemyInstructions = "Which enemy hero does %s answer best? Each option is an enemy whose beaters buy it more " +
+	"than heroes overall, with how much more, in percentage points."
 
 // Decide builds the hero's build: the core from popularity, then Jev picks
 // the situational items among the candidates, with their urgency and the
@@ -311,9 +316,12 @@ func Decide(ctx context.Context, jev Asker, ds Dataset, hero int, enemies []int)
 	for i, c := range cands {
 		options := map[string]any{}
 		lifts := map[string]float64{}
+		// Only the enemies the data ties the item to are options.
 		for _, e := range enemies {
-			options[name(e)] = map[string]any{"lift_points": pct(c.Lift[e])}
-			lifts[name(e)] = pct(c.Lift[e])
+			if l, ok := c.Lift[e]; ok {
+				options[name(e)] = map[string]any{"lift_points": pct(l)}
+				lifts[name(e)] = pct(l)
+			}
 		}
 		key := "item_" + strconv.Itoa(c.Item.ID)
 		qs[key+"_urgency"] = decision.Score(fmt.Sprintf(urgencyInstructions, c.Item.Name), levels...)
@@ -347,6 +355,11 @@ func Decide(ctx context.Context, jev Asker, ds Dataset, hero int, enemies []int)
 	}
 	if err != nil {
 		return fallback(ReasonError)
+	}
+	for _, a := range res.Answers {
+		if a.Confidence < MinConfidence {
+			return fallback(ReasonLowConfidence)
+		}
 	}
 	type picked struct {
 		Situational

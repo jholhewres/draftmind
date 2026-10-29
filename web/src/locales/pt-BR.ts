@@ -5,7 +5,6 @@ export const ptBR: Messages = {
   'app.health.ok': 'API: {status}, banco de dados {database}',
   'app.health.unreachable': 'API: inacessível ({error})',
   'app.trademark': 'Sem relação com a Valve nem com o jogo, e sem endosso da Valve. Dota 2 é marca registrada da Valve. Não lê nem altera o cliente do jogo.',
-  'screen.soon': 'Em breve.',
   'nav.label': 'Principal',
   'nav.draft': 'Draft',
   'nav.coach': 'Coach',

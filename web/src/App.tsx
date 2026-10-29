@@ -6,8 +6,7 @@ import HeroGrid from './heroes/HeroGrid'
 import HeroPage from './heroes/HeroPage'
 import PatchesPage from './patches/PatchesPage'
 import { useI18n } from './i18n'
-import Placeholder from './shell/Placeholder'
-import { tabLabel, useHash, useRoute } from './shell/route'
+import { useHash, useRoute } from './shell/route'
 import TabBar from './shell/TabBar'
 
 export default function App() {
@@ -46,10 +45,8 @@ export default function App() {
             <DraftTab manual={manual} />
           ) : tab === 'coach' ? (
             <CoachTab hash={hash} />
-          ) : tab === 'patches' ? (
-            <PatchesPage />
           ) : (
-            <Placeholder title={tabLabel[tab]} />
+            <PatchesPage />
           )}
         </main>
         <footer>

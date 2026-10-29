@@ -4,7 +4,6 @@ export const en = {
   'app.health.ok': 'API: {status}, database {database}',
   'app.health.unreachable': 'API: unreachable ({error})',
   'app.trademark': 'Not affiliated with or endorsed by Valve. Dota 2 is a Valve trademark. Never reads or changes the game client.',
-  'screen.soon': 'Coming soon.',
   'nav.label': 'Main',
   'nav.draft': 'Draft',
   'nav.coach': 'Coach',

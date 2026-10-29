@@ -9,9 +9,10 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/decision"
 )
 
-// lineup: the player's hero 10 against enemies 20 and 21. The heroes that
-// beat 20 (hero 30) buy Eul's Scepter far more than heroes overall; the
-// heroes that beat 21 (hero 31) buy Aghanim's Scepter.
+// lineup: the player's hero 10 against enemies 20, 21 and 22. The heroes
+// that beat 20 (hero 30) buy Eul's Scepter far more than heroes overall, and
+// those that beat 22 (hero 32) somewhat more; the heroes that beat 21 (hero
+// 31) buy Aghanim's Scepter.
 func lineup() Dataset {
 	items := map[int]Item{}
 	for _, it := range []Item{
@@ -33,9 +34,10 @@ func lineup() Dataset {
 			},
 			30: {"mid": {{100, 900}, {50, 100}}, "late": {{116, 100}}},
 			31: {"mid": {{108, 900}, {50, 100}}, "late": {{116, 100}}},
+			32: {"mid": {{100, 600}, {50, 400}}},
 		},
-		Counters: map[int][]int{20: {30}, 21: {31}},
-		Names:    map[int]string{10: "Puck", 20: "Lion", 21: "Viper", 30: "Lina", 31: "Sniper"},
+		Counters: map[int][]int{20: {30}, 21: {31}, 22: {32}},
+		Names:    map[int]string{10: "Puck", 20: "Lion", 21: "Viper", 22: "Pudge", 30: "Lina", 31: "Sniper", 32: "Zeus"},
 	}
 }
 
@@ -80,17 +82,22 @@ func cited(b Build) map[string]int {
 
 func TestEachSituationalItemCitesTheEnemyHeroThatTriggersIt(t *testing.T) {
 	ds := lineup()
-	// Jev moves Eul's to Viper, rates it urgent, and skips Aghanim's.
-	jev := &fakeJev{enemy: map[string]string{"100": "Viper", "108": "Lion"}, urgency: map[string]int{"100": 3, "108": 0}}
-	b := Decide(context.Background(), jev, ds, 10, []int{20, 21})
+	// Jev moves Eul's to Pudge, rates it urgent, and skips Aghanim's.
+	jev := &fakeJev{enemy: map[string]string{"100": "Pudge", "108": "Viper"}, urgency: map[string]int{"100": 3, "108": 0}}
+	b := Decide(context.Background(), jev, ds, 10, []int{20, 21, 22})
 	if b.Source != SourceJev || len(b.Situational) != 1 || b.Situational[0].Item.Key != "cyclone" ||
-		b.Situational[0].EnemyID != 21 || b.Situational[0].Urgency != "now" {
-		t.Fatalf("build %+v, want Eul's Scepter now against Viper (21) from Jev", b)
+		b.Situational[0].EnemyID != 22 || b.Situational[0].Urgency != "now" {
+		t.Fatalf("build %+v, want Eul's Scepter now against Pudge (22) from Jev", b)
+	}
+	// Jev may only cite an enemy the data ties the item to.
+	opts := jev.asked.Questions["item_100_enemy"].Criteria.(map[string]any)
+	if _, ok := opts["Viper"]; ok || len(opts) != 2 {
+		t.Fatalf("Eul's enemy options %v, want Lion and Pudge only", opts)
 	}
 
 	// Jev fails: the code order stands, each item citing the enemy whose
 	// beaters buy it most.
-	b = Decide(context.Background(), &fakeJev{err: errors.New("HTTP 500")}, ds, 10, []int{20, 21})
+	b = Decide(context.Background(), &fakeJev{err: errors.New("HTTP 500")}, ds, 10, []int{20, 21, 22})
 	if b.Source != SourceRanking || b.Reason != ReasonError {
 		t.Fatalf("source %s/%s, want ranking/error", b.Source, b.Reason)
 	}
