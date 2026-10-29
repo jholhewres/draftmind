@@ -9,6 +9,7 @@ Rules for coding agents working in this repository. Read [docs/SPEC.md](docs/SPE
 - `api/internal/db/migrations/` — numbered SQL files, applied once in name order. Never edit an applied migration; add a new one.
 - `web/` — React + Vite + TypeScript. `/api` is proxied to the Go server in dev.
 - `docs/` — spec, plan, ADRs.
+- `scripts/fixtures/` — Python generators for the synthetic test photos (`api/testdata/photos/README.md`).
 
 ## Commands
 
@@ -29,4 +30,4 @@ Rules for coding agents working in this repository. Read [docs/SPEC.md](docs/SPE
 - Prefer the standard library; add a dependency only with a clear reason.
 - Short, objective code comments. Code, docs and commit messages in English.
 - Tests next to the code (`*_test.go`, `*.test.tsx`); external HTTP calls tested against `httptest` servers or fixtures, never the live API in unit tests.
-- Do not commit or push without the owner's explicit ok. No co-author or attribution trailers.
+- Do not commit or push without the maintainer's explicit ok. No co-author or attribution trailers.
