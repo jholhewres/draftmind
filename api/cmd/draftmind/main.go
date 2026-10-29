@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -23,7 +24,7 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/writer"
 )
 
-const usage = "usage: draftmind <serve|migrate|sync heroes|sync details|sync stats|bench photo [dir]>"
+const usage = "usage: draftmind <serve|migrate|sync heroes|sync details|sync patchnotes [last N]|sync stats|bench photo [dir]>"
 
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
@@ -97,6 +98,19 @@ func runSync(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, log *sl
 	case "details":
 		feed := gamesync.NewHTTPFeed(gamesync.DefaultDatafeedBase, gamesync.DefaultDatafeedInterval, client)
 		_, err := gamesync.NewSyncer(pool, nil, log).Details(ctx, feed)
+		return err
+	case "patchnotes":
+		// Every patch of the list by default; a number keeps the last N.
+		last := 0
+		if len(os.Args) >= 4 {
+			n, err := strconv.Atoi(os.Args[3])
+			if err != nil || n < 0 {
+				return fmt.Errorf("sync patchnotes takes a patch count; %s", usage)
+			}
+			last = n
+		}
+		feed := gamesync.NewHTTPFeed(gamesync.DefaultDatafeedBase, gamesync.DefaultDatafeedInterval, client)
+		_, err := gamesync.NewSyncer(pool, nil, log).PatchNotes(ctx, feed, last)
 		return err
 	case "stats":
 		od := gamesync.NewHTTPOpenDota(gamesync.DefaultOpenDotaBase, cfg.OpenDotaAPIKey, client)

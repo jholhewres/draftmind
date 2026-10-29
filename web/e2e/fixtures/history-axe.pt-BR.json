@@ -1,0 +1,52 @@
+{
+ "slug": "axe",
+ "lang": "pt-BR",
+ "patches": [
+  {
+   "name": "7.41e",
+   "releasedAt": "2026-07-30T07:00:00Z",
+   "notes": [
+    {
+     "kind": "hero",
+     "indent": 1,
+     "text": "Redução da Agilidade base (20 → 18)"
+    },
+    {
+     "kind": "ability",
+     "indent": 1,
+     "text": "Redução do dano causado por segundo (12/18/24/30 → 12/16/20/24)",
+     "ability": "Fome de Batalha"
+    }
+   ]
+  },
+  {
+   "name": "7.41",
+   "releasedAt": "2026-03-24T07:00:00Z",
+   "notes": [
+    {
+     "kind": "hero",
+     "indent": 1,
+     "text": "Camada de Sangue | Remoção da habilidade Nativa"
+    },
+    {
+     "kind": "ability",
+     "indent": 1,
+     "text": "Agora, é a habilidade Nativa do Axe",
+     "ability": "Exército de Um Homem Só"
+    },
+    {
+     "kind": "ability",
+     "indent": 2,
+     "text": "Aumenta a Força do Axe em 50% da sua armadura, desde que não haja heróis aliados em até 700 unidades de distância dele. O efeito desvanece ao longo de 3s após um aliado se aproximar",
+     "ability": "Exército de Um Homem Só"
+    },
+    {
+     "kind": "ability",
+     "indent": 1,
+     "text": "Agora, cada vítima do Lâmina de Abate concede um acúmulo permanentemente, que por sua vez concede 1/1,5/2 de armadura dependendo do nível atual da Lâmina de Abate",
+     "ability": "Lâmina de Abate"
+    }
+   ]
+  }
+ ]
+}

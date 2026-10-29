@@ -1,0 +1,63 @@
+{
+ "name": "7.41f",
+ "releasedAt": "2026-09-15T07:00:00Z",
+ "lang": "pt-BR",
+ "general": [],
+ "heroes": [
+  {
+   "id": 1,
+   "slug": "antimage",
+   "name": "Anti-Mage",
+   "primaryAttr": "agi",
+   "attackType": "Melee",
+   "roles": [
+    "Carry",
+    "Escape",
+    "Nuker"
+   ],
+   "img": "/apps/dota2/images/dota_react/heroes/antimage.png",
+   "icon": "/apps/dota2/images/dota_react/heroes/icons/antimage.png",
+   "notes": [
+    {
+     "kind": "ability",
+     "indent": 1,
+     "text": "Aumento do mana queimado como dano (60% → 65%)"
+    }
+   ]
+  },
+  {
+   "id": 3,
+   "slug": "bane",
+   "name": "Bane",
+   "primaryAttr": "all",
+   "attackType": "Ranged",
+   "roles": [
+    "Support",
+    "Disabler",
+    "Nuker"
+   ],
+   "img": "/apps/dota2/images/dota_react/heroes/bane.png",
+   "icon": "/apps/dota2/images/dota_react/heroes/icons/bane.png",
+   "notes": [
+    {
+     "kind": "hero",
+     "indent": 1,
+     "text": "Redução da armadura base em 1"
+    }
+   ]
+  }
+ ],
+ "items": [
+  {
+   "id": 145,
+   "name": "Battle Fury",
+   "notes": [
+    {
+     "kind": "item",
+     "indent": 1,
+     "text": "Habilidade ativa (Cortar Árvore) | Redução do intervalo entre usos (4s → 3s)"
+    }
+   ]
+  }
+ ]
+}

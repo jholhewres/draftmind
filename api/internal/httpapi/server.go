@@ -28,6 +28,11 @@ type Catalog interface {
 	DraftDataset(ctx context.Context, enemies []int) (patch string, ds draft.Dataset, err error)
 	// Names are the current patch's hero and ability names, for the tip check.
 	Names(ctx context.Context) (catalog.Names, error)
+	// HeroHistory returns catalog.ErrNotFound for an unknown hero.
+	HeroHistory(ctx context.Context, slug, lang string) (catalog.HeroHistory, error)
+	Patches(ctx context.Context) ([]catalog.PatchSummary, error)
+	// PatchChanges returns catalog.ErrNotFound for a patch not synced.
+	PatchChanges(ctx context.Context, name, lang string) (catalog.PatchChanges, error)
 }
 
 // Server wires the routes to their dependencies.
@@ -74,6 +79,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/health", s.health)
 	mux.HandleFunc("GET /api/heroes", s.listHeroes)
 	mux.HandleFunc("GET /api/heroes/{slug}", s.heroDetail)
+	mux.HandleFunc("GET /api/heroes/{slug}/history", s.heroHistory)
+	mux.HandleFunc("GET /api/patches", s.listPatches)
+	mux.HandleFunc("GET /api/patches/{name}", s.patchChanges)
 	// All three spend money on model calls and need no login.
 	suggest, read := newLimiter(s.suggestLimit, s.now), newLimiter(s.readLimit, s.now)
 	mux.Handle("POST /api/draft/suggest", suggest.wrap(http.HandlerFunc(s.suggest)))

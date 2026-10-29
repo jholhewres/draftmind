@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { fetchHero, heroImageBase, type HeroDetail, type HeroStats } from '../api'
+import { fetchHero, fetchHeroHistory, heroImageBase, type HeroDetail, type HeroHistory, type HeroStats } from '../api'
 import { useI18n } from '../i18n'
 import { en, type MessageKey } from '../locales/en'
+import NoteList from '../patches/NoteList'
 
 const attrLabel: Record<string, MessageKey> = {
   str: 'heroes.attr.str',
@@ -129,7 +130,50 @@ function Hero({ hero }: { hero: HeroDetail }) {
           </section>
         </div>
       )}
+      <History slug={hero.slug} />
     </article>
+  )
+}
+
+// Patches shown before "show all".
+const HISTORY_SHOWN = 5
+
+// The hero's changes, newest patch first; nothing while it loads or when
+// none are synced.
+function History({ slug }: { slug: string }) {
+  const { t, locale } = useI18n()
+  const [history, setHistory] = useState<{ key: string; data: HeroHistory | null } | null>(null)
+  const [all, setAll] = useState(false)
+  const key = `${slug}:${locale}`
+
+  useEffect(() => {
+    const ctrl = new AbortController()
+    fetchHeroHistory(slug, locale, ctrl.signal)
+      .then((data) => setHistory({ key: `${slug}:${locale}`, data }))
+      .catch(() => {}) // the page stands without it
+    return () => ctrl.abort()
+  }, [slug, locale])
+
+  const patches = history?.key === key ? (history.data?.patches ?? []) : []
+  if (patches.length === 0) return null
+  const shown = all ? patches : patches.slice(0, HISTORY_SHOWN)
+  return (
+    <section className="panel hero-history" aria-labelledby="hero-history">
+      <h2 id="hero-history">{t('hero.history')}</h2>
+      <ol className="history">
+        {shown.map((p) => (
+          <li key={p.name}>
+            <span className="history-patch">{p.name}</span>
+            <NoteList notes={p.notes} />
+          </li>
+        ))}
+      </ol>
+      {!all && patches.length > HISTORY_SHOWN && (
+        <button type="button" className="chip" onClick={() => setAll(true)}>
+          {t('hero.historyAll', { count: patches.length })}
+        </button>
+      )}
+    </section>
   )
 }
 

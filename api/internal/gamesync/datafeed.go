@@ -308,12 +308,25 @@ func NewHTTPFeed(baseURL string, interval time.Duration, client *http.Client) *H
 
 // HeroData returns the herodata response for a hero in a feed language.
 func (f *HTTPFeed) HeroData(ctx context.Context, heroID int, language string) ([]byte, error) {
+	return f.get(ctx, "herodata", neturl.Values{"hero_id": {strconv.Itoa(heroID)}, "language": {language}})
+}
+
+// PatchList returns the patchnoteslist response.
+func (f *HTTPFeed) PatchList(ctx context.Context) ([]byte, error) {
+	return f.get(ctx, "patchnoteslist", neturl.Values{"language": {"english"}})
+}
+
+// PatchNotes returns the patchnotes response for a patch in a feed language.
+func (f *HTTPFeed) PatchNotes(ctx context.Context, patch, language string) ([]byte, error) {
+	return f.get(ctx, "patchnotes", neturl.Values{"version": {patch}, "language": {language}})
+}
+
+func (f *HTTPFeed) get(ctx context.Context, path string, q neturl.Values) ([]byte, error) {
 	if err := f.wait(ctx); err != nil {
 		return nil, err
 	}
 	defer func() { f.last = time.Now() }()
-	q := neturl.Values{"hero_id": {strconv.Itoa(heroID)}, "language": {language}}
-	url := f.baseURL + "/datafeed/herodata?" + q.Encode()
+	url := f.baseURL + "/datafeed/" + path + "?" + q.Encode()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err

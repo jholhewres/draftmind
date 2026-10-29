@@ -1,0 +1,16 @@
+{
+ "patches": [
+  {
+   "name": "7.41f",
+   "releasedAt": "2026-09-15T07:00:00Z",
+   "heroes": 35,
+   "items": 17
+  },
+  {
+   "name": "7.41e",
+   "releasedAt": "2026-07-30T07:00:00Z",
+   "heroes": 57,
+   "items": 32
+  }
+ ]
+}

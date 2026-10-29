@@ -58,7 +58,7 @@ test('with the browser in pt-BR, the tabs, placeholder and note are in Portugues
   const nav = screen.getByRole('navigation', { name: 'Principal' })
   fireEvent.click(within(nav).getByRole('link', { name: 'Heróis' }))
   expect(await screen.findByRole('heading', { level: 1, name: 'Heróis' })).toBeInTheDocument()
-  fireEvent.click(within(nav).getByRole('link', { name: 'Patches' }))
+  fireEvent.click(within(nav).getByRole('link', { name: 'Coach' }))
   expect(await screen.findByText('Em breve.')).toBeInTheDocument()
   expect(screen.getByText('Sem relação com a Valve nem com o jogo, e sem endosso da Valve. Dota 2 é marca registrada da Valve. Não lê nem altera o cliente do jogo.')).toBeInTheDocument()
 })

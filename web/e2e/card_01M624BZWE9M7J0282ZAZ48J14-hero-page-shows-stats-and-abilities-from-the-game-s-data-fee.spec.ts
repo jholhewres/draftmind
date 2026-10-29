@@ -11,6 +11,8 @@ async function mockHero(page: Page) {
     (url) => url.pathname.startsWith('/api/heroes/'),
     (route) => {
       const url = new URL(route.request().url())
+      // The hero's history is another card's; with none synced the page leaves it out.
+      if (url.pathname.endsWith('/history')) return route.fulfill({ status: 404, json: { error: 'no such hero' } })
       asked.push(url.pathname + url.search)
       if (url.pathname !== '/api/heroes/axe') return route.fulfill({ status: 404, json: { error: 'no such hero' } })
       const lang = url.searchParams.get('lang') === 'pt-BR' ? 'pt-BR' : 'en'

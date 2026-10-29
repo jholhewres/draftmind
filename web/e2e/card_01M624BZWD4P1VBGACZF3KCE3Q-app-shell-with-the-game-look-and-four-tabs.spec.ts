@@ -13,7 +13,8 @@ test('The tab bar switches between Draft, Coach, Heroes and Patches and marks th
   await expect(nav.getByRole('link')).toHaveText(tabs)
   await expect(nav.getByRole('link', { name: 'Draft' })).toHaveAttribute('aria-current', 'page')
 
-  for (const tab of tabs) {
+  // Ends on Coach, the tab still to be built.
+  for (const tab of ['Draft', 'Heroes', 'Patches', 'Coach']) {
     await nav.getByRole('link', { name: tab }).click()
     await expect(page).toHaveURL(new RegExp(`#/${tab.toLowerCase()}$`))
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(tab === 'Draft' ? 'Photograph the pick' : tab)
@@ -21,7 +22,7 @@ test('The tab bar switches between Draft, Coach, Heroes and Patches and marks th
   }
   await expect(page.getByText('Coming soon.')).toBeVisible()
   expect(escaped).toEqual([])
-  await expect(page).toHaveScreenshot('shell-patches.png')
+  await expect(page).toHaveScreenshot('shell-coach.png')
 })
 
 test("The Heroes tab shows each hero's portrait from its image path and filters by primary attribute", async ({

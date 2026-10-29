@@ -3,6 +3,7 @@ import { fetchHealth, type Health } from './api'
 import DraftTab from './draft/DraftTab'
 import HeroGrid from './heroes/HeroGrid'
 import HeroPage from './heroes/HeroPage'
+import PatchesPage from './patches/PatchesPage'
 import { useI18n } from './i18n'
 import Placeholder from './shell/Placeholder'
 import { tabLabel, useRoute } from './shell/route'
@@ -41,6 +42,8 @@ export default function App() {
             <HeroGrid />
           ) : tab === 'draft' ? (
             <DraftTab manual={manual} />
+          ) : tab === 'patches' ? (
+            <PatchesPage />
           ) : (
             <Placeholder title={tabLabel[tab]} />
           )}

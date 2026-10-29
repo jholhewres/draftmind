@@ -1,0 +1,129 @@
+{
+ "name": "7.41e",
+ "releasedAt": "2026-07-30T07:00:00Z",
+ "lang": "pt-BR",
+ "general": [
+  {
+   "kind": "general",
+   "indent": 0,
+   "text": "Portais Gêmeos"
+  },
+  {
+   "kind": "general",
+   "indent": 1,
+   "text": "Agora, a canalização de Portais Gêmeos pode ser interrompida por enraizamentos"
+  },
+  {
+   "kind": "general",
+   "indent": 0,
+   "text": "Tormenta"
+  },
+  {
+   "kind": "general",
+   "indent": 1,
+   "text": "Agora, anula projéteis quando se move entre fendas"
+  }
+ ],
+ "heroes": [
+  {
+   "id": 2,
+   "slug": "axe",
+   "name": "Axe",
+   "primaryAttr": "str",
+   "attackType": "Melee",
+   "roles": [
+    "Initiator",
+    "Durable",
+    "Disabler"
+   ],
+   "img": "/apps/dota2/images/dota_react/heroes/axe.png",
+   "icon": "/apps/dota2/images/dota_react/heroes/icons/axe.png",
+   "notes": [
+    {
+     "kind": "hero",
+     "indent": 1,
+     "text": "Redução da Agilidade base (20 → 18)"
+    },
+    {
+     "kind": "ability",
+     "indent": 1,
+     "text": "Redução do dano causado por segundo (12/18/24/30 → 12/16/20/24)",
+     "ability": "Fome de Batalha"
+    }
+   ]
+  },
+  {
+   "id": 3,
+   "slug": "bane",
+   "name": "Bane",
+   "primaryAttr": "all",
+   "attackType": "Ranged",
+   "roles": [
+    "Support",
+    "Disabler",
+    "Nuker"
+   ],
+   "img": "/apps/dota2/images/dota_react/heroes/bane.png",
+   "icon": "/apps/dota2/images/dota_react/heroes/icons/bane.png",
+   "notes": [
+    {
+     "kind": "ability",
+     "indent": 1,
+     "text": "Aumento do máximo de terror por herói (5 → 6)"
+    },
+    {
+     "kind": "ability",
+     "indent": 1,
+     "text": "Redução da redução de resistência estática por terror (5% → 4%)"
+    },
+    {
+     "kind": "ability",
+     "indent": 1,
+     "text": "Redução da duração (3,5/4,5/5,5/6,5s → 3/4/5/6s)"
+    },
+    {
+     "kind": "ability",
+     "indent": 1,
+     "text": "Agora, o alvo não concede mais nenhuma visão, em vez de alterar o seu alcance de visão"
+    },
+    {
+     "kind": "ability",
+     "indent": 1,
+     "text": "Cetro de Aghanim | Redução da redução de intervalo entre usos (45s → 40s)"
+    }
+   ]
+  },
+  {
+   "id": 6,
+   "slug": "drow_ranger",
+   "name": "Drow Ranger",
+   "primaryAttr": "agi",
+   "attackType": "Ranged",
+   "roles": [
+    "Carry",
+    "Disabler",
+    "Pusher"
+   ],
+   "img": "/apps/dota2/images/dota_react/heroes/drow_ranger.png",
+   "icon": "/apps/dota2/images/dota_react/heroes/icons/drow_ranger.png",
+   "notes": [
+    {
+     "kind": "ability",
+     "indent": 1,
+     "text": "Aumento do custo de mana (50/70/90/110 → 70/85/100/115)"
+    },
+    {
+     "kind": "ability",
+     "indent": 1,
+     "text": "Alteração da escala do alcance das flechas (1,75 × alcance de ataque da Drow Ranger → 475 unidades + alcance de ataque da Drow Ranger)"
+    },
+    {
+     "kind": "ability",
+     "indent": 1,
+     "text": "Redução do dano base adicional (100/120/140/160% → 80/100/120/140%)"
+    }
+   ]
+  }
+ ],
+ "items": []
+}

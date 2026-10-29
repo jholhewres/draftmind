@@ -70,6 +70,12 @@ export const test = base.extend<Fixtures>({
       void drafts
       await page.route('**/api/health', (route) => route.fulfill({ path: fixture('health.json') }))
       await page.route('**/api/heroes', (route) => route.fulfill({ path: fixture('heroes.json') }))
+      await page.route('**/api/patches', (route) => route.fulfill({ path: fixture('patches.json') }))
+      await page.route('**/api/patches/*', (route) => {
+        const url = new URL(route.request().url())
+        const lang = url.searchParams.get('lang') === 'pt-BR' ? 'pt-BR' : 'en'
+        return route.fulfill({ path: fixture(`patch-${decodeURIComponent(url.pathname.split('/').at(-1)!)}.${lang}.json`) })
+      })
       await page.route(imageCDN, (route) => route.fulfill({ path: fixture('hero-portrait.png') }))
       // Plain background color and fallback fonts keep the baselines stable.
       await page.route(backgroundImage, (route) => route.fulfill({ status: 404 }))

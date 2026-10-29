@@ -177,7 +177,7 @@ footer p { margin: 0 0 4px; }
 .board { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); }
 .slot-row { display: flex; align-items: flex-start; gap: 4px; }
 .row-label {
-  width: 58px; flex-shrink: 0; padding-top: 6px;
+  width: 88px; flex-shrink: 0; padding-top: 6px;
   font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
 }
 .slot-row.ally .row-label { color: var(--radiant); }
@@ -306,4 +306,37 @@ footer p { margin: 0 0 4px; }
   .picker-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .photo-capture { max-width: 640px; }
   .camera { min-height: 320px; }
+}
+
+/* Patches tab and the hero's history: notes grouped by ability. */
+.patch-picker { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.patch-picker .chip { flex-shrink: 0; }
+.patch-summary { gap: 4px; }
+.patch-summary .muted { font-size: 14px; }
+.hero-filter { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; font-size: 15px; }
+.hero-filter select {
+  min-width: 0; flex: 0 1 220px; height: 40px; padding: 0 10px; border-radius: 8px;
+  border: 1px solid var(--border-strong); background: var(--surface-solid); color: var(--fg); font: inherit; font-size: 15px;
+}
+.hero-filter select:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.patch-body { display: flex; flex-direction: column; gap: 14px; padding-bottom: 8px; }
+.patch-section { display: flex; flex-direction: column; gap: 8px; }
+.patch-section > h2 { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.patch-heroes, .patch-items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.patch-hero-head { display: flex; align-items: center; gap: 12px; color: var(--fg); text-decoration: none; }
+.patch-hero-head img { width: 64px; height: 36px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+.patch-hero-head:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.patch-heroes h3, .patch-items h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.notes { display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 1.4; }
+.note-label { font-size: 13px; font-weight: 600; color: var(--gold-light); }
+.note-group ul { margin: 2px 0 0; padding-left: 18px; }
+.note-group li.indent { margin-left: 16px; color: var(--muted); }
+.history { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.history > li { display: flex; gap: 12px; }
+.history-patch { width: 52px; flex-shrink: 0; font: 700 16px 'Barlow Condensed', Barlow, system-ui, sans-serif; color: var(--gold); }
+.history > li:not(:first-child) .history-patch { color: var(--muted); }
+.history .notes { flex: 1; min-width: 0; }
+.hero-history .chip { align-self: flex-start; }
+@media (min-width: 1024px) {
+  .patch-heroes, .patch-items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
 }

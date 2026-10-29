@@ -1,0 +1,52 @@
+{
+ "slug": "axe",
+ "lang": "en",
+ "patches": [
+  {
+   "name": "7.41e",
+   "releasedAt": "2026-07-30T07:00:00Z",
+   "notes": [
+    {
+     "kind": "hero",
+     "indent": 1,
+     "text": "Base Agility decreased from 20 to 18"
+    },
+    {
+     "kind": "ability",
+     "indent": 1,
+     "text": "Damage per second decreased from 12/18/24/30 to 12/16/20/24",
+     "ability": "Battle Hunger"
+    }
+   ]
+  },
+  {
+   "name": "7.41",
+   "releasedAt": "2026-03-24T07:00:00Z",
+   "notes": [
+    {
+     "kind": "hero",
+     "indent": 1,
+     "text": "Removed Coat of Blood innate ability"
+    },
+    {
+     "kind": "ability",
+     "indent": 1,
+     "text": "Now Axe's innate ability",
+     "ability": "One Man Army"
+    },
+    {
+     "kind": "ability",
+     "indent": 2,
+     "text": "Increases Axe's Strength by 50% of his armor, as long as there are no allied heroes within a 700 radius of him. The effect fades over 3s after an ally walks within range",
+     "ability": "One Man Army"
+    },
+    {
+     "kind": "ability",
+     "indent": 1,
+     "text": "Now each hero kill made with Culling Blade provides a permanent stack, which provides 1/1.5/2 armor depending on the current level of Culling Blade",
+     "ability": "Culling Blade"
+    }
+   ]
+  }
+ ]
+}

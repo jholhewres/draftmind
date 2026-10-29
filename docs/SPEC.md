@@ -121,6 +121,7 @@ browser (React/Vite) ──HTTP/SSE──▶ api (Go)
 | `hero_patch` | Per patch: the hero's attributes, roles, stats and lore |
 | `ability`, `hero_ability` | Abilities with values and their order per hero, per patch |
 | `item` | Items with cost, components, tags |
+| `patch_release` | Every release the data feed lists, letter patches included (name, release date) |
 | `patch_note` | Per patch: note text by target (hero, ability, talent, item, general), per language |
 | `hero_stat` | Per patch and bracket: picks, wins |
 | `hero_matchup` | Per patch: hero vs hero, games, wins |

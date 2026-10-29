@@ -230,3 +230,36 @@ export async function streamSuggestions(req: StreamRequest, onEvent: (e: StreamE
     }
   }
 }
+
+// One line of a patch's notes; ability names the ability when the current
+// patch has it.
+export type PatchNote = { kind: 'hero' | 'ability' | 'talent' | 'item' | 'general'; ability?: string; indent: number; text: string }
+
+// A hero's notes per patch, newest patch first.
+export type HeroHistory = { slug: string; lang: string; patches: { name: string; releasedAt: string; notes: PatchNote[] }[] }
+
+export type PatchSummary = { name: string; releasedAt: string; heroes: number; items: number }
+
+// What one patch changed, in the requested language when the patch has it.
+export type PatchChanges = {
+  name: string
+  releasedAt: string
+  lang: string
+  general: PatchNote[]
+  heroes: (Hero & { notes: PatchNote[] })[]
+  items: { id: number; name: string; notes: PatchNote[] }[]
+}
+
+// The hero's history, or null when no hero has that slug.
+export async function fetchHeroHistory(slug: string, lang: string, signal?: AbortSignal): Promise<HeroHistory | null> {
+  const path = `/api/heroes/${encodeURIComponent(slug)}/history?lang=${encodeURIComponent(lang)}`
+  const res = await fetch(path, { signal })
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
+  return (await res.json()) as HeroHistory
+}
+
+export const fetchPatches = (signal?: AbortSignal) => getJSON<{ patches: PatchSummary[] }>('/api/patches', signal)
+
+export const fetchPatch = (name: string, lang: string, signal?: AbortSignal) =>
+  getJSON<PatchChanges>(`/api/patches/${encodeURIComponent(name)}?lang=${encodeURIComponent(lang)}`, signal)
