@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { heroImageBase, type Hero } from '../api'
 import { useI18n } from '../i18n'
+import { useModal } from '../shell/modal'
 
 type Props = {
   title: string
@@ -16,6 +17,7 @@ export default function HeroPicker({ title, heroes, filled, onPick, onRemove, on
   const { t } = useI18n()
   const [query, setQuery] = useState('')
   const search = useRef<HTMLInputElement>(null)
+  useModal(onClose)
 
   useEffect(() => search.current?.focus(), [])
 
@@ -31,9 +33,6 @@ export default function HeroPicker({ title, heroes, filled, onPick, onRemove, on
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') onClose()
-        }}
       >
         <div className="picker-head">
           <h2>{title}</h2>

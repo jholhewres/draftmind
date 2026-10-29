@@ -52,7 +52,7 @@ test('A tap or a message saying the match was won or lost records the result', a
   await expect(page.getByRole('region', { name: 'What the coach noted' }).getByRole('listitem')).toHaveText(notes)
 
   // The ended match leaves the Coach tab; a tap ends the next one.
-  await page.getByRole('link', { name: 'Coach' }).click()
+  await page.getByRole('link', { name: 'Coach', exact: true }).click()
   await expect(page.getByText('Pick a hero on the Draft tab to start a match.')).toBeVisible()
   await page.reload()
   await openEnd(page)

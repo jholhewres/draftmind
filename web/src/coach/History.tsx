@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchMyMatches, heroImageBase, type Hero, type PastMatch } from '../api'
 import { useI18n } from '../i18n'
+import BackButton from '../shell/BackButton'
 import { clock } from './clock'
 
 type State = { status: 'loading' } | { status: 'visitor' } | { status: 'error' } | { status: 'ready'; matches: PastMatch[] }
@@ -25,11 +26,7 @@ export default function History({ byId }: { byId: Map<number, Hero> }) {
   return (
     <section className="screen match-history">
       <header className="screen-head with-back">
-        <a className="back" href="#/coach" aria-label={t('end.back')}>
-          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </a>
+        <BackButton parent="#/coach" label={t('end.back')} />
         <h1>{t('history.title')}</h1>
       </header>
       {state.status === 'loading' ? (

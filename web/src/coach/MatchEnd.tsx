@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { parseEndMessage, readEndScreen, saveMatchResult, type MatchResult, type MatchSession, type Outcome, type ResultFill } from '../api'
 import { prepareImage } from '../draft/prepare'
 import { useI18n } from '../i18n'
+import BackButton from '../shell/BackButton'
 import { clock } from './clock'
 import { saveSessionId } from './session'
 import { usePersona } from '../settings/persona'
@@ -121,18 +122,13 @@ export default function MatchEnd({ session, heroName, signedIn, onEnded }: Props
       .finally(() => setBusy(null))
   }
 
-  const back = (
-    <a className="back" href="#/coach" aria-label={t('end.back')}>
-      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M15 18l-6-6 6-6" />
-      </svg>
-    </a>
-  )
+  const back = <BackButton parent="#/coach" label={t('end.back')} />
 
   if (saved) {
     return (
       <section className="screen match-end">
-        <header className="screen-head">
+        <header className="screen-head with-back">
+          {back}
           <h1>{t('end.title')}</h1>
         </header>
         <p className={`end-saved ${saved.result}`} role="status">

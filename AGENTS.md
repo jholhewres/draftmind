@@ -8,7 +8,7 @@ Rules for coding agents working in this repository. Read [docs/ARCHITECTURE.md](
 - `sync heroes` loads patches and heroes from dotaconstants and is fast; `sync details` then loads each current-patch hero's stats, abilities and talents from the game's data feed (ADR-0007), rate limited to about 2 requests a second, one hero per transaction. `sync patchnotes [N]` loads the notes of every patch the feed lists (the last N with a number) in en and pt-BR, one patch per transaction, fetching again only the newest two patches and those not yet stored. `sync stats` loads OpenDota hero stats and matchups for the current patch at 1 request a second without a key, one hero per transaction, stopping at the first failure (ADR-0009). `sync builds` loads each current-patch hero's OpenDota item popularity by phase the same way. Run `sync heroes` first; `make sync` runs all five.
 - `api/internal/db/migrations/` — numbered SQL files, applied once in name order. Never edit an applied migration; add a new one.
 - `web/` — React + Vite + TypeScript. `/api` is proxied to the Go server in dev.
-- `docs/` — spec, plan, ADRs.
+- `docs/` — ARCHITECTURE.md and ADRs.
 - `scripts/fixtures/` — Python generators for the synthetic test photos (`api/testdata/photos/README.md`).
 
 ## Commands

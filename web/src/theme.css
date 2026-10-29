@@ -298,6 +298,7 @@ footer p { margin: 0 0 4px; }
 
 /* Suggestions for a photo: the read draft on top, flagged slots in gold. */
 .screen-head.with-back { justify-content: flex-start; align-items: center; gap: 6px; margin-left: -10px; }
+.screen-head.with-back > .muted { margin-left: auto; }
 .back { width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: none; color: var(--fg); cursor: pointer; border-radius: 8px; }
 .back:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
 .read-draft { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 12px; background: rgba(21, 25, 31, 0.88); border: 1px solid var(--border); }

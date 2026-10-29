@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { fetchHeroes, type Hero, type HeroCatalog, type StreamRequest } from '../api'
 import { useI18n } from '../i18n'
+import BackButton from '../shell/BackButton'
 import HeroPicker from './HeroPicker'
 import { sideLabel as label, type Side } from './labels'
 import { Row, SlotButton } from './slots'
@@ -78,7 +79,8 @@ export default function DraftBoard() {
 
   return (
     <section className="screen draft">
-      <header className="screen-head">
+      <header className="screen-head with-back">
+        <BackButton parent="#/draft" label={t('draft.back')} />
         <h1>{t('nav.draft')}</h1>
         {catalog?.patch && <span className="muted">{t('heroes.patch', { patch: catalog.patch })}</span>}
       </header>

@@ -98,6 +98,7 @@ export const ptBR: Messages = {
   'draft.choose.ban': 'Escolha um banimento',
   'draft.remove': 'Remover',
   'draft.close': 'Fechar',
+  'draft.back': 'Voltar ao draft',
   'draft.role': 'Sua posição',
   'draft.pos': 'Posição {n}: {name}',
   'draft.position.1': 'Carry',

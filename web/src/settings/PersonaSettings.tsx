@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Persona } from '../api'
 import { useI18n } from '../i18n'
+import BackButton from '../shell/BackButton'
 import type { MessageKey } from '../locales/en'
 import { usePersona } from './persona'
 
@@ -40,7 +41,8 @@ export default function PersonaSettings({ signedIn }: { signedIn: boolean }) {
 
   return (
     <section className="screen persona-settings">
-      <header className="screen-head">
+      <header className="screen-head with-back">
+        <BackButton parent="#/coach" label={t('end.back')} />
         <h1>{t('persona.title')}</h1>
       </header>
       <p className="muted lead">{t('persona.lead')}</p>

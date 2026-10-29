@@ -11,6 +11,7 @@ import {
   type Account,
 } from '../api'
 import { useI18n } from '../i18n'
+import BackButton from '../shell/BackButton'
 import LanguageSwitch from '../shell/LanguageSwitch'
 
 type Props = {
@@ -124,11 +125,7 @@ export default function SignIn({ token, failed, account, onAccount }: Props) {
   return (
     <div className="signin-screen">
       <header className="signin-top">
-        <a className="back" href="#/" aria-label={t('signin.back')}>
-          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-        </a>
+        <BackButton parent="#/" label={t('signin.back')} />
       </header>
       <main className="signin">
         <div className="signin-head">

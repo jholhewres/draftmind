@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { fetchHero, fetchHeroHistory, heroImageBase, type HeroDetail, type HeroHistory, type HeroStats } from '../api'
 import { useI18n } from '../i18n'
 import { en, type MessageKey } from '../locales/en'
+import BackButton from '../shell/BackButton'
 import NoteList from '../patches/NoteList'
 import Counters from './Counters'
 import PopularBuild from './PopularBuild'
@@ -41,14 +42,17 @@ export default function HeroPage({ slug }: { slug: string }) {
 
   const current = state.slug === slug && state.lang === locale ? state : { status: 'loading' as const }
   if (current.status === 'loading') return <p role="status">{t('hero.loading')}</p>
-  if (current.status === 'error') return <p role="alert">{t('hero.loadError', { error: current.error })}</p>
-  if (!current.hero) {
+  if (current.status === 'error' || !current.hero) {
     return (
       <section className="screen">
-        <a className="back-link" href="#/heroes">
-          {t('hero.back')}
-        </a>
-        <p className="muted">{t('hero.notFound', { slug })}</p>
+        <header className="screen-head with-back">
+          <BackButton parent="#/heroes" label={t('hero.back')} />
+        </header>
+        {current.status === 'error' ? (
+          <p role="alert">{t('hero.loadError', { error: current.error })}</p>
+        ) : (
+          <p className="muted">{t('hero.notFound', { slug })}</p>
+        )}
       </section>
     )
   }
@@ -76,11 +80,7 @@ function Hero({ hero }: { hero: HeroDetail }) {
     <article className="hero-page">
       <section className="hero-banner">
         <img src={heroImageBase + hero.img} alt="" width={256} height={144} />
-        <a className="back" href="#/heroes" aria-label={t('hero.back')}>
-          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-        </a>
+        <BackButton parent="#/heroes" label={t('hero.back')} />
         <div className="hero-banner-text">
           <h1>{hero.name}</h1>
           <p className="hero-meta">

@@ -97,6 +97,7 @@ export const en = {
   'draft.choose.ban': 'Choose a ban',
   'draft.remove': 'Remove',
   'draft.close': 'Close',
+  'draft.back': 'Back to draft',
   'draft.role': 'Your position',
   'draft.pos': 'Position {n}: {name}',
   'draft.position.1': 'Carry',

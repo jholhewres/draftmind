@@ -4,6 +4,9 @@ import './fonts.css'
 import './theme.css'
 import App from './App.tsx'
 import I18nProvider from './I18nProvider.tsx'
+import { trackHistory } from './shell/nav.ts'
+
+trackHistory()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
