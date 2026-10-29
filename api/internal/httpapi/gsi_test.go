@@ -113,6 +113,14 @@ func TestTheGamePostsWithTheAccountTokenAndTheMatchResultIsRecordedFromTheWinner
 		t.Fatalf("result %+v, want a win 12/4/17 in 2410 s from gsi", got.Result)
 	}
 
+	// The game keeps posting post game: a new match is not closed by it.
+	var next match.Session
+	_ = json.Unmarshal(send(h, http.MethodPost, "/api/match", `{"hero":1,"role":2,"enemies":[2]}`, me).Body.Bytes(), &next)
+	send(h, http.MethodPost, "/api/gsi", gsiFixture(t, "post_game.json", token, nil))
+	if got, _ := matches.Get(t.Context(), next.ID); got.Result != nil {
+		t.Fatalf("a post-game heartbeat closed the next match: %+v", got.Result)
+	}
+
 	// Revoked: the game's posts stop counting.
 	if rec := send(h, http.MethodDelete, "/api/me/gsi/token", "", me); rec.Code != http.StatusNoContent {
 		t.Fatalf("revoke: %d", rec.Code)

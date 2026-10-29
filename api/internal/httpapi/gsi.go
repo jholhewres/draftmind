@@ -134,16 +134,25 @@ func (s *Server) gsiAct(ctx context.Context, user int64, prev *gsi.State, cur gs
 	} else {
 		cur.Mode = sess.Mode
 	}
-	if out, ok := cur.Outcome(); ok {
+	// Only the move from playing to post game ends a match: the game keeps
+	// posting post game on its heartbeat, which must not close the next one.
+	if out, ok := cur.Outcome(); ok && prev != nil && prev.Phase == gsi.PhaseGame {
 		r := match.Result{Outcome: out, Kills: &cur.Kills, Deaths: &cur.Deaths, Assists: &cur.Assists, Source: "gsi"}
 		if cur.DurationS > 0 && cur.DurationS <= match.MaxDuration {
 			r.DurationS = &cur.DurationS
+		}
+		if err := r.Validate(); err != nil {
+			s.log.Warn("gsi result refused", "err", err)
+			return
 		}
 		if _, err := s.matches.SaveResult(ctx, id, &user, r); err != nil {
 			s.log.Error("gsi result", "err", err)
 		} else {
 			s.triggers().Forget(id)
 		}
+		return
+	}
+	if cur.Phase == gsi.PhaseEnded {
 		return
 	}
 	plan, cards := gsiPlan(sess)
