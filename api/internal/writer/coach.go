@@ -42,9 +42,9 @@ const parseInstructions = "You read one message a player sends their coach durin
 	"entities are the hero, ability and item names the message mentions, spelled as in the game. " +
 	"summary restates the situation in one short English sentence."
 
-// Situation reads text into a typed situation. A model error, a late
-// answer, an answer that is not the JSON asked for and a message the model
-// marks unclear all return an error wrapping ErrUnclear or the cause.
+// Situation reads text into a typed situation. An answer that is not the
+// JSON asked for, or a message the model marks unclear, returns an error
+// wrapping ErrUnclear; a model error or a late answer returns the cause.
 func (w *Writer) Situation(ctx context.Context, text string) (Situation, error) {
 	ctx, cancel := context.WithTimeout(ctx, CoachTimeout)
 	defer cancel()
@@ -192,7 +192,7 @@ func CheckAnswer(text string, allowed, known []string) error {
 			return fmt.Errorf("names %q, which is not in the facts", strings.TrimRightFunc(core, isNotWord))
 		}
 		last, _ := utf8.DecodeLastRuneInString(strings.TrimRight(word, `"'”’)»`))
-		start = last == '.' || last == '!' || last == '?' || last == ':' || last == '¡' || last == '¿'
+		start = last == '.' || last == '!' || last == '?'
 	}
 	return nil
 }

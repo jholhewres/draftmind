@@ -3,6 +3,7 @@ package match
 import (
 	"context"
 	"errors"
+	"math"
 	"slices"
 	"strings"
 	"unicode/utf8"
@@ -21,7 +22,8 @@ type Situation struct {
 	Heroes    []int    `json:"heroes"`
 	Abilities []string `json:"abilities"`
 	Items     []string `json:"items"`
-	// Unknown are mentioned names the current patch lacks; never passed on.
+	// Unknown are mentioned names the current patch lacks; an answer naming
+	// one, in any case, fails the check.
 	Unknown []string `json:"unknown"`
 }
 
@@ -34,7 +36,9 @@ const (
 	SourceParser = "parser" // Jev failed, was late or unsure: the parse's category at medium priority
 )
 
-// MinConfidence is the least confidence Jev's answers need to stand.
+// MinConfidence is the least confidence Jev's category needs to stand. The
+// priority is a score over ordered levels, whose confidence runs lower by
+// nature; its most likely level stands.
 const MinConfidence = 0.4
 
 // Parser reads a message into a situation (the writer model).
@@ -93,13 +97,19 @@ type Emit func(name string, v any)
 // be parsed. lang is the player's language.
 func (c *Coach) Reply(ctx context.Context, s Session, text, lang string, emit Emit) (Reply, error) {
 	parsed, err := c.Parse.Situation(ctx, text)
-	if err != nil {
+	if errors.Is(err, writer.ErrUnclear) {
 		// A guess on an unread message is worse than a question.
 		r := Reply{Kind: "followup", Reason: "unclear"}
-		if !errors.Is(err, writer.ErrUnclear) {
-			r.Reason = "error"
-		}
 		emit("followup", r)
+		return r, nil
+	}
+	if err != nil {
+		// The model failed or was late: the message was not unclear.
+		r := Reply{Kind: "answer", TextSource: writer.SourceTemplate, Reason: writer.ReasonError}
+		if errors.Is(err, context.DeadlineExceeded) {
+			r.Reason = writer.ReasonTimeout
+		}
+		emit("answer", r)
 		return r, nil
 	}
 	_, heroes, err := c.Facts.Heroes(ctx)
@@ -283,7 +293,7 @@ func (c *Coach) facts(ctx context.Context, s Session, sit Situation, heroes []ca
 	for _, ns := range names.Heroes {
 		f.known = append(f.known, ns...)
 	}
-	f.known = slices.Concat(f.known, names.Abilities, names.Items, names.OffPatch)
+	f.known = slices.Concat(f.known, names.Abilities, names.Items, names.OffPatch, sit.Unknown)
 	return f, nil
 }
 
@@ -332,7 +342,7 @@ func (c *Coach) decide(ctx context.Context, sit Situation, data map[string]any) 
 		return fallback()
 	}
 	cat, pri := res.Answers["category"], res.Answers["priority"]
-	if cat.Confidence < MinConfidence || pri.Confidence < MinConfidence {
+	if cat.Confidence < MinConfidence {
 		return fallback()
 	}
 	best, bestP := 1, -1.0
@@ -352,11 +362,4 @@ func cut(s string, n int) string {
 	return strings.TrimSpace(string(r[:n])) + "…"
 }
 
-func round1(x float64) float64 { return float64(int(x*10+copysign(0.5, x))) / 10 }
-
-func copysign(v, sign float64) float64 {
-	if sign < 0 {
-		return -v
-	}
-	return v
-}
+func round1(x float64) float64 { return math.Round(x*10) / 10 }

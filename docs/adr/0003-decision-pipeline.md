@@ -30,3 +30,4 @@ Client rules (our own implementation in `api/internal/decision`, not a copy of u
 - Answers stay inside the database's facts; the LLM cannot add a hero or item.
 - Three model hops cost latency; the UI streams the code ranking first and refines.
 - Jev's thresholds need calibration on our questions; start in shadow (log only) for low-confidence cases.
+- Amended 2026-10-29 (B1, B2): the 0.4 confidence floor applies to `choice` answers (the item's enemy, the coach's advice category). A `score` over ordered levels (an item's urgency, the advice priority) came back at 0.1 to 0.4 confidence on every live call, so its most likely level stands without a floor.

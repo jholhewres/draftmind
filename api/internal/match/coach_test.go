@@ -107,15 +107,19 @@ func (e *events) emit(name string, _ any) { e.names = append(e.names, name) }
 const laneParse = `{"clear": true, "category": "lane", "entities": ["Viper"], "summary": "Viper is winning the mid lane."}`
 
 func TestAnswersNameOnlyHeroesAbilitiesAndItemsInTheDatabaseForTheCurrentPatch(t *testing.T) {
+	// The player names an item the patch lacks; the parse passes it on.
+	const oldItemParse = `{"clear": true, "category": "lane", "entities": ["Viper", "Necronomicon"], "summary": "Viper wins the lane."}`
 	for _, tc := range []struct {
-		name, answer, source, reason string
+		name, parse, answer, source, reason string
 	}{
-		{"names from the facts stand", "Stay behind your creeps: Viper wins trades until level 6. Keep Phase Shift for Viper Strike and buy Black King Bar soon.", writer.SourceWriter, ""},
-		{"an item the facts lack fails", "Stay back and farm a Divine Rapier.", writer.SourceTemplate, writer.ReasonRejected},
-		{"a name the database lacks fails", "Stay back and buy a Glimmer Cape before you fight.", writer.SourceTemplate, writer.ReasonRejected},
+		{"names from the facts stand", laneParse, "Stay behind your creeps: Viper wins trades until level 6. Keep Phase Shift for Viper Strike and buy Black King Bar soon.", writer.SourceWriter, ""},
+		{"an item the facts lack fails", laneParse, "Stay back and farm a Divine Rapier.", writer.SourceTemplate, writer.ReasonRejected},
+		{"a name the database lacks fails", laneParse, "Stay back and buy a Glimmer Cape before you fight.", writer.SourceTemplate, writer.ReasonRejected},
+		{"an unknown name the player wrote fails at a sentence start", oldItemParse, "Viper is strong. Necronomicon helps you push.", writer.SourceTemplate, writer.ReasonRejected},
+		{"an unknown name the player wrote fails in lower case", oldItemParse, "Viper is strong, so a necronomicon helps you push.", writer.SourceTemplate, writer.ReasonRejected},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			m := &model{parse: laneParse, answer: tc.answer}
+			m := &model{parse: tc.parse, answer: tc.answer}
 			c := &Coach{Parse: m.server(t), Write: nil, Jev: &jev{}, Facts: fakeFacts{}}
 			c.Write = c.Parse.(*writer.Writer)
 			ev := &events{}

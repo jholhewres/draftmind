@@ -82,7 +82,10 @@ func (s *Store) Create(ctx context.Context, in Session) (Session, error) {
 	return in, nil
 }
 
-// Get returns the session with its messages, oldest first.
+// MaxMessages is how many of a session's latest messages Get returns.
+const MaxMessages = 200
+
+// Get returns the session with its latest MaxMessages messages, oldest first.
 func (s *Store) Get(ctx context.Context, id string) (Session, error) {
 	var out Session
 	if !ValidID(id) {
@@ -105,7 +108,7 @@ func (s *Store) Get(ctx context.Context, id string) (Session, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT id, author, kind, text, situation, coalesce(category, ''), coalesce(priority, ''), coalesce(source, ''),
 			coalesce(reason, ''), created_at
-		FROM match_message WHERE session_id = $1 ORDER BY id`, id)
+		FROM (SELECT * FROM match_message WHERE session_id = $1 ORDER BY id DESC LIMIT $2) m ORDER BY id`, id, MaxMessages)
 	if err != nil {
 		return out, fmt.Errorf("match messages: %w", err)
 	}
