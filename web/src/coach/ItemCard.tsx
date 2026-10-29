@@ -7,7 +7,8 @@ import { useI18n } from '../i18n'
 export default function ItemCard({ item, note, hot = false }: { item: Item; note?: string; hot?: boolean }) {
   const { t, locale } = useI18n()
   const [broken, setBroken] = useState(false)
-  const src = item.img && !broken ? heroImageBase + item.img : ''
+  // Only a path on the CDN host; anything else falls back.
+  const src = item.img?.startsWith('/') && !item.img.startsWith('//') && !broken ? heroImageBase + item.img : ''
   return (
     <span className={hot ? 'item-card hot' : 'item-card'}>
       {src ? (

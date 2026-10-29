@@ -293,10 +293,10 @@ export async function fetchCounters(slug: string, signal?: AbortSignal): Promise
   return (await res.json()) as Counters
 }
 
-// An item of the current patch, with the games it was bought in.
 // An item as a card shows it; img is its path on the image CDN, empty when none.
 export type ItemCard = { id: number; key: string; name: string; cost: number; img?: string }
 
+// An item of the current patch, with the games it was bought in.
 export type BuildItem = ItemCard & { count: number }
 
 export type Phase = 'start' | 'early' | 'mid' | 'late'
