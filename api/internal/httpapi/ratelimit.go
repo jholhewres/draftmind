@@ -26,7 +26,7 @@ var (
 	DefaultMailLimit   = Limit{Burst: 3, Every: 5 * time.Minute}
 )
 
-// limiter keeps one token bucket per client IP, in memory.
+// limiter keeps one token bucket per key (a client IP, an e-mail address), in memory.
 type limiter struct {
 	limit     Limit
 	now       func() time.Time

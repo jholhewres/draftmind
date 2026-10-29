@@ -49,6 +49,13 @@ func (p steamProvider) authURL(returnTo, realm string) string {
 // verify checks the assertion Steam sent to returnTo and asks Steam to
 // confirm its signature; it returns the SteamID.
 func (p steamProvider) verify(ctx context.Context, q url.Values, returnTo string) (string, error) {
+	// A repeated field would be checked here by its first copy and by
+	// Steam by another one.
+	for k, v := range q {
+		if strings.HasPrefix(k, "openid.") && len(v) != 1 {
+			return "", fmt.Errorf("%s is repeated", k)
+		}
+	}
 	if q.Get("openid.ns") != openIDNS || q.Get("openid.mode") != "id_res" {
 		return "", errors.New("not a positive assertion")
 	}

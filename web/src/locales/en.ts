@@ -189,7 +189,6 @@ export const en = {
   'signin.accountTitle': 'Your account',
   'signin.lead': 'Your account keeps your match history and how your coach talks.',
   'signin.checking': 'Checking your session…',
-  'signin.checkError': 'Could not check your session: {error}',
   'signin.email': 'E-mail',
   'signin.emailPlaceholder': 'you@example.com',
   'signin.send': 'Send sign-in link',

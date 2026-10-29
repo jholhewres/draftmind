@@ -190,7 +190,6 @@ export const ptBR: Messages = {
   'signin.accountTitle': 'Sua conta',
   'signin.lead': 'Sua conta guarda o histórico das partidas e o jeito do seu coach.',
   'signin.checking': 'Verificando sua sessão…',
-  'signin.checkError': 'Não foi possível verificar sua sessão: {error}',
   'signin.email': 'E-mail',
   'signin.emailPlaceholder': 'voce@exemplo.com',
   'signin.send': 'Enviar link de acesso',

@@ -156,6 +156,9 @@ func TestSteamSignInRefusesAnAssertionSteamDoesNotVerify(t *testing.T) {
 		{name: "claimed id not signed", edit: func(a url.Values, _ *fakeSteam) {
 			a.Set("openid.signed", "signed,op_endpoint,identity,return_to,response_nonce,assoc_handle")
 		}},
+		{name: "claimed id repeated", edit: func(a url.Values, _ *fakeSteam) {
+			a.Add("openid.claimed_id", "https://steamcommunity.com/openid/id/76561198000000002")
+		}},
 		{name: "not a positive assertion", edit: func(a url.Values, _ *fakeSteam) { a.Set("openid.mode", "cancel") }},
 		{name: "no state cookie", edit: func(url.Values, *fakeSteam) {}, noCookie: true},
 	}
