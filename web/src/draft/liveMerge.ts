@@ -14,3 +14,7 @@ export function mergeLive(prev: ReadSlot[] | null, next: ReadSlot[], reader: str
     return reader === 'jev' && n.confidence > p.confidence ? n : p
   })
 }
+
+// Whether a live read found a draft at all: a frame of the menus or the
+// match search reads as ten empty or unread slots, and is dropped.
+export const hasDraft = (slots: ReadSlot[]) => slots.some((s) => s.status === 'hero')

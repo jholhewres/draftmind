@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ReadSlot } from '../api'
-import { mergeLive } from './liveMerge'
+import { hasDraft, mergeLive } from './liveMerge'
 
 const hero = (heroId: number, confidence = 0.9): ReadSlot => ({ heroId, status: 'hero', confidence })
 const unknown: ReadSlot = { status: 'unknown', confidence: 0 }
@@ -21,5 +21,12 @@ describe('mergeLive', () => {
   })
   it('takes the first read as it is', () => {
     expect(mergeLive(null, [hero(1), unknown], 'vision')).toEqual([hero(1), unknown])
+  })
+})
+
+describe('hasDraft', () => {
+  it('drops a frame with no hero read, as the menus and the match search are', () => {
+    expect(hasDraft([empty, unknown, empty])).toBe(false)
+    expect(hasDraft([empty, hero(3)])).toBe(true)
   })
 })

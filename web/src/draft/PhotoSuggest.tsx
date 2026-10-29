@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { mergeLive } from './liveMerge'
+import { hasDraft, mergeLive } from './liveMerge'
 import { fetchHeroes, pooledModes, type DraftInput, type HeroCatalog, type ReadSlot, type StreamRead, type StreamRequest } from '../api'
 import { useI18n } from '../i18n'
 import HeroPicker from './HeroPicker'
@@ -108,6 +108,12 @@ export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto
   const onRead = useCallback((read: StreamRead) => {
     const next = [...read.radiant, ...read.dire]
     if (liveRef.current) {
+      // No hero on the frame (menus, the match search): keep what is shown.
+      if (!hasDraft(next)) {
+        readProp.current?.(read)
+        if (slotsRef.current) setEditedOn(photoRef.current)
+        return
+      }
       // A live frame adds to the draft on screen instead of replacing it;
       // when that differs from this read, the merged draft is ranked.
       const merged = mergeLive(slotsRef.current, next, read.reader)
