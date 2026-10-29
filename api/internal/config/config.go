@@ -4,6 +4,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net/netip"
 	"os"
 	"strings"
 )
@@ -31,6 +32,8 @@ type Config struct {
 	SMTPUser          string
 	SMTPPass          string
 	MailFrom          string
+	WebDir            string       // the web build served at /; empty serves the API alone
+	TrustedProxies    []netip.Addr // TRUSTED_PROXY: proxies whose X-Real-IP / X-Forwarded-For is believed
 }
 
 // Load reads the environment, applying defaults where a value is optional.
@@ -66,6 +69,17 @@ func load(getenv func(string) string) (Config, error) {
 		SMTPUser:          get("SMTP_USER", ""),
 		SMTPPass:          get("SMTP_PASS", ""),
 		MailFrom:          get("MAIL_FROM", ""),
+		WebDir:            get("WEB_DIR", ""),
+	}
+	for _, p := range strings.Split(get("TRUSTED_PROXY", ""), ",") {
+		if p = strings.TrimSpace(p); p == "" {
+			continue
+		}
+		a, err := netip.ParseAddr(p)
+		if err != nil {
+			return c, fmt.Errorf("TRUSTED_PROXY must be IP addresses, not %q", p)
+		}
+		c.TrustedProxies = append(c.TrustedProxies, a)
 	}
 	switch v := get("SYNC_SCHEDULE", "off"); v {
 	case "on", "off":
@@ -87,6 +101,6 @@ func load(getenv func(string) string) (Config, error) {
 
 // String describes the config without secrets.
 func (c Config) String() string {
-	return fmt.Sprintf("addr=%s public_url=%s decision_model=%s openrouter_key_set=%t smtp_set=%t sync_schedule=%t",
-		c.HTTPAddr, c.PublicURL, c.DecisionModel, c.OpenRouterAPIKey != "", c.SMTPHost != "", c.SyncSchedule)
+	return fmt.Sprintf("addr=%s public_url=%s decision_model=%s openrouter_key_set=%t smtp_set=%t sync_schedule=%t web_dir=%q trusted_proxies=%v",
+		c.HTTPAddr, c.PublicURL, c.DecisionModel, c.OpenRouterAPIKey != "", c.SMTPHost != "", c.SyncSchedule, c.WebDir, c.TrustedProxies)
 }

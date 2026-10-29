@@ -28,13 +28,20 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/writer"
 )
 
-const usage = "usage: draftmind <serve|migrate|sync heroes|sync details|sync patchnotes [N]|sync stats|sync builds|bench photo [dir]>"
+// version is set at build time: -ldflags "-X main.version=<v>".
+var version = "dev"
+
+const usage = "usage: draftmind <version|serve|migrate|sync heroes|sync details|sync patchnotes [N]|sync stats|sync builds|bench photo [dir]>"
 
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	if len(os.Args) < 2 {
 		fmt.Fprintln(os.Stderr, usage)
 		os.Exit(2)
+	}
+	if os.Args[1] == "version" {
+		fmt.Println(version)
+		return
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -64,7 +71,8 @@ func run(ctx context.Context, cmd string, log *slog.Logger) error {
 		return runSync(ctx, cfg, pool, log)
 	case "serve":
 		cat := catalog.NewStore(pool)
-		srv := httpapi.New(pool, cat, log).WithMatches(match.NewStore(pool)).WithPersonas(persona.NewStore(pool))
+		srv := httpapi.New(pool, cat, log).WithMatches(match.NewStore(pool)).WithPersonas(persona.NewStore(pool)).
+			WithWeb(cfg.WebDir).WithTrustedProxies(cfg.TrustedProxies...)
 		if cfg.OpenRouterAPIKey != "" {
 			jev := decision.New(cfg.OpenRouterBaseURL, cfg.OpenRouterAPIKey, cfg.DecisionModel,
 				cfg.DecisionProvider, decision.NewPGLog(pool, log))
@@ -182,7 +190,7 @@ func serve(ctx context.Context, cfg config.Config, h http.Handler, log *slog.Log
 	srv := &http.Server{Addr: cfg.HTTPAddr, Handler: h, ReadHeaderTimeout: 10 * time.Second}
 	errc := make(chan error, 1)
 	go func() { errc <- srv.ListenAndServe() }()
-	log.Info("listening", "config", cfg.String())
+	log.Info("listening", "version", version, "config", cfg.String())
 	select {
 	case err := <-errc:
 		return err

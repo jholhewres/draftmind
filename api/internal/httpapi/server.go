@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"net/netip"
 	"time"
 
 	"github.com/jholhewres/draftmind/api/internal/auth"
@@ -62,6 +63,8 @@ type Server struct {
 	personas     Personas
 	auth         *auth.Service
 	log          *slog.Logger
+	webDir       string       // the web build served at /, empty for the API alone
+	trusted      []netip.Addr // reverse proxies whose forwarded client address is believed
 
 	suggestLimit, readLimit Limit
 	voiceLimit              Limit
@@ -157,7 +160,10 @@ func (s *Server) Handler() http.Handler {
 	} else {
 		mux.Handle("GET /api/me", s.requireUser(nil))
 	}
-	return mux
+	if s.webDir != "" {
+		mux.Handle("GET /", s.web())
+	}
+	return s.realIP(mux)
 }
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {

@@ -100,8 +100,8 @@ func (l *limiter) clients() int {
 	return len(l.buckets)
 }
 
-// clientIP is the connection's address. A proxy in front would make every
-// client one; the deploy card must pass the client's address on.
+// clientIP is the connection's address; behind a trusted proxy realIP has
+// already set it to the forwarded client.
 func clientIP(r *http.Request) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {

@@ -3,6 +3,7 @@ package httpapi
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"strings"
 	"testing"
 	"time"
@@ -103,5 +104,40 @@ func TestSuggestAndReadAreRateLimitedPerClient(t *testing.T) {
 	h.ServeHTTP(rec, health)
 	if rec.Code == http.StatusTooManyRequests {
 		t.Fatal("health is rate limited")
+	}
+}
+
+func TestRateLimitKeysOnTheRealClientBehindATrustedProxy(t *testing.T) {
+	srv := New(fakeDB{}, nil, quietLog()).WithLimits(Limit{Burst: 1, Every: time.Hour}, DefaultReadLimit).WithTrustedProxies(netip.MustParseAddr("127.0.0.1"))
+	h := srv.Handler()
+	post := func(remote, realIP, forwarded string) int {
+		req := httptest.NewRequest(http.MethodPost, "/api/draft/suggest", strings.NewReader("{}"))
+		req.RemoteAddr = remote + ":51234"
+		if realIP != "" {
+			req.Header.Set("X-Real-IP", realIP)
+		}
+		if forwarded != "" {
+			req.Header.Set("X-Forwarded-For", forwarded)
+		}
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	// Two clients behind the proxy keep their own buckets.
+	post("127.0.0.1", "203.0.113.7", "")
+	if code := post("127.0.0.1", "198.51.100.2", ""); code == http.StatusTooManyRequests {
+		t.Fatal("a second client behind the proxy shared the first one's bucket")
+	}
+	if code := post("127.0.0.1", "203.0.113.7", ""); code != http.StatusTooManyRequests {
+		t.Fatalf("the first client again: %d, want 429", code)
+	}
+	// Without X-Real-IP the right-most X-Forwarded-For entry is the client.
+	if code := post("127.0.0.1", "", "10.9.9.9, 203.0.113.7"); code != http.StatusTooManyRequests {
+		t.Fatalf("X-Forwarded-For client: %d, want 429", code)
+	}
+	// A client that is not the proxy cannot pick its key with the header.
+	post("192.0.2.50", "198.51.100.77", "")
+	if code := post("192.0.2.50", "198.51.100.78", ""); code != http.StatusTooManyRequests {
+		t.Fatalf("a spoofed X-Real-IP from a direct client: %d, want 429", code)
 	}
 }
