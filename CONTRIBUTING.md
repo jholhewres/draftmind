@@ -18,7 +18,7 @@ make dev
 
 ## Curated data
 
-`api/data/item_counters.json` holds the counter tags (ADR-0011): which items answer which tag, the tags a hero brings by slug, and the tags each dotaconstants role brings. It is the only place these opinions live; never hardcode them in Go.
+`api/internal/curated/item_counters.json` holds the counter tags (ADR-0011): which items answer which tag, the tags a hero brings by slug, and the tags each dotaconstants role brings. It is the only place these opinions live; never hardcode them in Go.
 
 - Use dotaconstants item keys and hero slugs; names the current patch lacks are skipped.
 - Tags are lower-case words with underscores.

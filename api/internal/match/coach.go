@@ -464,7 +464,7 @@ const ReasonQuick = "quick"
 
 // QuickItems answers the "items now?" quick action from the session's item
 // plan alone, with no Jev or writer call (ADR-0011): the situational items
-// most urgent first, then the next core items not yet started. The UI words
+// most urgent first (later ones last), then the mid and late core items. The UI words
 // the template; the cards are the answer.
 func QuickItems(s Session, emit Emit) Reply {
 	r := Reply{Kind: "answer", Category: "items", Priority: "medium", Source: SourceQuick, TextSource: writer.SourceTemplate, Reason: ReasonQuick}

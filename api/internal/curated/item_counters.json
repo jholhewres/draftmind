@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "note": "Curated counter tags (ADR-0011). Keys are dotaconstants item keys and hero slugs; names the current patch lacks are skipped. Bump version when you change it.",
+  "items": {
+    "magic_damage": ["black_king_bar", "pipe", "glimmer_cape", "eternal_shroud", "hood_of_defiance"],
+    "physical_damage": ["blade_mail", "shivas_guard", "assault", "butterfly", "crimson_guard", "solar_crest"],
+    "evasion": ["monkey_king_bar", "bloodthorn"],
+    "illusions": ["bfury", "mjollnir", "maelstrom", "radiance", "gungir"],
+    "healing": ["spirit_vessel", "shivas_guard", "skadi"],
+    "invisibility": ["gem", "dust", "ward_sentry"],
+    "mobility": ["orchid", "bloodthorn", "rod_of_atos", "gungir", "sheepstick", "abyssal_blade"],
+    "disables": ["black_king_bar", "lotus_orb", "aeon_disk", "sphere"]
+  },
+  "heroes": {
+    "phantom_lancer": ["illusions"],
+    "naga_siren": ["illusions"],
+    "chaos_knight": ["illusions"],
+    "terrorblade": ["illusions"],
+    "meepo": ["illusions"],
+    "arc_warden": ["illusions"],
+    "phantom_assassin": ["evasion"],
+    "brewmaster": ["evasion"],
+    "alchemist": ["healing"],
+    "huskar": ["healing"],
+    "necrolyte": ["healing"],
+    "morphling": ["healing"],
+    "riki": ["invisibility"],
+    "bounty_hunter": ["invisibility"],
+    "clinkz": ["invisibility"],
+    "weaver": ["invisibility"],
+    "nyx_assassin": ["invisibility"]
+  },
+  "roles": {
+    "Nuker": ["magic_damage"],
+    "Disabler": ["disables"],
+    "Escape": ["mobility"],
+    "Carry": ["physical_damage"]
+  }
+}

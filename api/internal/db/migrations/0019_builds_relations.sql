@@ -40,7 +40,7 @@ CREATE TABLE hero_build_item (
 );
 
 -- What an item answers (magic damage, illusions...), and what a hero brings,
--- from api/data/item_counters.json (curated) or the hero's roles (roles).
+-- from api/internal/curated/item_counters.json (curated) or the hero's roles (roles).
 CREATE TABLE item_tag (
     patch_id integer NOT NULL,
     item_id  integer NOT NULL,

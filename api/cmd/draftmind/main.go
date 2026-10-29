@@ -16,10 +16,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/jholhewres/draftmind/api/data"
 	"github.com/jholhewres/draftmind/api/internal/auth"
 	"github.com/jholhewres/draftmind/api/internal/catalog"
 	"github.com/jholhewres/draftmind/api/internal/config"
+	"github.com/jholhewres/draftmind/api/internal/curated"
 	"github.com/jholhewres/draftmind/api/internal/db"
 	"github.com/jholhewres/draftmind/api/internal/decision"
 	"github.com/jholhewres/draftmind/api/internal/gamesync"
@@ -185,7 +185,7 @@ func runSync(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, log *sl
 			return err
 		}
 		// Then the builds, item relations and counter tags from it (ADR-0011).
-		_, err := syncer.Relations(ctx, data.ItemCounters)
+		_, err := syncer.Relations(ctx, curated.ItemCounters)
 		return err
 	default:
 		return fmt.Errorf("unknown sync target; %s", usage)

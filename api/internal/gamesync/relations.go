@@ -16,7 +16,7 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/items"
 )
 
-// Counters is the curated counter file, api/data/item_counters.json (ADR-0011).
+// Counters is the curated counter file, api/internal/curated/item_counters.json (ADR-0011).
 type Counters struct {
 	Version int `json:"version"`
 	// Items are, per tag, the item keys that answer it.
