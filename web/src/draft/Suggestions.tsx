@@ -17,11 +17,17 @@ const fallbackReason: Record<FallbackReason, MessageKey> = {
   low_confidence: 'draft.source.lowConfidence',
 }
 
-type Props = SuggestStream & { byId: Map<number, Hero> }
+type Props = SuggestStream & {
+  byId: Map<number, Hero>
+  // Starts a match with the hero; the button shows on the first suggestion.
+  onStart?: (heroId: number) => void
+  starting?: number | null
+  startError?: string | null
+}
 
 // The top of the ranking with each hero's counter chips, score and tip.
 // Items are keyed by hero, so a new order or a tip updates them in place.
-export default function SuggestionList({ result, error, tips, streaming, byId }: Props) {
+export default function SuggestionList({ result, error, tips, streaming, byId, onStart, starting = null, startError = null }: Props) {
   const { t, locale } = useI18n()
   const name = (id: number) => byId.get(id)?.name ?? `#${id}`
 
@@ -91,11 +97,22 @@ export default function SuggestionList({ result, error, tips, streaming, byId }:
                   </span>
                 </div>
                 {tipFor(s, rank, tips.get(s.heroId))}
+                {onStart && rank === 0 && (
+                  <button
+                    type="button"
+                    className="start-match"
+                    disabled={starting !== null}
+                    onClick={() => onStart(s.heroId)}
+                  >
+                    {starting === s.heroId ? t('draft.starting') : t('draft.start', { hero: name(s.heroId) })}
+                  </button>
+                )}
               </li>
             )
           })}
         </ol>
       )}
+      {startError && <p role="alert">{t('draft.startError', { error: startError })}</p>}
     </section>
   )
 }

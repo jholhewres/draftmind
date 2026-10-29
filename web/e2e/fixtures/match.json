@@ -1,0 +1,108 @@
+{
+  "id": "7f3c2a1e-4b5d-4e6f-8a9b-0c1d2e3f4a5b",
+  "patch": "7.41",
+  "heroId": 8,
+  "role": 1,
+  "allies": [],
+  "enemies": [
+    2,
+    6
+  ],
+  "bans": [
+    3
+  ],
+  "itemPlan": {
+    "heroId": 8,
+    "core": [
+      {
+        "phase": "start",
+        "items": [
+          {
+            "id": 44,
+            "key": "tango",
+            "name": "Tango",
+            "cost": 90,
+            "count": 40100
+          }
+        ]
+      },
+      {
+        "phase": "early",
+        "items": [
+          {
+            "id": 63,
+            "key": "power_treads",
+            "name": "Power Treads",
+            "cost": 1400,
+            "count": 30200
+          },
+          {
+            "id": 36,
+            "key": "magic_wand",
+            "name": "Magic Wand",
+            "cost": 450,
+            "count": 20100
+          }
+        ]
+      },
+      {
+        "phase": "mid",
+        "items": [
+          {
+            "id": 145,
+            "key": "bfury",
+            "name": "Battle Fury",
+            "cost": 4100,
+            "count": 21000
+          },
+          {
+            "id": 147,
+            "key": "manta",
+            "name": "Manta Style",
+            "cost": 4650,
+            "count": 12000
+          }
+        ]
+      },
+      {
+        "phase": "late",
+        "items": [
+          {
+            "id": 139,
+            "key": "basher",
+            "name": "Skull Basher",
+            "cost": 2875,
+            "count": 6000
+          }
+        ]
+      }
+    ],
+    "situational": [
+      {
+        "item": {
+          "id": 116,
+          "key": "black_king_bar",
+          "name": "Black King Bar",
+          "cost": 4050
+        },
+        "enemyId": 2,
+        "urgency": "now",
+        "score": 9.2
+      },
+      {
+        "item": {
+          "id": 119,
+          "key": "butterfly",
+          "name": "Butterfly",
+          "cost": 5450
+        },
+        "enemyId": 6,
+        "urgency": "later",
+        "score": 4.1
+      }
+    ],
+    "source": "jev"
+  },
+  "createdAt": "2026-10-29T03:00:00Z",
+  "messages": []
+}

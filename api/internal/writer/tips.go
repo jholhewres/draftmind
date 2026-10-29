@@ -148,12 +148,8 @@ func (w *Writer) Tip(ctx context.Context, b Brief) Tip {
 			call.Outcome = OutcomeOK
 		}
 	}
-	if w.Log != nil {
-		// The tip is ready; a slow database must not hold the stream long.
-		logCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 2*time.Second)
-		w.Log.Record(logCtx, call)
-		cancel()
-	}
+	// The tip is ready; a slow database must not hold the stream long.
+	w.record(ctx, call)
 	return tip
 }
 
@@ -169,17 +165,27 @@ func (w *Writer) complete(ctx context.Context, b Brief, call *Call) (string, err
 	if err != nil {
 		return "", err
 	}
-	body, err := json.Marshal(map[string]any{
+	return w.chat(ctx, fmt.Sprintf(tipInstructions, b.Lang), string(facts), 200, false, call)
+}
+
+// chat sends one system and one user message and returns the text answer;
+// asJSON asks for a JSON object.
+func (w *Writer) chat(ctx context.Context, system, user string, maxTokens int, asJSON bool, call *Call) (string, error) {
+	payload := map[string]any{
 		"model": w.Model,
 		"messages": []any{
-			map[string]any{"role": "system", "content": fmt.Sprintf(tipInstructions, b.Lang)},
-			map[string]any{"role": "user", "content": string(facts)},
+			map[string]any{"role": "system", "content": system},
+			map[string]any{"role": "user", "content": user},
 		},
-		"max_tokens": 200,
+		"max_tokens": maxTokens,
 		"reasoning":  map[string]any{"effort": "minimal"},
 		"provider":   map[string]any{"data_collection": "deny", "zdr": true},
 		"usage":      map[string]any{"include": true},
-	})
+	}
+	if asJSON {
+		payload["response_format"] = map[string]any{"type": "json_object"}
+	}
+	body, err := json.Marshal(payload)
 	if err != nil {
 		return "", err
 	}
@@ -243,6 +249,22 @@ func Check(text string, allowed, known []string) error {
 	case n > MaxTip:
 		return fmt.Errorf("%d characters, over %d", n, MaxTip)
 	}
+	masked, err := maskAndMatch(text, allowed, known)
+	if err != nil {
+		return err
+	}
+	for _, word := range strings.Fields(masked) {
+		core := strings.TrimLeftFunc(word, isNotWord)
+		if r, _ := utf8.DecodeRuneInString(core); unicode.IsUpper(r) {
+			return fmt.Errorf("names %q, which is not in the result", strings.TrimRightFunc(core, isNotWord))
+		}
+	}
+	return nil
+}
+
+// maskAndMatch masks the allowed names in text and fails when it still
+// names a known one, in any case.
+func maskAndMatch(text string, allowed, known []string) (string, error) {
 	// Longest first, so a name inside a longer one is masked with it.
 	names := slices.Clone(allowed)
 	slices.SortFunc(names, func(a, b string) int { return len(b) - len(a) })
@@ -253,16 +275,10 @@ func Check(text string, allowed, known []string) error {
 	lower := strings.ToLower(masked)
 	for _, name := range known {
 		if name != "" && indexWord(lower, strings.ToLower(name)) >= 0 {
-			return fmt.Errorf("names %q, which is not in the result", name)
+			return "", fmt.Errorf("names %q, which is not in the result", name)
 		}
 	}
-	for _, word := range strings.Fields(masked) {
-		core := strings.TrimLeftFunc(word, isNotWord)
-		if r, _ := utf8.DecodeRuneInString(core); unicode.IsUpper(r) {
-			return fmt.Errorf("names %q, which is not in the result", strings.TrimRightFunc(core, isNotWord))
-		}
-	}
-	return nil
+	return masked, nil
 }
 
 // mask stands in for an allowed name; it is not a letter or a digit.

@@ -6,13 +6,12 @@ import HeroGrid from './heroes/HeroGrid'
 import HeroPage from './heroes/HeroPage'
 import PatchesPage from './patches/PatchesPage'
 import { useI18n } from './i18n'
-import { useHash, useRoute } from './shell/route'
+import { useRoute } from './shell/route'
 import TabBar from './shell/TabBar'
 
 export default function App() {
   const { t } = useI18n()
   const { tab, hero, manual } = useRoute()
-  const hash = useHash()
   const [health, setHealth] = useState<Health | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -44,7 +43,7 @@ export default function App() {
           ) : tab === 'draft' ? (
             <DraftTab manual={manual} />
           ) : tab === 'coach' ? (
-            <CoachTab hash={hash} />
+            <CoachTab />
           ) : (
             <PatchesPage />
           )}

@@ -24,6 +24,14 @@ async function mockBuild(page: Page, builds: unknown[]) {
   })
 }
 
+// An Axe match against Crystal Maiden, Bane and Drow Ranger, its item plan
+// decided when it started; the Coach tab restores it by the kept id.
+async function axeMatch(page: Page) {
+  const id = '0b9e8d7c-6a5f-4e3d-9c2b-1a0f9e8d7c6b'
+  await page.addInitScript((id) => window.localStorage.setItem('draftmind.match', id), id)
+  await page.route(`**/api/match/${id}`, (route) => route.fulfill({ path: fixture('match-axe.json') }))
+}
+
 test('Only items that exist in the current patch are suggested', async ({ page, escaped }) => {
   await mockBuild(page, [])
   await page.goto('/#/heroes/axe')
@@ -40,11 +48,10 @@ test('Only items that exist in the current patch are suggested', async ({ page, 
 })
 
 test('Each situational item cites the enemy hero that triggers it', async ({ page, escaped }) => {
-  const builds: unknown[] = []
-  await mockBuild(page, builds)
-  await page.goto('/#/coach?hero=2&vs=5,3,6')
+  await axeMatch(page)
+  await page.goto('/#/coach')
 
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Axe')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Axe · Offlane')
   const card = page.getByRole('region', { name: 'Build · against this lineup' })
   const name = (id: number) => heroes.heroes.find((h) => h.id === id)!.name
   await expect(card.getByRole('list', { name: 'Situational items' }).getByRole('listitem')).toHaveText([
@@ -53,7 +60,6 @@ test('Each situational item cites the enemy hero that triggers it', async ({ pag
     `Force Staff later · vs ${name(6)}`,
   ])
   await expect(card.getByRole('list', { name: 'Mid game' }).getByRole('listitem')).toHaveText(['Blink Dagger', 'Blade Mail'])
-  expect(builds.at(-1)).toEqual({ hero: 2, enemies: [5, 3, 6] })
 
   expect(escaped).toEqual([])
   await expect(page).toHaveScreenshot('coach-build.png')
@@ -63,8 +69,8 @@ test.describe(() => {
   test.use({ locale: 'pt-BR' })
 
   test('The build card reads in the player language', async ({ page }) => {
-    await mockBuild(page, [])
-    await page.goto('/#/coach?hero=2&vs=5,3,6')
+    await axeMatch(page)
+    await page.goto('/#/coach')
     const card = page.getByRole('region', { name: 'Build · contra esta formação' })
     await expect(card.getByRole('listitem').first()).toHaveText('Black King Bar agora · vs Crystal Maiden')
     await expect(card.getByText('Da popularidade de itens do OpenDota.')).toBeVisible()

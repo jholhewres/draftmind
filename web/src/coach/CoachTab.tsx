@@ -1,30 +1,29 @@
 import { useEffect, useMemo, useState } from 'react'
-import { fetchBuild, fetchHeroes, type Build, type Hero } from '../api'
+import { fetchHeroes, fetchMatch, heroImageBase, type Hero, type MatchSession } from '../api'
 import { useI18n } from '../i18n'
+import type { MessageKey } from '../locales/en'
 import BuildCard from './BuildCard'
+import CoachChat from './CoachChat'
+import MatchTimer from './MatchTimer'
+import { saveSessionId, savedSessionId } from './session'
 
-// The lineup in the hash: #/coach?hero=<id>&vs=<id>,<id>.
-function lineupFromHash(hash: string): { hero: number; enemies: number[] } | null {
-  const query = hash.split('?')[1]
-  if (!query) return null
-  const q = new URLSearchParams(query)
-  const hero = Number(q.get('hero'))
-  if (!Number.isInteger(hero) || hero <= 0) return null
-  const enemies = (q.get('vs') ?? '')
-    .split(',')
-    .filter(Boolean)
-    .map(Number)
-    .filter((n) => Number.isInteger(n) && n > 0)
-  return { hero, enemies }
+const position: Record<number, MessageKey> = {
+  1: 'draft.position.1',
+  2: 'draft.position.2',
+  3: 'draft.position.3',
+  4: 'draft.position.4',
+  5: 'draft.position.5',
 }
 
-// The Coach tab: the locked hero and its build against the enemy lineup.
-export default function CoachTab({ hash }: { hash: string }) {
+type State = { status: 'loading' } | { status: 'none' } | { status: 'error'; error: string } | { status: 'ready'; session: MatchSession }
+
+// The Coach tab: the match the player started on the Draft tab, restored
+// from the id kept in localStorage after a reload.
+export default function CoachTab() {
   const { t } = useI18n()
-  const lineup = useMemo(() => lineupFromHash(hash), [hash])
+  const [id] = useState(savedSessionId)
+  const [state, setState] = useState<State>(id ? { status: 'loading' } : { status: 'none' })
   const [heroes, setHeroes] = useState<Hero[]>([])
-  const [build, setBuild] = useState<{ key: string; data?: Build; error?: string } | null>(null)
-  const key = lineup ? `${lineup.hero}:${lineup.enemies.join(',')}` : ''
 
   useEffect(() => {
     const ctrl = new AbortController()
@@ -35,40 +34,52 @@ export default function CoachTab({ hash }: { hash: string }) {
   }, [])
 
   useEffect(() => {
-    if (!lineup) return
+    if (!id) return
     const ctrl = new AbortController()
-    fetchBuild(lineup.hero, lineup.enemies, ctrl.signal)
-      .then((data) => setBuild({ key, data }))
+    fetchMatch(id, ctrl.signal)
+      .then((session) => {
+        if (session) return setState({ status: 'ready', session })
+        saveSessionId(null) // gone from the server: start afresh
+        setState({ status: 'none' })
+      })
       .catch((e: unknown) => {
-        if (!ctrl.signal.aborted) setBuild({ key, error: e instanceof Error ? e.message : String(e) })
+        if (!ctrl.signal.aborted) setState({ status: 'error', error: e instanceof Error ? e.message : String(e) })
       })
     return () => ctrl.abort()
-  }, [lineup, key])
+  }, [id])
 
   const byId = useMemo(() => new Map(heroes.map((h) => [h.id, h])), [heroes])
-  if (!lineup) {
+  if (state.status !== 'ready') {
     return (
       <section className="screen">
         <header className="screen-head">
           <h1>{t('nav.coach')}</h1>
         </header>
-        <p className="muted">{t('coach.empty')}</p>
+        {state.status === 'loading' ? (
+          <p role="status">{t('coach.loading')}</p>
+        ) : state.status === 'error' ? (
+          <p role="alert">{t('coach.loadError', { error: state.error })}</p>
+        ) : (
+          <p className="muted">{t('coach.empty')}</p>
+        )}
       </section>
     )
   }
-  const current = build?.key === key ? build : null
+  const s = state.session
+  const hero = byId.get(s.heroId)
   return (
     <section className="screen coach">
-      <header className="screen-head">
-        <h1>{byId.get(lineup.hero)?.name ?? t('nav.coach')}</h1>
+      <header className="coach-head">
+        {hero && <img src={heroImageBase + hero.img} alt="" width={128} height={72} />}
+        <div className="coach-title">
+          <h1>{t('coach.title', { hero: hero?.name ?? `#${s.heroId}`, position: t(position[s.role] ?? 'nav.coach') })}</h1>
+          <MatchTimer id={s.id} />
+        </div>
       </header>
-      {current?.error ? (
-        <p role="alert">{t('build.error', { error: current.error })}</p>
-      ) : current?.data ? (
-        <BuildCard build={current.data} byId={byId} />
-      ) : (
-        <p role="status">{t('build.loading')}</p>
-      )}
+      <div className="coach-body">
+        <BuildCard build={s.itemPlan} byId={byId} />
+        <CoachChat session={s} />
+      </div>
     </section>
   )
 }

@@ -5,6 +5,7 @@ import HeroPicker from './HeroPicker'
 import { sideLabel as label, type Side } from './labels'
 import { Row, SlotButton } from './slots'
 import RoleOptions from './RoleOptions'
+import { useStartMatch } from '../coach/useStartMatch'
 import SuggestionList from './Suggestions'
 import { useSuggestStream } from './useSuggestStream'
 
@@ -58,6 +59,7 @@ export default function DraftBoard() {
 
   const request = useMemo((): StreamRequest => ({ kind: 'draft', draft: input, lang: locale }), [input, locale])
   const ranking = useSuggestStream(request)
+  const match = useStartMatch(input)
 
   const byId = useMemo(() => new Map((catalog?.heroes ?? []).map((h) => [h.id, h])), [catalog])
   const taken = new Set([...input.allies, ...input.enemies, ...input.bans])
@@ -103,7 +105,7 @@ export default function DraftBoard() {
             <RoleOptions name="role" role={role} onChange={setRole} />
             <p className="muted hint">{t('draft.hint')}</p>
           </div>
-          <SuggestionList {...ranking} byId={byId} />
+          <SuggestionList {...ranking} byId={byId} onStart={match.start} starting={match.starting} startError={match.error} />
         </div>
       )}
       {picking && catalog && (

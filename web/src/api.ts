@@ -210,7 +210,16 @@ export async function streamSuggestions(req: StreamRequest, onEvent: (e: StreamE
   }
   const res = await fetch(`/api/draft/stream?${query}`, init)
   if (!res.ok || !res.body) throw new Error(`/api/draft/stream: HTTP ${res.status}`)
-  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader()
+  await readEvents(res.body, (name, data) => {
+    const ev = asEvent(name, data)
+    if (ev) onEvent(ev)
+  })
+}
+
+// Reads a Server-Sent Events body, calling onEvent with each event's name
+// and data; resolves when the body ends.
+async function readEvents(body: ReadableStream<BufferSource>, onEvent: (name: string, data: string) => void): Promise<void> {
+  const reader = body.pipeThrough(new TextDecoderStream()).getReader()
   let buf = ''
   for (;;) {
     const { value, done } = await reader.read()
@@ -225,8 +234,7 @@ export async function streamSuggestions(req: StreamRequest, onEvent: (e: StreamE
         if (line.startsWith('event:')) name = line.slice(6).trim()
         else if (line.startsWith('data:')) data.push(line.slice(5).replace(/^ /, ''))
       }
-      const ev = asEvent(name, data.join('\n'))
-      if (ev) onEvent(ev)
+      onEvent(name, data.join('\n'))
     }
   }
 }
@@ -324,4 +332,105 @@ export async function fetchBuild(hero: number, enemies: number[], signal?: Abort
   })
   if (!res.ok) throw new Error(`/api/draft/build: HTTP ${res.status}`)
   return (await res.json()) as Build
+}
+
+export type Category = 'lane' | 'teamfight' | 'items' | 'objective' | 'other'
+export type Priority = 'low' | 'medium' | 'high'
+
+// One chat line. A coach line with no text is a template the UI words: a
+// follow-up question, or an answer the server could not write or check.
+export type MatchMessage = {
+  id: number
+  author: 'player' | 'coach'
+  kind: 'text' | 'answer' | 'followup'
+  text: string
+  category?: Category
+  priority?: Priority
+  source?: string
+  reason?: string
+}
+
+// A match being coached: the draft, the locked hero, its item plan and the chat.
+export type MatchSession = {
+  id: string
+  patch: string
+  heroId: number
+  role: number
+  allies: number[]
+  enemies: number[]
+  bans: number[]
+  itemPlan: Omit<Build, 'patch' | 'popularitySource'>
+  messages: MatchMessage[]
+}
+
+export type MatchStart = { hero: number; role: number; allies: number[]; enemies: number[]; bans: number[] }
+
+export async function startMatch(req: MatchStart, signal?: AbortSignal): Promise<MatchSession> {
+  const res = await fetch('/api/match', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+    signal,
+  })
+  if (!res.ok) throw new Error(`/api/match: HTTP ${res.status}`)
+  return (await res.json()) as MatchSession
+}
+
+// The session, or null when no session has that id.
+export async function fetchMatch(id: string, signal?: AbortSignal): Promise<MatchSession | null> {
+  const path = `/api/match/${encodeURIComponent(id)}`
+  const res = await fetch(path, { signal })
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
+  return (await res.json()) as MatchSession
+}
+
+export type CoachEvent =
+  | { type: 'message'; message: MatchMessage }
+  | { type: 'decision'; category: Category; priority: Priority }
+  | { type: 'reply'; message: Omit<MatchMessage, 'id'> }
+
+// Sends the player's message and streams the coach's turn.
+export async function sendMatchMessage(
+  id: string,
+  text: string,
+  lang: string,
+  onEvent: (e: CoachEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const path = `/api/match/${encodeURIComponent(id)}/messages?${new URLSearchParams({ lang })}`
+  const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }), signal })
+  if (!res.ok || !res.body) throw new Error(`/api/match/messages: HTTP ${res.status}`)
+  await readEvents(res.body, (name, data) => {
+    let body: Record<string, unknown>
+    try {
+      body = JSON.parse(data) as Record<string, unknown>
+    } catch {
+      return
+    }
+    const str = (v: unknown) => (typeof v === 'string' ? v : undefined)
+    switch (name) {
+      case 'message':
+        onEvent({ type: 'message', message: body as MatchMessage })
+        break
+      case 'decision':
+        onEvent({ type: 'decision', category: body.category as Category, priority: body.priority as Priority })
+        break
+      case 'answer':
+      case 'followup':
+        onEvent({
+          type: 'reply',
+          message: {
+            author: 'coach',
+            kind: name,
+            // A template's text is worded here, never taken from the stream.
+            text: name === 'answer' && body.textSource === 'writer' ? (str(body.text) ?? '') : '',
+            category: str(body.category) as Category | undefined,
+            priority: str(body.priority) as Priority | undefined,
+            reason: str(body.reason),
+          },
+        })
+        break
+    }
+  })
 }

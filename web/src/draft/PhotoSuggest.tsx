@@ -6,6 +6,7 @@ import { prepareImage } from './prepare'
 import { sideLabel } from './labels'
 import { Row, SlotButton } from './slots'
 import RoleOptions from './RoleOptions'
+import { useStartMatch } from '../coach/useStartMatch'
 import SuggestionList from './Suggestions'
 import { useSuggestStream } from './useSuggestStream'
 
@@ -104,6 +105,7 @@ export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto
     setRole(r)
   }
   const ranking = useSuggestStream(followsPhoto ? photoRequest : draftRequest, onRead)
+  const match = useStartMatch(input)
   const readError = prepareError ?? (slots ? null : ranking.error)
   const byId = useMemo(() => new Map((catalog?.heroes ?? []).map((h) => [h.id, h])), [catalog])
 
@@ -180,7 +182,7 @@ export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto
           </section>
           <RoleOptions name="photo-role" role={role} onChange={changeRole} />
         </div>
-        {slots && <SuggestionList {...ranking} byId={byId} />}
+        {slots && <SuggestionList {...ranking} byId={byId} onStart={match.start} starting={match.starting} startError={match.error} />}
       </div>
       {picking !== null && slots && catalog && (
         <HeroPicker

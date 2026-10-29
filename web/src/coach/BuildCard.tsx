@@ -11,7 +11,7 @@ const urgencyLabel: Record<Urgency, MessageKey> = {
 
 // The locked hero's build: core items by phase from item popularity, then
 // the situational items, each naming the enemy hero it answers.
-export default function BuildCard({ build, byId }: { build: Build; byId: Map<number, Hero> }) {
+export default function BuildCard({ build, byId }: { build: Omit<Build, 'patch' | 'popularitySource'>; byId: Map<number, Hero> }) {
   const { t } = useI18n()
   const name = (id: number) => byId.get(id)?.name ?? `#${id}`
   const afterStart = build.core.filter((p) => p.phase !== 'start')

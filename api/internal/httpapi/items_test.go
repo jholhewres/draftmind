@@ -10,6 +10,7 @@ import (
 
 	"github.com/jholhewres/draftmind/api/internal/catalog"
 	"github.com/jholhewres/draftmind/api/internal/dbtest"
+	"github.com/jholhewres/draftmind/api/internal/match"
 )
 
 // buildPatches has heroes 1 to 3 on 7.40 and 7.41, the current patch. Item
@@ -36,7 +37,7 @@ func buildPatches(t *testing.T) *Server {
 		SELECT id, 3, 2, 1000, 700 FROM patch WHERE name = '7.41'`); err != nil {
 		t.Fatal(err)
 	}
-	return New(fakeDB{}, catalog.NewStore(pool), quietLog())
+	return New(fakeDB{}, catalog.NewStore(pool), quietLog()).WithMatches(match.NewStore(pool))
 }
 
 func TestBuildSuggestsOnlyItemsOfTheCurrentPatch(t *testing.T) {

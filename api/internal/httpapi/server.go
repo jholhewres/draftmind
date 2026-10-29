@@ -49,6 +49,8 @@ type Server struct {
 	jev     draft.Asker
 	reader  photo.Reader
 	tips    Tipper
+	matches Matches
+	coach   Replier
 	log     *slog.Logger
 
 	suggestLimit, readLimit Limit
@@ -91,12 +93,15 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/heroes/{slug}/build", s.heroBuild)
 	mux.HandleFunc("GET /api/patches", s.listPatches)
 	mux.HandleFunc("GET /api/patches/{name}", s.patchChanges)
-	// All four spend money on model calls and need no login.
+	// These spend money on model calls and need no login.
 	suggest, read := newLimiter(s.suggestLimit, s.now), newLimiter(s.readLimit, s.now)
 	mux.Handle("POST /api/draft/suggest", suggest.wrap(http.HandlerFunc(s.suggest)))
 	mux.Handle("POST /api/draft/stream", suggest.wrap(s.stream(read)))
 	mux.Handle("POST /api/draft/read", read.wrap(http.HandlerFunc(s.readDraft)))
 	mux.Handle("POST /api/draft/build", suggest.wrap(http.HandlerFunc(s.build)))
+	mux.Handle("POST /api/match", suggest.wrap(http.HandlerFunc(s.startMatch)))
+	mux.HandleFunc("GET /api/match/{id}", s.getMatch)
+	mux.Handle("POST /api/match/{id}/messages", suggest.wrap(http.HandlerFunc(s.matchMessage)))
 	return mux
 }
 

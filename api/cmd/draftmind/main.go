@@ -21,6 +21,7 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/decision"
 	"github.com/jholhewres/draftmind/api/internal/gamesync"
 	"github.com/jholhewres/draftmind/api/internal/httpapi"
+	"github.com/jholhewres/draftmind/api/internal/match"
 	"github.com/jholhewres/draftmind/api/internal/writer"
 )
 
@@ -60,16 +61,19 @@ func run(ctx context.Context, cmd string, log *slog.Logger) error {
 		return runSync(ctx, cfg, pool, log)
 	case "serve":
 		cat := catalog.NewStore(pool)
-		srv := httpapi.New(pool, cat, log)
+		srv := httpapi.New(pool, cat, log).WithMatches(match.NewStore(pool))
 		if cfg.OpenRouterAPIKey != "" {
-			srv.WithDecider(decision.New(cfg.OpenRouterBaseURL, cfg.OpenRouterAPIKey, cfg.DecisionModel,
-				cfg.DecisionProvider, decision.NewPGLog(pool, log)))
+			jev := decision.New(cfg.OpenRouterBaseURL, cfg.OpenRouterAPIKey, cfg.DecisionModel,
+				cfg.DecisionProvider, decision.NewPGLog(pool, log))
+			srv.WithDecider(jev)
 			readers := newPhotoReaders(cfg, decision.NewPGLog(pool, log))
 			srv.WithPhotoReader(readers.chain(cfg.PhotoReader))
-			srv.WithWriter(writer.New(cfg.OpenRouterBaseURL, cfg.OpenRouterAPIKey, cfg.WriterModel, writer.NewPGLog(pool, log)))
+			w := writer.New(cfg.OpenRouterBaseURL, cfg.OpenRouterAPIKey, cfg.WriterModel, writer.NewPGLog(pool, log))
+			srv.WithWriter(w)
+			srv.WithCoach(&match.Coach{Parse: w, Jev: jev, Write: w, Facts: cat})
 			go warmPortraits(ctx, cat, readers.jev.Portraits, log)
 		} else {
-			log.Warn("OPENROUTER_API_KEY is not set: suggestions keep the code ranking, tips are templates and photos cannot be read")
+			log.Warn("OPENROUTER_API_KEY is not set: suggestions keep the code ranking, tips and coach answers are templates and photos cannot be read")
 		}
 		return serve(ctx, cfg, srv.Handler(), log)
 	case "bench":

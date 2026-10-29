@@ -41,7 +41,7 @@ const subscribe = (onChange: () => void) => {
   return () => window.removeEventListener('hashchange', onChange)
 }
 
-export const useHash = () => useSyncExternalStore(subscribe, () => window.location.hash)
+const useHash = () => useSyncExternalStore(subscribe, () => window.location.hash)
 
 // The route in the URL hash, updated on every hash change.
 export function useRoute(): Route {

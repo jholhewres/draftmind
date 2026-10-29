@@ -1,0 +1,132 @@
+{
+  "id": "0b9e8d7c-6a5f-4e3d-9c2b-1a0f9e8d7c6b",
+  "patch": "7.41",
+  "heroId": 2,
+  "role": 3,
+  "allies": [],
+  "enemies": [
+    5,
+    3,
+    6
+  ],
+  "bans": [],
+  "itemPlan": {
+    "heroId": 2,
+    "core": [
+      {
+        "phase": "start",
+        "items": [
+          {
+            "id": 44,
+            "key": "tango",
+            "name": "Tango",
+            "cost": 90,
+            "count": 51200
+          },
+          {
+            "id": 182,
+            "key": "ring_of_protection",
+            "name": "Ring of Protection",
+            "cost": 175,
+            "count": 30100
+          },
+          {
+            "id": 16,
+            "key": "branches",
+            "name": "Iron Branch",
+            "cost": 50,
+            "count": 28800
+          }
+        ]
+      },
+      {
+        "phase": "early",
+        "items": [
+          {
+            "id": 36,
+            "key": "magic_wand",
+            "name": "Magic Wand",
+            "cost": 450,
+            "count": 21000
+          },
+          {
+            "id": 50,
+            "key": "phase_boots",
+            "name": "Phase Boots",
+            "cost": 1500,
+            "count": 19400
+          }
+        ]
+      },
+      {
+        "phase": "mid",
+        "items": [
+          {
+            "id": 1,
+            "key": "blink",
+            "name": "Blink Dagger",
+            "cost": 2250,
+            "count": 18800
+          },
+          {
+            "id": 263,
+            "key": "blade_mail",
+            "name": "Blade Mail",
+            "cost": 2100,
+            "count": 9100
+          }
+        ]
+      },
+      {
+        "phase": "late",
+        "items": [
+          {
+            "id": 610,
+            "key": "overwhelming_blink",
+            "name": "Overwhelming Blink",
+            "cost": 6550,
+            "count": 3900
+          }
+        ]
+      }
+    ],
+    "situational": [
+      {
+        "item": {
+          "id": 116,
+          "key": "black_king_bar",
+          "name": "Black King Bar",
+          "cost": 4050
+        },
+        "enemyId": 5,
+        "urgency": "now",
+        "score": 12.4
+      },
+      {
+        "item": {
+          "id": 231,
+          "key": "lotus_orb",
+          "name": "Lotus Orb",
+          "cost": 3850
+        },
+        "enemyId": 3,
+        "urgency": "soon",
+        "score": 8.1
+      },
+      {
+        "item": {
+          "id": 102,
+          "key": "force_staff",
+          "name": "Force Staff",
+          "cost": 2200
+        },
+        "enemyId": 6,
+        "urgency": "later",
+        "score": 5.3
+      }
+    ],
+    "source": "jev"
+  },
+  "createdAt": "2026-10-29T03:00:00Z",
+  "messages": []
+}
