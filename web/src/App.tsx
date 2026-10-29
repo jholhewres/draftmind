@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { fetchAccount, fetchHealth, type Account, type Health } from './api'
+import { fetchAccount, type Account } from './api'
 import SignIn from './auth/SignIn'
 import Landing from './landing/Landing'
 import CoachTab from './coach/CoachTab'
@@ -11,13 +11,12 @@ import PersonaProvider from './settings/PersonaProvider'
 import PersonaSettings from './settings/PersonaSettings'
 import { useI18n } from './i18n'
 import { useRoute } from './shell/route'
+import Footer from './shell/Footer'
 import TabBar from './shell/TabBar'
 
 export default function App() {
   const { t } = useI18n()
   const { tab, hero, manual, signin, landing, coach, settings } = useRoute()
-  const [health, setHealth] = useState<Health | null>(null)
-  const [error, setError] = useState<string | null>(null)
   // undefined while checked; a failed check reads as a visitor.
   const [account, setAccount] = useState<Account | null | undefined>(undefined)
   const onAccount = useCallback((a: Account | null) => setAccount(a), [])
@@ -28,16 +27,6 @@ export default function App() {
       .then(setAccount)
       .catch(() => {
         if (!ctrl.signal.aborted) setAccount(null)
-      })
-    return () => ctrl.abort()
-  }, [])
-
-  useEffect(() => {
-    const ctrl = new AbortController()
-    fetchHealth(ctrl.signal)
-      .then(setHealth)
-      .catch((e: unknown) => {
-        if (!ctrl.signal.aborted) setError(e instanceof Error ? e.message : String(e))
       })
     return () => ctrl.abort()
   }, [])
@@ -80,16 +69,7 @@ export default function App() {
               <PatchesPage />
             )}
           </main>
-          <footer>
-            <p className="note">{t('app.trademark')}</p>
-            <p className="status" role="status">
-              {error
-                ? t('app.health.unreachable', { error })
-                : health
-                  ? t('app.health.ok', { status: health.status, database: health.database })
-                  : t('app.health.checking')}
-            </p>
-          </footer>
+          <Footer />
         </div>
       </div>
     </PersonaProvider>

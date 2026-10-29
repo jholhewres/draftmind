@@ -46,3 +46,15 @@ func (s *Server) patchChanges(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, p)
 }
+
+// syncStatus serves GET /api/sync/status: the current patch, each source's
+// last successful sync and the newest failure.
+func (s *Server) syncStatus(w http.ResponseWriter, r *http.Request) {
+	st, err := s.catalog.SyncStatus(r.Context())
+	if err != nil {
+		s.log.Error("sync status", "err", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "could not read the sync status"})
+		return
+	}
+	writeJSON(w, http.StatusOK, st)
+}

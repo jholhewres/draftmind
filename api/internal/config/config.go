@@ -24,6 +24,7 @@ type Config struct {
 	STTModel          string // transcribes push-to-talk clips (ADR-0005)
 	OpenDotaAPIKey    string
 	DotaconstantsRef  string
+	SyncSchedule      bool   // SYNC_SCHEDULE=on: serve keeps the synced data current
 	PublicURL         string // where the web app is served; sign-in links and Steam return there
 	SMTPHost          string // empty: links go to the log in development, else e-mail sign-in is off
 	SMTPPort          string
@@ -65,12 +66,16 @@ func load(getenv func(string) string) (Config, error) {
 		SMTPUser:          get("SMTP_USER", ""),
 		SMTPPass:          get("SMTP_PASS", ""),
 		MailFrom:          get("MAIL_FROM", ""),
+		SyncSchedule:      get("SYNC_SCHEDULE", "off") == "on",
 	}
 	if c.DatabaseURL == "" {
 		return c, errors.New("DATABASE_URL is required")
 	}
 	if c.PhotoReader != "jev" && c.PhotoReader != "vision" {
 		return c, fmt.Errorf("PHOTO_READER must be jev or vision, not %q", c.PhotoReader)
+	}
+	if v := get("SYNC_SCHEDULE", "off"); v != "on" && v != "off" {
+		return c, fmt.Errorf("SYNC_SCHEDULE must be on or off, not %q", v)
 	}
 	if c.SMTPHost != "" && c.MailFrom == "" {
 		return c, errors.New("MAIL_FROM is required with SMTP_HOST")
@@ -80,6 +85,6 @@ func load(getenv func(string) string) (Config, error) {
 
 // String describes the config without secrets.
 func (c Config) String() string {
-	return fmt.Sprintf("addr=%s public_url=%s decision_model=%s openrouter_key_set=%t smtp_set=%t",
-		c.HTTPAddr, c.PublicURL, c.DecisionModel, c.OpenRouterAPIKey != "", c.SMTPHost != "")
+	return fmt.Sprintf("addr=%s public_url=%s decision_model=%s openrouter_key_set=%t smtp_set=%t sync_schedule=%t",
+		c.HTTPAddr, c.PublicURL, c.DecisionModel, c.OpenRouterAPIKey != "", c.SMTPHost != "", c.SyncSchedule)
 }

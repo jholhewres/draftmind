@@ -28,6 +28,20 @@ export const sse = (events: [string, unknown][]) => ({
   body: events.map(([name, data]) => `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`).join(''),
 })
 
+// GET /api/sync/status with 7.41 current, last synced hoursAgo before now.
+export const syncStatus = (hoursAgo: number) => {
+  const at = new Date(Date.now() - hoursAgo * 3600_000).toISOString()
+  return {
+    patch: '7.41',
+    updatedAt: at,
+    sources: [
+      { source: 'dotaconstants:heroes', lastSuccess: at },
+      { source: 'opendota:stats', lastSuccess: at },
+    ],
+    lastFailure: null,
+  }
+}
+
 type Fixtures = {
   // Requests that tried to leave the dev server unmocked; each was aborted.
   escaped: string[]
@@ -70,6 +84,8 @@ export const test = base.extend<Fixtures>({
     async ({ page, drafts }, provide) => {
       void drafts
       await page.route('**/api/health', (route) => route.fulfill({ path: fixture('health.json') }))
+      // Synced three hours before the request, so the footer reads the same every run.
+      await page.route('**/api/sync/status', (route) => route.fulfill({ json: syncStatus(3) }))
       // A visitor unless a spec signs in.
       await page.route('**/api/me', (route) => route.fulfill({ status: 401, json: { error: 'sign in first' } }))
       await page.route('**/api/heroes', (route) => route.fulfill({ path: fixture('heroes.json') }))

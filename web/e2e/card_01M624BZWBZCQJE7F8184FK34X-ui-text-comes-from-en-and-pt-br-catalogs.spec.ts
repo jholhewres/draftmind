@@ -11,7 +11,7 @@ test.describe(() => {
     await page.goto('/#/heroes')
 
     await expect(page.getByRole('list', { name: 'Heróis' })).toBeVisible()
-    await expect(page.getByText('Patch 7.41')).toBeVisible()
+    await expect(page.getByText('Patch 7.41', { exact: true })).toBeVisible()
     await page.getByRole('searchbox', { name: 'Buscar heróis' }).fill('zzz')
     await expect(page.getByText('Nenhum herói encontrado para “zzz”.')).toBeVisible()
     await expect(page.getByText(/Dota 2 é marca registrada da Valve/)).toBeVisible()

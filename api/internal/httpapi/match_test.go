@@ -1,12 +1,15 @@
 package httpapi
 
 import (
+	"bytes"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/jholhewres/draftmind/api/internal/auth"
 	"github.com/jholhewres/draftmind/api/internal/match"
 )
 
@@ -56,5 +59,56 @@ func TestTheMatchSessionSurvivesAPageReload(t *testing.T) {
 		if rec := do(http.MethodGet, "/api/match/"+id, ""); rec.Code != http.StatusNotFound {
 			t.Fatalf("GET %s: %d, want 404", id, rec.Code)
 		}
+	}
+}
+
+func TestAPlayersMatchAnswers404ToEveryoneElse(t *testing.T) {
+	srv, pool := buildPatchesPool(t)
+	logs := &bytes.Buffer{}
+	a, err := auth.New(pool, "http://localhost:5173", slog.New(slog.NewTextHandler(logs, nil)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := a.WithLogMailer(); err != nil {
+		t.Fatal(err)
+	}
+	h := srv.WithAuth(a).Handler()
+	signIn := func(email string) *http.Cookie {
+		logs.Reset()
+		send(h, http.MethodPost, "/api/auth/email", `{"email":"`+email+`"}`)
+		m := devLink.FindStringSubmatch(logs.String())
+		for _, c := range send(h, http.MethodPost, "/api/auth/email/verify", `{"token":"`+m[1]+`"}`).Result().Cookies() {
+			if c.Name == auth.CookieName {
+				return c
+			}
+		}
+		t.Fatal("no session")
+		return nil
+	}
+	start := func(who ...*http.Cookie) string {
+		var s match.Session
+		_ = json.Unmarshal(send(h, http.MethodPost, "/api/match", `{"hero":1,"role":2,"enemies":[2]}`, who...).Body.Bytes(), &s)
+		return s.ID
+	}
+	me, other := signIn("player@example.com"), signIn("other@example.com")
+	mine, visitors := start(me), start()
+	msg := `{"text":"viper is killing me mid"}`
+
+	for _, who := range [][]*http.Cookie{{other}, nil} {
+		if rec := send(h, http.MethodGet, "/api/match/"+mine, "", who...); rec.Code != http.StatusNotFound {
+			t.Fatalf("someone else read the player's match: %d", rec.Code)
+		}
+		if rec := send(h, http.MethodPost, "/api/match/"+mine+"/messages", msg, who...); rec.Code != http.StatusNotFound {
+			t.Fatalf("someone else posted to the player's match: %d", rec.Code)
+		}
+	}
+	if rec := send(h, http.MethodGet, "/api/match/"+mine, "", me); rec.Code != http.StatusOK {
+		t.Fatalf("the player read their match: %d", rec.Code)
+	}
+	if rec := send(h, http.MethodPost, "/api/match/"+mine+"/messages", msg, me); rec.Code != http.StatusOK {
+		t.Fatalf("the player posted to their match: %d", rec.Code)
+	}
+	if rec := send(h, http.MethodGet, "/api/match/"+visitors, "", other); rec.Code != http.StatusOK {
+		t.Fatalf("a visitor's match by its id: %d", rec.Code)
 	}
 }

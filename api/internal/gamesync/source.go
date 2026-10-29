@@ -58,6 +58,12 @@ func (s *HTTPSource) Fetch(ctx context.Context, file string) ([]byte, error) {
 	return s.get(ctx, fmt.Sprintf("%s/odota/dotaconstants/%s/build/%s", s.baseURL, sha, file), "", 32<<20)
 }
 
+// FetchAtRef implements PatchSource: the file at the ref as it is now,
+// read from raw files, which GitHub's API rate limit does not count.
+func (s *HTTPSource) FetchAtRef(ctx context.Context, file string) ([]byte, error) {
+	return s.get(ctx, fmt.Sprintf("%s/odota/dotaconstants/%s/build/%s", s.baseURL, neturl.PathEscape(s.ref), file), "", 32<<20)
+}
+
 func (s *HTTPSource) get(ctx context.Context, url, accept string, limit int64) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -71,6 +77,10 @@ func (s *HTTPSource) get(ctx context.Context, url, accept string, limit int64) (
 		return nil, err
 	}
 	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK && resp.Header.Get("X-RateLimit-Remaining") == "0" {
+		// Unauthenticated, the API allows 60 requests an hour per IP.
+		return nil, fmt.Errorf("GET %s: GitHub rate limit reached until %s", url, resp.Header.Get("X-RateLimit-Reset"))
+	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("GET %s: HTTP %d", url, resp.StatusCode)
 	}

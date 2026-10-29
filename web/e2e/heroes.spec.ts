@@ -9,8 +9,8 @@ const sizes: Record<string, { width: number; height: number }> = {
 test('runs at the project size against the mocked API', async ({ page, escaped }, testInfo) => {
   await page.goto('/#/heroes')
 
-  await expect(page.getByRole('status').filter({ hasText: 'API:' })).toHaveText('API: ok, database ok')
-  await expect(page.getByText('Patch 7.41')).toBeVisible()
+  await expect(page.getByRole('contentinfo').getByRole('status')).toHaveText('Patch 7.41 · updated 3 hours ago')
+  await expect(page.getByText('Patch 7.41', { exact: true })).toBeVisible()
   expect(await page.evaluate(() => ({ width: innerWidth, height: innerHeight }))).toEqual(sizes[testInfo.project.name])
   expect(escaped).toEqual([])
 })

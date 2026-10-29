@@ -1,9 +1,11 @@
 import type { Messages } from './en'
 
 export const ptBR: Messages = {
-  'app.health.checking': 'API: verificando…',
-  'app.health.ok': 'API: {status}, banco de dados {database}',
-  'app.health.unreachable': 'API: inacessível ({error})',
+  'app.sync.checking': 'Verificando os dados…',
+  'app.sync.unavailable': 'Status da sincronização indisponível',
+  'app.sync.none': 'Ainda não sincronizado',
+  'app.sync.status': 'Patch {patch} · atualizado {ago}',
+  'app.sync.patch': 'Patch {patch}',
   'app.trademark': 'Sem relação com a Valve nem com o jogo, e sem endosso da Valve. Dota 2 é marca registrada da Valve. Não lê nem altera o cliente do jogo.',
   'nav.label': 'Principal',
   'nav.draft': 'Draft',

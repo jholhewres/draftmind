@@ -21,5 +21,5 @@ test('an unsupported browser language falls back to English', () => {
 
 test('translate fills the variables of a message', () => {
   expect(translate('pt-BR', 'heroes.noMatch', { query: 'zzz' })).toBe('Nenhum herói encontrado para “zzz”.')
-  expect(translate('en', 'app.health.ok', { status: 'ok', database: 'up' })).toBe('API: ok, database up')
+  expect(translate('en', 'app.sync.status', { patch: '7.41', ago: '3 hours ago' })).toBe('Patch 7.41 · updated 3 hours ago')
 })

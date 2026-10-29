@@ -95,9 +95,9 @@ func (s *Syncer) items(ctx context.Context) (Result, error) {
 		return res, errors.New("items.json has no items")
 	}
 	err = pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
-		var patchID int
-		if err := tx.QueryRow(ctx, `SELECT id FROM patch WHERE is_current`).Scan(&patchID); err != nil {
-			return fmt.Errorf("current patch (sync heroes first): %w", err)
+		patchID, err := s.targetPatch(ctx, tx)
+		if err != nil {
+			return err
 		}
 		ids := make([]int, len(items))
 		for i, it := range items {

@@ -85,6 +85,9 @@ func run(ctx context.Context, cmd string, log *slog.Logger) error {
 			return err
 		}
 		srv.WithAuth(accounts)
+		if cfg.SyncSchedule {
+			go newScheduler(cfg, pool, log).Run(ctx)
+		}
 		return serve(ctx, cfg, srv.Handler(), log)
 	case "bench":
 		return runBench(ctx, cfg, pool, log)
@@ -113,6 +116,19 @@ func newAccounts(cfg config.Config, pool *pgxpool.Pool, log *slog.Logger) (*auth
 		log.Warn("SMTP_HOST is not set: sign-in by e-mail link is off, Steam sign-in still works")
 	}
 	return accounts, nil
+}
+
+// newScheduler keeps the synced data current from inside serve
+// (SYNC_SCHEDULE=on): a new patch is synced from every source and promoted
+// only when all succeeded; stats and builds are refreshed daily.
+func newScheduler(cfg config.Config, pool *pgxpool.Pool, log *slog.Logger) *gamesync.Scheduler {
+	client := &http.Client{Timeout: 30 * time.Second}
+	source := func() gamesync.PatchSource {
+		return gamesync.NewHTTPSource(gamesync.DefaultGitHubAPI, gamesync.DefaultDotaconstantsBase, cfg.DotaconstantsRef, client)
+	}
+	feed := gamesync.NewHTTPFeed(gamesync.DefaultDatafeedBase, gamesync.DefaultDatafeedInterval, client)
+	od := gamesync.NewHTTPOpenDota(gamesync.DefaultOpenDotaBase, cfg.OpenDotaAPIKey, client)
+	return gamesync.NewScheduler(pool, source, feed, od, log.With("component", "sync"))
 }
 
 func runSync(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, log *slog.Logger) error {

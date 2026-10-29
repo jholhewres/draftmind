@@ -1,8 +1,10 @@
 // The source catalog: every key the UI uses, in English.
 export const en = {
-  'app.health.checking': 'API: checking…',
-  'app.health.ok': 'API: {status}, database {database}',
-  'app.health.unreachable': 'API: unreachable ({error})',
+  'app.sync.checking': 'Checking the data…',
+  'app.sync.unavailable': 'Sync status unavailable',
+  'app.sync.none': 'Not synced yet',
+  'app.sync.status': 'Patch {patch} · updated {ago}',
+  'app.sync.patch': 'Patch {patch}',
   'app.trademark': 'Not affiliated with or endorsed by Valve. Dota 2 is a Valve trademark. Never reads or changes the game client.',
   'nav.label': 'Main',
   'nav.draft': 'Draft',

@@ -141,14 +141,12 @@ func storeMatchups(ctx context.Context, tx pgx.Tx, patchID, heroID int, ms []Mat
 	return nil
 }
 
-// currentPatchHeroes returns the current patch and its hero ids in order.
+// currentPatchHeroes returns the patch written, the current one unless
+// ForPatch named another, and its hero ids in order.
 func (s *Syncer) currentPatchHeroes(ctx context.Context) (int, []int, error) {
-	var patchID int
-	if err := s.pool.QueryRow(ctx, `SELECT id FROM patch WHERE is_current`).Scan(&patchID); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, nil, errors.New("no current patch: run sync heroes first")
-		}
-		return 0, nil, fmt.Errorf("current patch: %w", err)
+	patchID, err := s.targetPatch(ctx, s.pool)
+	if err != nil {
+		return 0, nil, err
 	}
 	rows, err := s.pool.Query(ctx, `SELECT hero_id FROM hero_patch WHERE patch_id = $1 ORDER BY hero_id`, patchID)
 	if err != nil {

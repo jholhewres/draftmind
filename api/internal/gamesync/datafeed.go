@@ -321,25 +321,50 @@ func (f *HTTPFeed) PatchNotes(ctx context.Context, patch, language string) ([]by
 	return f.get(ctx, "patchnotes", neturl.Values{"version": {patch}, "language": {language}})
 }
 
+// feedRetries is how often a transient answer is retried: 429, a 5xx, or
+// a null or empty body, which the feed sometimes sends for one hero.
+const feedRetries = 3
+
+// get fetches path, retrying a transient answer after a doubling delay.
 func (f *HTTPFeed) get(ctx context.Context, path string, q neturl.Values) ([]byte, error) {
+	url := f.baseURL + "/datafeed/" + path + "?" + q.Encode()
+	for attempt := 0; ; attempt++ {
+		b, transient, err := f.once(ctx, url)
+		if !transient || attempt == feedRetries {
+			return b, err
+		}
+		if err := sleepUntil(ctx, time.Now().Add(f.interval<<attempt)); err != nil {
+			return nil, err
+		}
+	}
+}
+
+func (f *HTTPFeed) once(ctx context.Context, url string) (b []byte, transient bool, err error) {
 	if err := f.wait(ctx); err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	defer func() { f.last = time.Now() }()
-	url := f.baseURL + "/datafeed/" + path + "?" + q.Encode()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	resp, err := f.client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, ctx.Err() == nil, err
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("GET %s: HTTP %d", url, resp.StatusCode)
+		retry := resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500
+		return nil, retry, fmt.Errorf("GET %s: HTTP %d", url, resp.StatusCode)
 	}
-	return io.ReadAll(io.LimitReader(resp.Body, 8<<20))
+	b, err = io.ReadAll(io.LimitReader(resp.Body, 8<<20))
+	if err != nil {
+		return nil, false, err
+	}
+	if body := strings.TrimSpace(string(b)); body == "" || body == "null" {
+		return nil, true, fmt.Errorf("GET %s: empty answer", url)
+	}
+	return b, false, nil
 }
 
 // wait holds the next request until interval has passed since the last one ended.

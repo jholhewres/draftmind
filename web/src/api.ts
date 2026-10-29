@@ -1,4 +1,10 @@
-export type Health = { status: string; database: string }
+// GET /api/sync/status: the current patch and when each source last synced.
+export type SyncStatus = {
+  patch: string
+  updatedAt: string | null
+  sources: { source: string; lastSuccess: string }[]
+  lastFailure: { source: string; at: string } | null
+}
 
 export type Hero = {
   id: number
@@ -22,7 +28,7 @@ async function getJSON<T>(path: string, signal?: AbortSignal, okStatuses: number
   return (await res.json()) as T
 }
 
-export const fetchHealth = (signal?: AbortSignal) => getJSON<Health>('/api/health', signal, [503])
+export const fetchSyncStatus = (signal?: AbortSignal) => getJSON<SyncStatus>('/api/sync/status', signal)
 
 export const fetchHeroes = (signal?: AbortSignal) => getJSON<HeroCatalog>('/api/heroes', signal)
 

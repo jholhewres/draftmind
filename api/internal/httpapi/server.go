@@ -42,6 +42,7 @@ type Catalog interface {
 	BuildDataset(ctx context.Context, enemies []int) (patch string, ds items.Dataset, err error)
 	// HeroBuild returns catalog.ErrNotFound for a hero the current patch lacks.
 	HeroBuild(ctx context.Context, slug string) (catalog.HeroBuild, error)
+	SyncStatus(ctx context.Context) (catalog.SyncStatus, error)
 }
 
 // Server wires the routes to their dependencies.
@@ -134,6 +135,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/heroes/{slug}/build", s.heroBuild)
 	mux.HandleFunc("GET /api/patches", s.listPatches)
 	mux.HandleFunc("GET /api/patches/{name}", s.patchChanges)
+	mux.HandleFunc("GET /api/sync/status", s.syncStatus)
 	// These spend money on model calls and need no login.
 	suggest, read := newLimiter(s.suggestLimit, s.now), newLimiter(s.readLimit, s.now)
 	mux.Handle("POST /api/draft/suggest", suggest.wrap(http.HandlerFunc(s.suggest)))

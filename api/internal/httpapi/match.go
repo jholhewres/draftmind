@@ -101,6 +101,8 @@ func (s *Server) getMatch(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// loadMatch loads the session named in the path. A signed-in player's
+// session answers 404 to anyone else; a visitor's is reached by its id.
 func (s *Server) loadMatch(w http.ResponseWriter, r *http.Request) (match.Session, bool) {
 	if s.matches == nil {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "match sessions are not configured"})
@@ -115,6 +117,12 @@ func (s *Server) loadMatch(w http.ResponseWriter, r *http.Request) (match.Sessio
 		s.log.Error("load match", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "could not load the match"})
 		return sess, false
+	}
+	if sess.UserID != nil {
+		if me := s.userID(r); me == nil || *me != *sess.UserID {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "no such match"})
+			return match.Session{}, false
+		}
 	}
 	return sess, true
 }

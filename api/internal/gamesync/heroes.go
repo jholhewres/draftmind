@@ -41,9 +41,10 @@ func (r *Result) add(inserted, written bool) {
 
 // Syncer writes synced data into Postgres.
 type Syncer struct {
-	pool *pgxpool.Pool
-	src  Source
-	log  *slog.Logger
+	pool  *pgxpool.Pool
+	src   Source
+	log   *slog.Logger
+	patch string // the patch written; empty for the current one
 }
 
 // NewSyncer builds a syncer.
@@ -51,10 +52,66 @@ func NewSyncer(pool *pgxpool.Pool, src Source, log *slog.Logger) *Syncer {
 	return &Syncer{pool: pool, src: src, log: log}
 }
 
+// ForPatch returns a syncer that writes the named patch's rows and never
+// moves the current patch, so a new patch can be staged before Promote.
+func (s *Syncer) ForPatch(name string) *Syncer {
+	c := *s
+	c.patch = name
+	return &c
+}
+
+// WithSource returns a syncer that reads dotaconstants from src.
+func (s *Syncer) WithSource(src Source) *Syncer {
+	c := *s
+	c.src = src
+	return &c
+}
+
+// Promote makes the named patch the current one in one transaction.
+func (s *Syncer) Promote(ctx context.Context, name string) error {
+	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `UPDATE patch SET is_current = false WHERE is_current AND name <> $1`, name); err != nil {
+			return fmt.Errorf("clear current patch: %w", err)
+		}
+		tag, err := tx.Exec(ctx, `UPDATE patch SET is_current = true WHERE name = $1`, name)
+		if err != nil {
+			return fmt.Errorf("promote patch %s: %w", name, err)
+		}
+		if tag.RowsAffected() != 1 {
+			return fmt.Errorf("promote patch %s: no such patch", name)
+		}
+		return nil
+	})
+}
+
+// targetPatch is the id of the patch this syncer writes.
+func (s *Syncer) targetPatch(ctx context.Context, q interface {
+	QueryRow(context.Context, string, ...any) pgx.Row
+}) (int, error) {
+	var id int
+	var err error
+	if s.patch != "" {
+		err = q.QueryRow(ctx, `SELECT id FROM patch WHERE name = $1`, s.patch).Scan(&id)
+	} else {
+		err = q.QueryRow(ctx, `SELECT id FROM patch WHERE is_current`).Scan(&id)
+	}
+	if errors.Is(err, pgx.ErrNoRows) {
+		if s.patch != "" {
+			return 0, fmt.Errorf("no patch %s: run sync heroes first", s.patch)
+		}
+		return 0, errors.New("no current patch: run sync heroes first")
+	}
+	if err != nil {
+		return 0, fmt.Errorf("target patch: %w", err)
+	}
+	return id, nil
+}
+
 const heroesSource = "dotaconstants:heroes"
 
 // Heroes syncs patches and heroes in one transaction and records the run.
-// The latest patch by release date becomes the current one.
+// The latest patch by release date becomes the current one; a syncer
+// ForPatch stages it instead, and fails when it is not that patch.
 func (s *Syncer) Heroes(ctx context.Context) (Result, error) {
 	var runID int64
 	if err := s.pool.QueryRow(ctx,
@@ -101,25 +158,33 @@ func (s *Syncer) heroes(ctx context.Context) (Result, error) {
 		return res, errors.New("heroes.json has no heroes")
 	}
 
+	current := patches[len(patches)-1].Name
+	if s.patch != "" && s.patch != current {
+		return res, fmt.Errorf("patch.json's newest patch is %s, not %s", current, s.patch)
+	}
 	err = pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
-		current := patches[len(patches)-1].Name
-		// Clear the old current patch first: the unique index allows one.
-		// Each cleared row counts as updated here, not again in the upsert loop.
-		rows, err := tx.Query(ctx, `UPDATE patch SET is_current = false WHERE is_current AND name <> $1 RETURNING name`, current)
-		if err != nil {
-			return fmt.Errorf("clear current patch: %w", err)
+		var cleared []string
+		if s.patch == "" {
+			// Clear the old current patch first: the unique index allows one.
+			// Each cleared row counts as updated here, not again in the upsert loop.
+			rows, err := tx.Query(ctx, `UPDATE patch SET is_current = false WHERE is_current AND name <> $1 RETURNING name`, current)
+			if err != nil {
+				return fmt.Errorf("clear current patch: %w", err)
+			}
+			if cleared, err = pgx.CollectRows(rows, pgx.RowTo[string]); err != nil {
+				return fmt.Errorf("clear current patch: %w", err)
+			}
+			res.Updated += len(cleared)
 		}
-		cleared, err := pgx.CollectRows(rows, pgx.RowTo[string])
-		if err != nil {
-			return fmt.Errorf("clear current patch: %w", err)
-		}
-		res.Updated += len(cleared)
 		for _, p := range patches {
+			// A staged sync leaves every patch's current flag as it is.
 			inserted, written, err := upsertReturning(ctx, tx, `
-				INSERT INTO patch (name, released_at, is_current) VALUES ($1, $2, $3)
-				ON CONFLICT (name) DO UPDATE SET released_at = EXCLUDED.released_at, is_current = EXCLUDED.is_current
-				WHERE (patch.released_at, patch.is_current) IS DISTINCT FROM (EXCLUDED.released_at, EXCLUDED.is_current)
-				RETURNING xmax = 0`, p.Name, p.ReleasedAt, p.Name == current)
+				INSERT INTO patch (name, released_at, is_current) VALUES ($1, $2, $3 AND $4)
+				ON CONFLICT (name) DO UPDATE SET released_at = EXCLUDED.released_at,
+					is_current = CASE WHEN $4 THEN EXCLUDED.is_current ELSE patch.is_current END
+				WHERE (patch.released_at, patch.is_current)
+					IS DISTINCT FROM (EXCLUDED.released_at, CASE WHEN $4 THEN EXCLUDED.is_current ELSE patch.is_current END)
+				RETURNING xmax = 0`, p.Name, p.ReleasedAt, p.Name == current, s.patch == "")
 			if err != nil {
 				return fmt.Errorf("upsert patch %s: %w", p.Name, err)
 			}

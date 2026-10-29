@@ -179,3 +179,21 @@ func TestDatafeedRejectsAHeroWithoutStats(t *testing.T) {
 		t.Fatalf("err = %v, want a rejection for missing stats", err)
 	}
 }
+
+func TestDatafeedHTTPFeedRetriesA502AndANullBody(t *testing.T) {
+	answers := []func(http.ResponseWriter){
+		func(w http.ResponseWriter) { http.Error(w, "bad gateway", http.StatusBadGateway) },
+		func(w http.ResponseWriter) { _, _ = w.Write([]byte("null")) },
+		func(w http.ResponseWriter) { _, _ = w.Write([]byte(`{"result":{}}`)) },
+	}
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		answers[min(calls, len(answers)-1)](w)
+		calls++
+	}))
+	t.Cleanup(srv.Close)
+	b, err := NewHTTPFeed(srv.URL, 0, srv.Client()).HeroData(context.Background(), 2, "english")
+	if err != nil || string(b) != `{"result":{}}` || calls != 3 {
+		t.Fatalf("got %q, %v after %d requests; want the third answer", b, err, calls)
+	}
+}

@@ -43,22 +43,6 @@ func (s *Server) WithNoter(n Noter) *Server {
 	return s
 }
 
-// ownMatch loads the session the way loadMatch does, answering 404 when a
-// signed-in player's session is asked for by anyone else.
-func (s *Server) ownMatch(w http.ResponseWriter, r *http.Request) (match.Session, bool) {
-	sess, ok := s.loadMatch(w, r)
-	if !ok {
-		return sess, false
-	}
-	if sess.UserID != nil {
-		if me := s.userID(r); me == nil || *me != *sess.UserID {
-			writeJSON(w, http.StatusNotFound, map[string]string{"error": "no such match"})
-			return sess, false
-		}
-	}
-	return sess, true
-}
-
 // parseResult serves POST /api/match/{id}/end/parse: a message read into
 // {"result": "win"|"loss"} for the player to confirm, or 422 when it does
 // not say. Nothing is saved.
@@ -79,7 +63,7 @@ func (s *Server) parseResult(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "text must be 1 to 500 characters"})
 		return
 	}
-	if _, ok := s.ownMatch(w, r); !ok {
+	if _, ok := s.loadMatch(w, r); !ok {
 		return
 	}
 	result, err := s.resultParser.ParseResult(r.Context(), req.Text)
@@ -112,7 +96,7 @@ func (s *Server) readEnd(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, status, map[string]string{"error": err.Error()})
 		return
 	}
-	sess, ok := s.ownMatch(w, r)
+	sess, ok := s.loadMatch(w, r)
 	if !ok {
 		return
 	}
@@ -192,7 +176,7 @@ func (s *Server) saveResult(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	sess, ok := s.ownMatch(w, r)
+	sess, ok := s.loadMatch(w, r)
 	if !ok {
 		return
 	}
