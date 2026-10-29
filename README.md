@@ -1,6 +1,25 @@
-# Draftmind
+<p align="center">
+  <img src="docs/images/logo.svg" width="72" alt="Draftmind logo">
+</p>
 
-A draft guide and in-match coach for Dota 2, in the browser. Photograph the pick screen and Draftmind reads the draft, suggests heroes, then items, and keeps coaching until the match ends, by text or push-to-talk voice. It also has a guide page per hero and a patches tab.
+<h1 align="center">Draftmind</h1>
+
+<p align="center">
+  A draft guide and in-match coach for Dota 2, in the browser.<br>
+  <a href="https://draftmind.jhol.dev">draftmind.jhol.dev</a>
+</p>
+
+<p align="center">
+  <img src="docs/images/landing.jpg" width="240" alt="Landing page on a phone">
+  <img src="docs/images/heroes.jpg" width="240" alt="Heroes tab on a phone">
+  <img src="docs/images/hero.jpg" width="240" alt="Hero page on a phone">
+</p>
+
+<p align="center">
+  <img src="docs/images/hero-desktop.jpg" width="820" alt="Hero page on desktop: counters, attributes and abilities">
+</p>
+
+Photograph the pick screen and Draftmind reads the draft, suggests heroes, then items, and keeps coaching until the match ends, by text or push-to-talk voice. It also has a guide page per hero and a patches tab.
 
 > Draftmind is an independent fan tool, not affiliated with or endorsed by Valve Corporation. Dota 2 and its hero names, portraits and game data are trademarks and copyrighted material of Valve. Draftmind runs on a separate device or browser tab and never reads, modifies or overlays the game client: its only inputs are what the player types, says or photographs. See [NOTICE](NOTICE).
 
