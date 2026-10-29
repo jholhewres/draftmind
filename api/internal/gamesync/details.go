@@ -45,7 +45,7 @@ func (s *Syncer) Details(ctx context.Context, feed Feed) (Result, error) {
 
 func (s *Syncer) details(ctx context.Context, feed Feed) (Result, error) {
 	var res Result
-	patchID, ids, err := s.currentPatchHeroes(ctx)
+	patchID, ids, err := s.patchHeroes(ctx)
 	if err != nil {
 		return res, err
 	}

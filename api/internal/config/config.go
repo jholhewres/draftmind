@@ -66,16 +66,18 @@ func load(getenv func(string) string) (Config, error) {
 		SMTPUser:          get("SMTP_USER", ""),
 		SMTPPass:          get("SMTP_PASS", ""),
 		MailFrom:          get("MAIL_FROM", ""),
-		SyncSchedule:      get("SYNC_SCHEDULE", "off") == "on",
+	}
+	switch v := get("SYNC_SCHEDULE", "off"); v {
+	case "on", "off":
+		c.SyncSchedule = v == "on"
+	default:
+		return c, fmt.Errorf("SYNC_SCHEDULE must be on or off, not %q", v)
 	}
 	if c.DatabaseURL == "" {
 		return c, errors.New("DATABASE_URL is required")
 	}
 	if c.PhotoReader != "jev" && c.PhotoReader != "vision" {
 		return c, fmt.Errorf("PHOTO_READER must be jev or vision, not %q", c.PhotoReader)
-	}
-	if v := get("SYNC_SCHEDULE", "off"); v != "on" && v != "off" {
-		return c, fmt.Errorf("SYNC_SCHEDULE must be on or off, not %q", v)
 	}
 	if c.SMTPHost != "" && c.MailFrom == "" {
 		return c, errors.New("MAIL_FROM is required with SMTP_HOST")

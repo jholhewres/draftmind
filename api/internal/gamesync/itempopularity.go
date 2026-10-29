@@ -84,7 +84,7 @@ func (s *Syncer) ItemPopularity(ctx context.Context, od ItemPopularityAPI) (Resu
 }
 
 func (s *Syncer) itemPopularity(ctx context.Context, od ItemPopularityAPI, res *Result) error {
-	patchID, heroes, err := s.currentPatchHeroes(ctx)
+	patchID, heroes, err := s.patchHeroes(ctx)
 	if err != nil {
 		return err
 	}

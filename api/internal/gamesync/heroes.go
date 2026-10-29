@@ -60,13 +60,6 @@ func (s *Syncer) ForPatch(name string) *Syncer {
 	return &c
 }
 
-// WithSource returns a syncer that reads dotaconstants from src.
-func (s *Syncer) WithSource(src Source) *Syncer {
-	c := *s
-	c.src = src
-	return &c
-}
-
 // Promote makes the named patch the current one in one transaction.
 func (s *Syncer) Promote(ctx context.Context, name string) error {
 	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {

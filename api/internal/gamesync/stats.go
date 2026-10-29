@@ -39,7 +39,7 @@ func (s *Syncer) Stats(ctx context.Context, od OpenDota) (Result, error) {
 }
 
 func (s *Syncer) stats(ctx context.Context, od OpenDota, res *Result) error {
-	patchID, ids, err := s.currentPatchHeroes(ctx)
+	patchID, ids, err := s.patchHeroes(ctx)
 	if err != nil {
 		return err
 	}
@@ -141,9 +141,9 @@ func storeMatchups(ctx context.Context, tx pgx.Tx, patchID, heroID int, ms []Mat
 	return nil
 }
 
-// currentPatchHeroes returns the patch written, the current one unless
+// patchHeroes returns the patch written, the current one unless
 // ForPatch named another, and its hero ids in order.
-func (s *Syncer) currentPatchHeroes(ctx context.Context) (int, []int, error) {
+func (s *Syncer) patchHeroes(ctx context.Context) (int, []int, error) {
 	patchID, err := s.targetPatch(ctx, s.pool)
 	if err != nil {
 		return 0, nil, err

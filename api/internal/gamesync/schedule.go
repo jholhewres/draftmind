@@ -75,7 +75,7 @@ func (sc *Scheduler) Run(ctx context.Context) {
 	tick := time.NewTicker(sc.CheckEvery)
 	defer tick.Stop()
 	for {
-		if err := sc.Check(ctx); err != nil && ctx.Err() == nil {
+		if err := sc.safeCheck(ctx); err != nil && ctx.Err() == nil {
 			sc.log.Warn("scheduled sync failed", "err", err)
 		}
 		select {
@@ -84,6 +84,17 @@ func (sc *Scheduler) Run(ctx context.Context) {
 		case <-tick.C:
 		}
 	}
+}
+
+// safeCheck runs Check, turning a panic on odd upstream data into an error
+// so the server keeps serving.
+func (sc *Scheduler) safeCheck(ctx context.Context) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("scheduled sync panicked: %v", r)
+		}
+	}()
+	return sc.Check(ctx)
 }
 
 // Check is one tick: a full sync when either source lists a patch the
@@ -101,7 +112,7 @@ func (sc *Scheduler) Check(ctx context.Context) error {
 		}
 		if err := sc.fullSync(ctx, src, target); err != nil {
 			sc.failures++
-			sc.retryAt = sc.now().Add(min(sc.CheckEvery<<sc.failures, maxRetryWait))
+			sc.retryAt = sc.now().Add(min(sc.CheckEvery<<min(sc.failures, 10), maxRetryWait))
 			return err
 		}
 		sc.failures, sc.retryAt = 0, time.Time{}
@@ -149,8 +160,11 @@ func (sc *Scheduler) newPatch(ctx context.Context, src PatchSource) (string, boo
 }
 
 // fullSync runs every source in order on target's rows, then promotes it.
-// A failure leaves the current patch and its rows as they were; the rows
-// staged so far stay for the next attempt to update.
+// A failure leaves the current patch and its per-patch rows as they were;
+// the shared hero rows (names, images) may already carry the new values.
+// When target is already current (a new feed release only), the sync
+// updates its rows in place. The rows staged so far stay for the next
+// attempt to update.
 func (sc *Scheduler) fullSync(ctx context.Context, src PatchSource, target string) error {
 	var runID int64
 	if err := sc.pool.QueryRow(ctx,

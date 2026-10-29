@@ -40,4 +40,4 @@ make dev               # Postgres on 127.0.0.1:55433, API on :8080, web on :5173
 
 All settings come from the environment (see [.env.example](.env.example)). `.env` is gitignored; secrets never go into the repository.
 
-With `SYNC_SCHEDULE=on`, `serve` keeps the data current itself: every hour it looks for a new patch in dotaconstants and the data feed, syncs it from every source into its own rows while the previous patch stays current, and makes it current only when all succeeded; stats and builds are refreshed daily. `GET /api/sync/status` reports the current patch, each source's last successful sync and the newest failure.
+With `SYNC_SCHEDULE=on`, `serve` keeps the data current itself: every hour it looks for a new patch in dotaconstants and the data feed, syncs it from every source into its own per-patch rows while the previous patch stays current, and makes it current only when all succeeded; stats and builds are refreshed daily. `GET /api/sync/status` reports the current patch, each source's last successful sync and the newest failure.
