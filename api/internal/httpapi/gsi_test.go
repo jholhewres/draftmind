@@ -121,6 +121,40 @@ func TestTheGamePostsWithTheAccountTokenAndTheMatchResultIsRecordedFromTheWinner
 		t.Fatalf("a post-game heartbeat closed the next match: %+v", got.Result)
 	}
 
+	// A post-game update without the winner yet does not lose the result:
+	// the first later post with one records it, once.
+	var third match.Session
+	_ = json.Unmarshal(send(h, http.MethodPost, "/api/match", `{"hero":1,"role":2,"enemies":[2]}`, me).Body.Bytes(), &third)
+	send(h, http.MethodPost, "/api/gsi", gsiFixture(t, "in_progress.json", token, func(v map[string]any) {
+		v["map"].(map[string]any)["matchid"] = "8000000001"
+	}))
+	noWinner := func(v map[string]any) {
+		v["map"].(map[string]any)["matchid"] = "8000000001"
+		v["map"].(map[string]any)["win_team"] = "none"
+	}
+	send(h, http.MethodPost, "/api/gsi", gsiFixture(t, "post_game.json", token, noWinner))
+	if got, _ := matches.Get(t.Context(), third.ID); got.Result != nil {
+		t.Fatalf("a post game with no winner closed the match: %+v", got.Result)
+	}
+	send(h, http.MethodPost, "/api/gsi", gsiFixture(t, "post_game.json", token, func(v map[string]any) {
+		v["map"].(map[string]any)["matchid"] = "8000000001"
+	}))
+	got, _ = matches.Get(t.Context(), third.ID)
+	if got.Result == nil || got.Result.Outcome != "win" || got.Result.Source != "gsi" {
+		t.Fatalf("result %+v, want the win from the later post", got.Result)
+	}
+	closedAt := got.Result.EndedAt
+	now = now.Add(time.Second)
+	send(h, http.MethodPost, "/api/gsi", gsiFixture(t, "post_game.json", token, func(v map[string]any) {
+		v["map"].(map[string]any)["matchid"] = "8000000001"
+	}))
+	if got, _ := matches.Get(t.Context(), third.ID); !got.Result.EndedAt.Equal(closedAt) {
+		t.Fatalf("the match was closed twice: %v then %v", closedAt, got.Result.EndedAt)
+	}
+	if got, _ := matches.Get(t.Context(), next.ID); got.Result != nil {
+		t.Fatalf("a repeated post game closed another match: %+v", got.Result)
+	}
+
 	// Revoked: the game's posts stop counting.
 	if rec := send(h, http.MethodDelete, "/api/me/gsi/token", "", me); rec.Code != http.StatusNoContent {
 		t.Fatalf("revoke: %d", rec.Code)

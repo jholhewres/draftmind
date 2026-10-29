@@ -136,7 +136,8 @@ func (s *Server) gsiAct(ctx context.Context, user int64, prev *gsi.State, cur gs
 	}
 	// Only the move from playing to post game ends a match: the game keeps
 	// posting post game on its heartbeat, which must not close the next one.
-	if out, ok := cur.Outcome(); ok && prev != nil && prev.Phase == gsi.PhaseGame {
+	// A post game that came before its winner waits for the next post.
+	if out, ok := cur.Outcome(); ok && prev != nil && (prev.Phase == gsi.PhaseGame || prev.Phase == gsi.PhaseEnded && prev.Winner == "") {
 		r := match.Result{Outcome: out, Kills: &cur.Kills, Deaths: &cur.Deaths, Assists: &cur.Assists, Source: "gsi"}
 		if cur.DurationS > 0 && cur.DurationS <= match.MaxDuration {
 			r.DurationS = &cur.DurationS

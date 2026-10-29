@@ -3,6 +3,7 @@ package httpapi
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -133,5 +134,43 @@ func TestTheItemsQuickActionAnswersWithoutTheCoach(t *testing.T) {
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/match/"+id+"/messages", strings.NewReader(`{"text":"x","quick":"lane"}`)))
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("unknown quick action: %d", rec.Code)
+	}
+}
+
+func TestARetryOfAStoredMessageAnswersItWithoutStoringItTwice(t *testing.T) {
+	srv := buildPatches(t)
+	coach := &recordingCoach{}
+	h := srv.WithCoach(coach).Handler()
+	id := startTestMatch(t, h)
+	rec := send(h, http.MethodPost, "/api/match/"+id+"/messages", `{"text":"should I push top?"}`)
+	var mine match.Message
+	for _, line := range strings.Split(rec.Body.String(), "\n") {
+		if rest, ok := strings.CutPrefix(line, "data: "); ok && mine.ID == 0 {
+			_ = json.Unmarshal([]byte(rest), &mine)
+		}
+	}
+	if mine.ID == 0 {
+		t.Fatalf("no stored message in %s", rec.Body)
+	}
+	// The client lost the stream and retries the same message by its id.
+	rec = send(h, http.MethodPost, "/api/match/"+id+"/messages", fmt.Sprintf(`{"text":"should I push top?","resend":%d}`, mine.ID))
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "event: answer") {
+		t.Fatalf("retry: %d %s", rec.Code, rec.Body)
+	}
+	got := send(h, http.MethodGet, "/api/match/"+id, "")
+	var sess match.Session
+	_ = json.Unmarshal(got.Body.Bytes(), &sess)
+	players := 0
+	for _, m := range sess.Messages {
+		if m.Author == "player" {
+			players++
+		}
+	}
+	if players != 1 || len(coach.texts) != 2 || coach.texts[1] != "should I push top?" {
+		t.Fatalf("player messages %d, coach asked %q; want 1 stored message answered twice", players, coach.texts)
+	}
+	// An id that is not this session's latest player message is refused.
+	if rec := send(h, http.MethodPost, "/api/match/"+id+"/messages", `{"text":"x","resend":999999}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("unknown resend id: %d", rec.Code)
 	}
 }

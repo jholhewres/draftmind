@@ -156,6 +156,9 @@ func (s *Server) matchMessage(w http.ResponseWriter, r *http.Request) {
 		Text string `json:"text"`
 		// Quick names a quick action the code answers alone: items.
 		Quick string `json:"quick,omitempty"`
+		// Resend is the id of the session's last player message, answered
+		// again without storing it twice when the first stream was lost.
+		Resend int64 `json:"resend,omitempty"`
 	}
 	if err := decodeOne(w, r, &req, 8<<10); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
@@ -178,11 +181,28 @@ func (s *Server) matchMessage(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	msg := match.Message{Author: "player", Kind: "text", Text: req.Text}
+	if req.Resend != 0 {
+		if msg, ok = lastPlayerMessage(sess, req.Resend); !ok {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "resend must be the session's last player message"})
+			return
+		}
+	}
 	var quick replyFunc
 	if req.Quick == "items" {
 		quick = func(_ match.Session, emit match.Emit) match.Reply { return match.QuickItems(sess, emit) }
 	}
-	s.coachTurnWith(w, r, sess, match.Message{Author: "player", Kind: "text", Text: req.Text}, lang, p, quick)
+	s.coachTurnWith(w, r, sess, msg, lang, p, quick)
+}
+
+// lastPlayerMessage is the session's latest player message when its id is id.
+func lastPlayerMessage(sess match.Session, id int64) (match.Message, bool) {
+	for _, m := range slices.Backward(sess.Messages) {
+		if m.Author == "player" {
+			return m, m.ID == id
+		}
+	}
+	return match.Message{}, false
 }
 
 // replyFunc answers a turn in code alone, with no model call.
@@ -208,16 +228,21 @@ func (s *Server) coachTurn(w http.ResponseWriter, r *http.Request, sess match.Se
 }
 
 // coachTurnWith is coachTurn, answered by quick instead of the coach when set.
+// A message that already has an id is stored, so it is answered again only.
 func (s *Server) coachTurnWith(w http.ResponseWriter, r *http.Request, sess match.Session, msg match.Message, lang string, p persona.Persona, quick replyFunc) {
-	mine, err := s.matches.Add(r.Context(), sess.ID, msg)
-	if err != nil {
-		s.log.Error("match message", "err", err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "could not store the message"})
-		return
+	mine := msg
+	if msg.ID == 0 {
+		var err error
+		if mine, err = s.matches.Add(r.Context(), sess.ID, msg); err != nil {
+			s.log.Error("match message", "err", err)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "could not store the message"})
+			return
+		}
 	}
 	out := newEventStream(w, s)
 	out.send("message", mine)
 	reply := match.Reply{Kind: "answer", TextSource: writer.SourceTemplate, Reason: writer.ReasonUnavailable}
+	var err error
 	if quick != nil {
 		reply = quick(sess, out.send)
 	} else if s.coach == nil {

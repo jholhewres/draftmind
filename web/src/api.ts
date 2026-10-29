@@ -500,9 +500,12 @@ export async function sendMatchMessage(
   onEvent: (e: CoachEvent) => void,
   signal?: AbortSignal,
   quick?: QuickAction,
+  // The id of the player's message the server already stored: it is answered
+  // again without a second copy.
+  resend?: number,
 ): Promise<void> {
   const path = `/api/match/${encodeURIComponent(id)}/messages?${coachQuery(lang, persona)}`
-  const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, quick }), signal })
+  const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, quick, resend }), signal })
   if (!res.ok || !res.body) throw new Error(`/api/match/messages: HTTP ${res.status}`)
   await readCoachTurn(res.body, onEvent)
 }
@@ -532,8 +535,11 @@ export async function sendMatchVoice(
   await readCoachTurn(res.body, onEvent)
 }
 
+// A turn whose stream ends before its done event failed midway.
 async function readCoachTurn(body: ReadableStream<BufferSource>, onEvent: (e: CoachEvent) => void) {
+  let done = false
   await readEvents(body, (name, data) => {
+    if (name === 'done') done = true
     let body: Record<string, unknown>
     try {
       body = JSON.parse(data) as Record<string, unknown>
@@ -566,6 +572,7 @@ async function readCoachTurn(body: ReadableStream<BufferSource>, onEvent: (e: Co
         break
     }
   })
+  if (!done) throw new Error('the coach stream ended early')
 }
 
 // The player's own coach: how it talks, never what it decides.

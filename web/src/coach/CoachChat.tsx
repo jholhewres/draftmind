@@ -57,7 +57,13 @@ const quickActions: { key: MessageKey; action?: QuickAction }[] = [
 const PINNED_PX = 120
 const atEnd = (end: HTMLElement | null) => !end || end.getBoundingClientRect().top <= window.innerHeight + PINNED_PX
 
-type Turn = { run: (onEvent: (ev: CoachEvent) => void, signal: AbortSignal) => Promise<void>; spoken: boolean }
+type Turn = {
+  run: (onEvent: (ev: CoachEvent) => void, signal: AbortSignal) => Promise<void>
+  spoken: boolean
+  action?: QuickAction
+  // The player's message once the server stored it.
+  stored?: MatchMessage
+}
 
 const lineOf = (m: MatchMessage): Line => ({ ...m, key: `m${m.id}` })
 
@@ -133,8 +139,9 @@ export default function CoachChat({ session, pushed = [] }: { session: MatchSess
 
   // Runs one coach turn; a spoken turn adds its transcript when the server
   // sends it and reads the answer aloud.
-  const turn = ({ run, spoken }: Turn) => {
-    last.current = { run, spoken }
+  const turn = (next: Turn) => {
+    const { run, spoken } = next
+    last.current = next
     pinned.current = pinned.current || atEnd(end.current)
     setPending(true)
     setVoicePending(spoken)
@@ -144,9 +151,11 @@ export default function CoachChat({ session, pushed = [] }: { session: MatchSess
     if (spoken) setNote(null)
     ctrl.current = new AbortController()
     run((ev) => {
+      if (ev.type === 'message') next.stored = ev.message
       if (ev.type === 'message' && spoken) {
         setVoicePending(false)
-        setLines((cur) => [...cur, lineOf(ev.message)])
+        const line = lineOf(ev.message)
+        setLines((cur) => (cur.some((l) => l.key === line.key) ? cur : [...cur, line]))
       }
       if (ev.type === 'decision') setWriting({ category: ev.category, priority: ev.priority })
       if (ev.type === 'reply') {
@@ -171,7 +180,7 @@ export default function CoachChat({ session, pushed = [] }: { session: MatchSess
     const msg = raw.trim()
     if (!msg || pending) return false
     setLines((cur) => [...cur, { key: `p${Date.now()}`, author: 'player', kind: 'text', text: msg }])
-    turn({ run: (onEvent, signal) => sendMatchMessage(session.id, msg, locale, persona, onEvent, signal, action), spoken: false })
+    turn({ run: (onEvent, signal) => sendMatchMessage(session.id, msg, locale, persona, onEvent, signal, action), spoken: false, action })
     return true
   }
 
@@ -185,9 +194,14 @@ export default function CoachChat({ session, pushed = [] }: { session: MatchSess
     turn({ run: (onEvent, signal) => sendMatchVoice(session.id, wav, locale, persona, onEvent, signal), spoken: true })
   }
 
-  // The failed turn again, without adding the player's message twice.
+  // The failed turn again, without adding the player's message twice: a
+  // message the server already stored is answered again by its id.
   const retry = () => {
-    if (last.current && !pending) turn(last.current)
+    const prev = last.current
+    if (!prev || pending) return
+    const m = prev.stored
+    if (!m) return turn(prev)
+    turn({ ...prev, run: (onEvent, signal) => sendMatchMessage(session.id, m.text, locale, persona, onEvent, signal, prev.action, m.id) })
   }
 
   const tag = (category: Category, priority: Priority) => (

@@ -229,7 +229,7 @@ export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto
           </section>
           <RoleOptions name="photo-role" role={role} onChange={changeRole} />
         </div>
-        {slots && <SuggestionList {...ranking} byId={byId} onStart={match.start} starting={match.starting} startError={match.error} />}
+        {slots && <SuggestionList {...ranking} byId={byId} onStart={match.start} starting={match.starting} startError={match.error} hasBans={mode === 'captains_mode'} />}
       </div>
       {choosingOwn && catalog && (
         <HeroPicker
