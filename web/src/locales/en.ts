@@ -225,6 +225,7 @@ export const en = {
   'build.loading': 'Loading the build…',
   'build.error': 'Could not load the build: {error}',
   'draft.start': 'Pick {hero} and start',
+  'draft.pickOwn': 'Choose your hero',
   'draft.starting': 'Starting the match…',
   'draft.startError': 'Could not start the match: {error}',
   'coach.loading': 'Loading the match…',

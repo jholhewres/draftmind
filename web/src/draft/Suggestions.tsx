@@ -116,10 +116,10 @@ export default function SuggestionList({ result, error, tips, streaming, byId, o
                   </span>
                 </div>
                 {tipFor(s, rank, tips.get(s.heroId))}
-                {onStart && rank === 0 && (
+                {onStart && (
                   <button
                     type="button"
-                    className="start-match"
+                    className={rank === 0 ? 'start-match' : 'start-match secondary'}
                     disabled={starting !== null}
                     onClick={() => onStart(s.heroId)}
                   >

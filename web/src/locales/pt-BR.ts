@@ -226,6 +226,7 @@ export const ptBR: Messages = {
   'build.loading': 'Carregando a build…',
   'build.error': 'Não foi possível carregar a build: {error}',
   'draft.start': 'Escolher {hero} e começar',
+  'draft.pickOwn': 'Escolher o seu herói',
   'draft.starting': 'Começando a partida…',
   'draft.startError': 'Não foi possível começar a partida: {error}',
   'coach.loading': 'Carregando a partida…',

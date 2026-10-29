@@ -199,7 +199,7 @@ footer p { margin: 0 0 4px; }
 .ally .slot.filled { border-color: #5e8a2a; }
 .enemy .slot.filled { border-color: #a8392a; }
 .ban .slot.filled img { filter: grayscale(1) brightness(0.7); }
-.slot.you { cursor: default; border: 2px dashed var(--gold); color: var(--gold); font-size: 12px; font-weight: 600; }
+.slot.you { cursor: pointer; background: transparent; border: 2px dashed var(--gold); color: var(--gold); font-size: 12px; font-weight: 600; }
 
 .roles { margin: 0; padding: 0; border: 0; min-width: 0; }
 .role-options { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
@@ -396,11 +396,12 @@ footer p { margin: 0 0 4px; }
   .phases { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
 }
 
-/* Start a match with the first suggestion. */
+/* Start a match with a suggestion: gold on the first, outlined on the rest. */
 .start-match {
   align-self: stretch; height: 46px; margin: 0 0 6px 6px; border-radius: 10px; cursor: pointer; border: 0;
   background: var(--gold); color: var(--gold-text); font: 600 16px Barlow, system-ui, sans-serif;
 }
+.start-match.secondary { height: 40px; background: transparent; color: var(--fg); border: 1px solid var(--border-strong); font-size: 14px; }
 .start-match:disabled { opacity: 0.6; cursor: default; }
 .start-match:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 

@@ -59,6 +59,8 @@ export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto
   const [team, setTeam] = useState<Team>('radiant')
   const [role, setRole] = useState(1)
   const [picking, setPicking] = useState<number | null>(null)
+  // Choosing the player's own hero, any hero, to start the match with it.
+  const [choosingOwn, setChoosingOwn] = useState(false)
   const [mode] = useGameMode()
   const [layout, setLayout] = useState<string | undefined>(undefined)
 
@@ -204,9 +206,9 @@ export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto
                 <Row side="ally" title={t('photo.yourTeam')}>
                   {own.map((i) =>
                     i === you ? (
-                      <span key={i} className="slot you">
+                      <button key={i} type="button" className="slot you" onClick={() => setChoosingOwn(true)} aria-label={t('draft.pickOwn')}>
                         {t('draft.you')}
-                      </span>
+                      </button>
                     ) : allyAt.includes(i) ? (
                       slotAt('ally', i)
                     ) : null,
@@ -229,6 +231,19 @@ export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto
         </div>
         {slots && <SuggestionList {...ranking} byId={byId} onStart={match.start} starting={match.starting} startError={match.error} />}
       </div>
+      {choosingOwn && catalog && (
+        <HeroPicker
+          title={t('draft.pickOwn')}
+          heroes={catalog.heroes.filter((h) => !taken.has(h.id))}
+          filled={false}
+          onPick={(id) => {
+            setChoosingOwn(false)
+            match.start(id)
+          }}
+          onRemove={() => setChoosingOwn(false)}
+          onClose={() => setChoosingOwn(false)}
+        />
+      )}
       {picking !== null && slots && catalog && (
         <HeroPicker
           title={t(sideLabel[pickingSide].choose)}
