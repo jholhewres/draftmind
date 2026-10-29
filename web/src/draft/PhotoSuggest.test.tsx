@@ -228,7 +228,8 @@ test('an unread seat on your team is yours when no slot is empty, so every read 
   expect(asked).toHaveLength(1)
   expect(urls).toHaveLength(1)
   expect(within(group('Your team')).getByText('You')).toBeInTheDocument()
-  expect(within(group('Your team')).getAllByRole('button')).toHaveLength(4)
+  // four ally slots, plus your own slot, which opens the hero picker
+  expect(within(group('Your team')).getAllByRole('button')).toHaveLength(5)
 })
 
 test('a flagged enemy slot can be set to empty from the picker', async () => {
