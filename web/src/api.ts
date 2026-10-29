@@ -278,3 +278,50 @@ export async function fetchCounters(slug: string, signal?: AbortSignal): Promise
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
   return (await res.json()) as Counters
 }
+
+// An item of the current patch, with the games it was bought in.
+export type BuildItem = { id: number; key: string; name: string; cost: number; count: number }
+
+export type Phase = 'start' | 'early' | 'mid' | 'late'
+
+export type PhaseItems = { phase: Phase; items: BuildItem[] }
+
+// A hero's most bought items by phase on the current patch, from OpenDota
+// item popularity.
+export type HeroBuild = { patch: string; source: string; core: PhaseItems[] }
+
+// The hero's popular build, or null when the current patch has no such hero.
+export async function fetchHeroBuild(slug: string, signal?: AbortSignal): Promise<HeroBuild | null> {
+  const path = `/api/heroes/${encodeURIComponent(slug)}/build`
+  const res = await fetch(path, { signal })
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
+  return (await res.json()) as HeroBuild
+}
+
+export type Urgency = 'later' | 'soon' | 'now'
+
+// An item for this lineup and the enemy it answers; urgency only when Jev chose it.
+export type SituationalItem = { item: Omit<BuildItem, 'count'>; enemyId: number; urgency?: Urgency; score: number }
+
+// The locked hero's build against a lineup (POST /api/draft/build).
+export type Build = {
+  patch: string
+  popularitySource: string
+  heroId: number
+  core: PhaseItems[]
+  situational: SituationalItem[]
+  source: 'jev' | 'ranking'
+  reason?: string
+}
+
+export async function fetchBuild(hero: number, enemies: number[], signal?: AbortSignal): Promise<Build> {
+  const res = await fetch('/api/draft/build', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ hero, enemies }),
+    signal,
+  })
+  if (!res.ok) throw new Error(`/api/draft/build: HTTP ${res.status}`)
+  return (await res.json()) as Build
+}

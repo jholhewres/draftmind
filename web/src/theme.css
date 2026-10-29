@@ -357,3 +357,18 @@ footer p { margin: 0 0 4px; }
 .low-sample { opacity: 0.55; }
 .low-sample .counter-delta { text-decoration: underline dotted; }
 .counter-note { margin: 0; font-size: 12px; }
+
+/* Item builds: core items by phase as chips; situational items in gold. */
+.phases { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.phase { display: flex; flex-direction: column; gap: 4px; }
+.phase dt { font-size: 12px; font-weight: 600; color: var(--muted); }
+.phase dd { margin: 0; }
+.item-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; font-size: 13px; }
+.item-chip { padding: 4px 9px; border-radius: 6px; background: #1e242c; }
+.item-chip.hot { background: rgba(217, 174, 91, 0.14); border: 1px solid var(--gold); color: var(--gold-light); font-weight: 600; }
+.build-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.build-source { margin: 0; font-size: 12px; }
+.coach { display: flex; flex-direction: column; gap: 12px; }
+@media (min-width: 1024px) {
+  .phases { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+}

@@ -11,8 +11,8 @@ async function mockHero(page: Page) {
     (url) => url.pathname.startsWith('/api/heroes/'),
     (route) => {
       const url = new URL(route.request().url())
-      // History and counters are other cards'; with none synced the page leaves them out.
-      if (/\/(history|counters)$/.test(url.pathname)) return route.fulfill({ status: 404, json: { error: 'no such hero' } })
+      // History, counters and the build are other cards'; with none synced the page leaves them out.
+      if (/\/(history|counters|build)$/.test(url.pathname)) return route.fulfill({ status: 404, json: { error: 'no such hero' } })
       asked.push(url.pathname + url.search)
       if (url.pathname !== '/api/heroes/axe') return route.fulfill({ status: 404, json: { error: 'no such hero' } })
       const lang = url.searchParams.get('lang') === 'pt-BR' ? 'pt-BR' : 'en'

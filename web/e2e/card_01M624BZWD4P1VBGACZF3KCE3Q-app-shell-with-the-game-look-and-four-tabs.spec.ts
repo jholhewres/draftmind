@@ -13,14 +13,14 @@ test('The tab bar switches between Draft, Coach, Heroes and Patches and marks th
   await expect(nav.getByRole('link')).toHaveText(tabs)
   await expect(nav.getByRole('link', { name: 'Draft' })).toHaveAttribute('aria-current', 'page')
 
-  // Ends on Coach, the tab still to be built.
+  // Ends on Coach with no match: its empty state.
   for (const tab of ['Draft', 'Heroes', 'Patches', 'Coach']) {
     await nav.getByRole('link', { name: tab }).click()
     await expect(page).toHaveURL(new RegExp(`#/${tab.toLowerCase()}$`))
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(tab === 'Draft' ? 'Photograph the pick' : tab)
     await expect(nav.locator('[aria-current="page"]')).toHaveText(tab)
   }
-  await expect(page.getByText('Coming soon.')).toBeVisible()
+  await expect(page.getByText('Pick a hero on the Draft tab to start a match.')).toBeVisible()
   expect(escaped).toEqual([])
   await expect(page).toHaveScreenshot('shell-coach.png')
 })

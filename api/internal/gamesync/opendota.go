@@ -202,3 +202,8 @@ func sleepUntil(ctx context.Context, t time.Time) error {
 		return nil
 	}
 }
+
+// ItemPopularity returns the /heroes/{id}/itemPopularity response.
+func (o *HTTPOpenDota) ItemPopularity(ctx context.Context, heroID int) ([]byte, error) {
+	return o.get(ctx, "/heroes/"+strconv.Itoa(heroID)+"/itemPopularity")
+}

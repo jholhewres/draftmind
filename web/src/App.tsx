@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react'
 import { fetchHealth, type Health } from './api'
+import CoachTab from './coach/CoachTab'
 import DraftTab from './draft/DraftTab'
 import HeroGrid from './heroes/HeroGrid'
 import HeroPage from './heroes/HeroPage'
 import PatchesPage from './patches/PatchesPage'
 import { useI18n } from './i18n'
 import Placeholder from './shell/Placeholder'
-import { tabLabel, useRoute } from './shell/route'
+import { tabLabel, useHash, useRoute } from './shell/route'
 import TabBar from './shell/TabBar'
 
 export default function App() {
   const { t } = useI18n()
   const { tab, hero, manual } = useRoute()
+  const hash = useHash()
   const [health, setHealth] = useState<Health | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -42,6 +44,8 @@ export default function App() {
             <HeroGrid />
           ) : tab === 'draft' ? (
             <DraftTab manual={manual} />
+          ) : tab === 'coach' ? (
+            <CoachTab hash={hash} />
           ) : tab === 'patches' ? (
             <PatchesPage />
           ) : (

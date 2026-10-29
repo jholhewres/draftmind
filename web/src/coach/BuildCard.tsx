@@ -1,0 +1,39 @@
+import type { Build, Hero, Urgency } from '../api'
+import { useI18n } from '../i18n'
+import type { MessageKey } from '../locales/en'
+import PhaseList from './PhaseList'
+
+const urgencyLabel: Record<Urgency, MessageKey> = {
+  now: 'build.urgency.now',
+  soon: 'build.urgency.soon',
+  later: 'build.urgency.later',
+}
+
+// The locked hero's build: core items by phase from item popularity, then
+// the situational items, each naming the enemy hero it answers.
+export default function BuildCard({ build, byId }: { build: Build; byId: Map<number, Hero> }) {
+  const { t } = useI18n()
+  const name = (id: number) => byId.get(id)?.name ?? `#${id}`
+  const late = build.core.filter((p) => p.phase !== 'start')
+  return (
+    <section className="panel build-card" aria-labelledby="build-title">
+      <div className="build-head">
+        <h2 id="build-title">{t('build.title')}</h2>
+        {build.source === 'ranking' && <span className="source-label">{t('build.ranked')}</span>}
+      </div>
+      {build.situational.length > 0 && (
+        <ul className="item-chips situational" aria-label={t('build.situational')}>
+          {build.situational.map((s) => (
+            <li key={s.item.id} className={`item-chip hot${s.urgency ? ` urgency-${s.urgency}` : ''}`}>
+              {s.urgency
+                ? t('build.vsUrgent', { item: s.item.name, urgency: t(urgencyLabel[s.urgency]), enemy: name(s.enemyId) })
+                : t('build.vs', { item: s.item.name, enemy: name(s.enemyId) })}
+            </li>
+          ))}
+        </ul>
+      )}
+      {late.some((p) => p.items.length > 0) ? <PhaseList phases={late} /> : <p className="muted">{t('build.none')}</p>}
+      <p className="muted build-source">{t('build.source')}</p>
+    </section>
+  )
+}

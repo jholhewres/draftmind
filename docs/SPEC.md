@@ -145,7 +145,7 @@ browser (React/Vite) ──HTTP/SSE──▶ api (Go)
 ## 8. Open questions
 
 1. **Synergy source.** OpenDota has no hero-pair synergy endpoint. Options: STRATZ GraphQL (needs a token) or aggregating our own sample from OpenDota public matches. Decide in the synergy slice.
-2. **Game guides source.** The in-game guides live in the Steam Workshop. Decide in the guides slice whether the Steam Web API exposes their builds; otherwise use OpenDota item popularity alone.
+2. **Game guides source.** The in-game guides live in the Steam Workshop. Decided in B1 (2026-10-29), which absorbed C3: the hero page and the coach show OpenDota item popularity alone, labelled as such; the Workshop guides stay out until a source for their builds exists.
 3. **Matchup sample size.** OpenDota matchups come from a limited sample; shrink win rates toward 50 % by games played. Validate on real drafts.
 4. **Photo reader.** Jev images (beta) or a vision model, by benchmark (ADR-0006).
 5. **Image hosting.** Hero portraits load from the image CDN the synced paths point to. Revisit if the host blocks hotlinking.

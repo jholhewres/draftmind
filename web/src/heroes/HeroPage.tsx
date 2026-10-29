@@ -4,6 +4,7 @@ import { useI18n } from '../i18n'
 import { en, type MessageKey } from '../locales/en'
 import NoteList from '../patches/NoteList'
 import Counters from './Counters'
+import PopularBuild from './PopularBuild'
 
 const attrLabel: Record<string, MessageKey> = {
   str: 'heroes.attr.str',
@@ -132,6 +133,7 @@ function Hero({ hero }: { hero: HeroDetail }) {
           </section>
         </div>
       )}
+      <PopularBuild slug={hero.slug} />
       <History slug={hero.slug} />
     </article>
   )

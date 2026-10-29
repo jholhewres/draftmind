@@ -24,7 +24,7 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/writer"
 )
 
-const usage = "usage: draftmind <serve|migrate|sync heroes|sync details|sync patchnotes [N]|sync stats|bench photo [dir]>"
+const usage = "usage: draftmind <serve|migrate|sync heroes|sync details|sync patchnotes [N]|sync stats|sync builds|bench photo [dir]>"
 
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
@@ -115,6 +115,11 @@ func runSync(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, log *sl
 	case "stats":
 		od := gamesync.NewHTTPOpenDota(gamesync.DefaultOpenDotaBase, cfg.OpenDotaAPIKey, client)
 		_, err := gamesync.NewSyncer(pool, nil, log).Stats(ctx, od)
+		return err
+	case "builds":
+		// Each hero's item popularity by phase, for the item build (B1).
+		od := gamesync.NewHTTPOpenDota(gamesync.DefaultOpenDotaBase, cfg.OpenDotaAPIKey, client)
+		_, err := gamesync.NewSyncer(pool, nil, log).ItemPopularity(ctx, od)
 		return err
 	default:
 		return fmt.Errorf("unknown sync target; %s", usage)

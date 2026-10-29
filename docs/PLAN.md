@@ -22,7 +22,7 @@ Done: S0 (scaffold) and S1 (hero catalog sync: `draftmind sync heroes`, `GET /ap
 
 ## Milestone B — Match
 
-- **B1. Item build for the locked hero.** Item popularity sync; core and situational candidates; Jev picks situational items, each citing the enemy that triggers it.
+- **B1. Item build for the locked hero.** Item popularity sync (`draftmind sync builds`); core items by phase; situational candidates are mid and late items, not in the core, that this hero or the heroes beating an enemy buy more than heroes overall; Jev picks them with an urgency and the enemy each one answers; the popular build on the hero page.
 - **B2. Coach chat during the match.** Match session with draft, hero, role and item plan; typed situation → facts → Jev → writer over SSE.
 - **B3. Push-to-talk voice.** Hold to record → STT → coach → `speechSynthesis` (ADR-0005).
 - **B4. Match result by tap, photo or message.** End-screen photo fills result, duration and KDA to confirm; coach notes; match history.
@@ -32,7 +32,7 @@ Done: S0 (scaffold) and S1 (hero catalog sync: `draftmind sync heroes`, `GET /ap
 
 - **C1. Patch notes stored as each hero's history.** Every patch's notes from the data feed in `patch_note`; Patches tab; hero history on the hero page.
 - **C2. Counters on the hero page.** Top counters and victims from the current patch's matchups.
-- **C3. Game guides on the hero page.** Decide the guides source in an ADR (Steam Workshop or item popularity alone); sync the most used build per hero.
+- **C3. Game guides on the hero page.** Merged into B1: the hero page's popular build by phase comes from OpenDota item popularity, labelled as such.
 - **C4. Synergy in suggestions and hero pages.** Decide the synergy source in an ADR; `hero_synergy`; synergy reasons in the ranking.
 
 ## Milestone D — Run it for real

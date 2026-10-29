@@ -17,10 +17,10 @@ const isTab = (id: string): id is Tab => (tabs as readonly string[]).includes(id
 export type Route = { tab: Tab; hero: string | null; manual: boolean }
 
 // "#/heroes" names the Heroes tab and "#/heroes/<slug>" a hero in it;
-// "#/draft/manual" is the draft board built by hand. An empty or unknown
-// hash opens Draft.
+// "#/draft/manual" is the draft board built by hand. A query after "?" is
+// the screen's own. An empty or unknown hash opens Draft.
 export function routeFromHash(hash: string): Route {
-  const [id, sub] = hash.replace(/^#\/?/, '').split('/')
+  const [id, sub] = hash.replace(/^#\/?/, '').split('?')[0].split('/')
   if (!isTab(id)) return { tab: 'draft', hero: null, manual: false }
   return { tab: id, hero: id === 'heroes' && sub ? decodeSlug(sub) : null, manual: id === 'draft' && sub === 'manual' }
 }
@@ -41,7 +41,7 @@ const subscribe = (onChange: () => void) => {
   return () => window.removeEventListener('hashchange', onChange)
 }
 
-const useHash = () => useSyncExternalStore(subscribe, () => window.location.hash)
+export const useHash = () => useSyncExternalStore(subscribe, () => window.location.hash)
 
 // The route in the URL hash, updated on every hash change.
 export function useRoute(): Route {

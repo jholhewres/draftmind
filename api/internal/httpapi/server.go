@@ -10,6 +10,7 @@ import (
 
 	"github.com/jholhewres/draftmind/api/internal/catalog"
 	"github.com/jholhewres/draftmind/api/internal/draft"
+	"github.com/jholhewres/draftmind/api/internal/items"
 	"github.com/jholhewres/draftmind/api/internal/photo"
 	"github.com/jholhewres/draftmind/api/internal/writer"
 )
@@ -35,6 +36,10 @@ type Catalog interface {
 	PatchChanges(ctx context.Context, name, lang string) (catalog.PatchChanges, error)
 	// HeroCounters returns catalog.ErrNotFound for a hero the current patch lacks.
 	HeroCounters(ctx context.Context, slug string, n int) (catalog.Counters, error)
+	// BuildDataset loads the current patch's item build data for these enemies.
+	BuildDataset(ctx context.Context, enemies []int) (patch string, ds items.Dataset, err error)
+	// HeroBuild returns catalog.ErrNotFound for a hero the current patch lacks.
+	HeroBuild(ctx context.Context, slug string) (catalog.HeroBuild, error)
 }
 
 // Server wires the routes to their dependencies.
@@ -83,13 +88,15 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/heroes/{slug}", s.heroDetail)
 	mux.HandleFunc("GET /api/heroes/{slug}/history", s.heroHistory)
 	mux.HandleFunc("GET /api/heroes/{slug}/counters", s.heroCounters)
+	mux.HandleFunc("GET /api/heroes/{slug}/build", s.heroBuild)
 	mux.HandleFunc("GET /api/patches", s.listPatches)
 	mux.HandleFunc("GET /api/patches/{name}", s.patchChanges)
-	// All three spend money on model calls and need no login.
+	// All four spend money on model calls and need no login.
 	suggest, read := newLimiter(s.suggestLimit, s.now), newLimiter(s.readLimit, s.now)
 	mux.Handle("POST /api/draft/suggest", suggest.wrap(http.HandlerFunc(s.suggest)))
 	mux.Handle("POST /api/draft/stream", suggest.wrap(s.stream(read)))
 	mux.Handle("POST /api/draft/read", read.wrap(http.HandlerFunc(s.readDraft)))
+	mux.Handle("POST /api/draft/build", suggest.wrap(http.HandlerFunc(s.build)))
 	return mux
 }
 
