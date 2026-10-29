@@ -84,6 +84,13 @@ func run(ctx context.Context, cmd string, log *slog.Logger) error {
 			srv.WithWriter(w)
 			coach := &match.Coach{Parse: w, Jev: jev, Write: w, Facts: cat, Note: w}
 			srv.WithCoach(coach).WithNoter(coach).WithResultParser(w).WithEndReader(readers.vision)
+			if cfg.LiveCoach {
+				live := match.NewLive(jev)
+				if cfg.LiveWriter {
+					live.Write, live.Facts = w, cat
+				}
+				srv.WithLive(live)
+			}
 			srv.WithTranscriber(writer.New(cfg.OpenRouterBaseURL, cfg.OpenRouterAPIKey, cfg.STTModel, writer.NewPGLog(pool, log)))
 			go warmPortraits(ctx, cat, readers.jev.Portraits, log)
 		} else {

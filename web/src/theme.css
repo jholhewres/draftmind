@@ -686,9 +686,9 @@ footer p { margin: 0 0 4px; }
 .live-start .camera-hint { grid-column: 2; }
 .live-start-text { font-weight: 600; }
 .live-start:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-.live-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--radiant); box-shadow: 0 0 0 4px rgba(156, 203, 74, 0.18); animation: live-pulse 1.6s infinite; }
+.share-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--radiant); box-shadow: 0 0 0 4px rgba(156, 203, 74, 0.18); animation: live-pulse 1.6s infinite; }
 @keyframes live-pulse { 50% { opacity: 0.4; } }
-@media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .share-dot { animation: none; } }
 .live-bar {
   position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
   padding: 10px 14px; background: var(--bar, #111419); border-bottom: 1px solid var(--border);
@@ -697,3 +697,10 @@ footer p { margin: 0 0 4px; }
 .live-stats { font-size: 13px; flex: 1 1 12rem; }
 .live-stop { margin-left: auto; }
 .live-wait { padding: 24px 16px; }
+/* Live coach bar above the build, and the tag on its chat lines (ADR-0014). */
+.coach-live { position: static; border: 1px solid var(--border); border-radius: 12px; }
+.coach-live.on { border-color: rgba(156, 203, 74, 0.6); }
+.live-line-tag {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--radiant); background: rgba(156, 203, 74, 0.12);
+}

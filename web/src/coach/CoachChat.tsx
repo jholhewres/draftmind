@@ -33,6 +33,15 @@ const priorityLabel: Record<Priority, MessageKey> = {
 
 type Line = Omit<MatchMessage, 'id'> & { key: string }
 
+// The UI's line for each live event the coach spoke (ADR-0014).
+const liveText: Record<string, MessageKey> = {
+  item_timing: 'liveCoach.event.item_timing',
+  deaths: 'liveCoach.event.deaths',
+  objective: 'liveCoach.event.objective',
+  phase: 'liveCoach.event.phase',
+  map: 'liveCoach.event.map',
+}
+
 // One tap sends the chip's own words as the player's message; a chip with an
 // action is answered by the server's code, with no model call.
 const quickActions: { key: MessageKey; action?: QuickAction }[] = [
@@ -69,13 +78,19 @@ const micIcon = (
 // their category and priority, and the box to write the next one, with the
 // push-to-talk button beside it. A spoken message shows its transcript and
 // the answer to it is read aloud in the coach's language.
-export default function CoachChat({ session }: { session: MatchSession }) {
+export default function CoachChat({ session, pushed = [] }: { session: MatchSession; pushed?: MatchMessage[] }) {
   const { t, locale } = useI18n()
   const { persona } = usePersona()
   // The coach writes, and its text is spoken, in the persona's language; a
   // template the UI words is spoken in the UI's.
   const lang = coachLang(persona, locale)
   const [lines, setLines] = useState<Line[]>(() => session.messages.map(lineOf))
+  // Live coach lines land in the same conversation, once each.
+  const [seenPushed, setSeenPushed] = useState(0)
+  if (pushed.length > seenPushed) {
+    setSeenPushed(pushed.length)
+    setLines((cur) => [...cur, ...pushed.slice(seenPushed).map(lineOf)])
+  }
   const [text, setText] = useState('')
   const [pending, setPending] = useState(false)
   // The coach's decision, once it streams in: its answer is being written.
@@ -111,6 +126,7 @@ export default function CoachChat({ session }: { session: MatchSession }) {
   const coachText = (l: Omit<Line, 'key'>) => {
     if (l.kind === 'followup') return t('coach.followup')
     if (!l.text && l.reason === 'quick') return t(l.items?.length ? 'coach.quickItems' : 'coach.quickItemsNone')
+    if (!l.text && l.reason?.startsWith('live:')) return t(liveText[l.reason.slice(5)] ?? 'coach.template', { item: l.items?.[0]?.name ?? '' })
     return l.text || t('coach.template')
   }
 
@@ -182,6 +198,7 @@ export default function CoachChat({ session }: { session: MatchSession }) {
       <ol className="chat" aria-live="polite">
         {lines.map((l) => (
           <li key={l.key} className={l.author === 'player' ? 'bubble mine' : `bubble coach ${l.kind}`}>
+            {l.author === 'coach' && l.source === 'live' && <span className="live-line-tag">{t('live.on')}</span>}
             {l.author === 'coach' && l.kind === 'answer' && l.category && l.priority && tag(l.category, l.priority)}
             {l.kind === 'voice' && (
               <span className="voice-tag">

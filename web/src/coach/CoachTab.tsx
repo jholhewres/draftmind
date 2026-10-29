@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { fetchHeroes, fetchMatch, heroImageBase, type Hero, type MatchSession } from '../api'
+import { fetchHeroes, fetchMatch, heroImageBase, type Hero, type MatchMessage, type MatchSession } from '../api'
 import { useI18n } from '../i18n'
 import type { MessageKey } from '../locales/en'
 import BuildCard from './BuildCard'
 import CoachChat from './CoachChat'
 import History from './History'
+import LiveCoach from './LiveCoach'
 import MatchEnd from './MatchEnd'
 import MatchTimer from './MatchTimer'
 import type { CoachView } from '../shell/route'
@@ -28,6 +29,7 @@ export default function CoachTab({ view, signedIn }: { view?: CoachView; signedI
   const [id] = useState(savedSessionId)
   const [state, setState] = useState<State>(id ? { status: 'loading' } : { status: 'none' })
   const [heroes, setHeroes] = useState<Hero[]>([])
+  const [live, setLive] = useState<MatchMessage[]>([])
 
   useEffect(() => {
     const ctrl = new AbortController()
@@ -111,8 +113,9 @@ export default function CoachTab({ view, signedIn }: { view?: CoachView; signedI
         </div>
       </header>
       <div className="coach-body">
+        <LiveCoach session={s} onLine={(m) => setLive((cur) => [...cur, m])} />
         <BuildCard build={s.itemPlan} byId={byId} />
-        <CoachChat session={s} />
+        <CoachChat session={s} pushed={live} />
       </div>
     </section>
   )

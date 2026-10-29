@@ -55,6 +55,7 @@ type Server struct {
 	tips    Tipper
 	matches Matches
 	coach   Replier
+	live    *match.Live
 	stt     match.Transcriber
 
 	resultParser ResultParser
@@ -151,6 +152,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/match", suggest.wrap(http.HandlerFunc(s.startMatch)))
 	mux.HandleFunc("GET /api/match/{id}", s.getMatch)
 	mux.Handle("POST /api/match/{id}/messages", suggest.wrap(http.HandlerFunc(s.matchMessage)))
+	mux.Handle("POST /api/match/{id}/live", newLimiter(DefaultLiveLimit, s.now).wrap(http.HandlerFunc(s.liveTick)))
 	mux.Handle("POST /api/match/{id}/voice", newLimiter(s.voiceLimit, s.now).wrap(http.HandlerFunc(s.matchVoice)))
 	mux.Handle("POST /api/match/{id}/end/parse", suggest.wrap(http.HandlerFunc(s.parseResult)))
 	mux.Handle("POST /api/match/{id}/end/read", read.wrap(http.HandlerFunc(s.readEnd)))

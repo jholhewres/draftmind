@@ -79,7 +79,7 @@ export default function LiveDraft({ stream, onStop }: { stream: MediaStream; onS
     <div className="live-draft">
       <section className="live-bar" aria-label={t('live.bar')}>
         <span className="live-tag">
-          <span className="live-dot" aria-hidden="true" />
+          <span className="share-dot" aria-hidden="true" />
           {t('live.on')}
         </span>
         <span className="muted live-stats">

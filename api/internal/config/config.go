@@ -26,6 +26,8 @@ type Config struct {
 	OpenDotaAPIKey    string
 	DotaconstantsRef  string
 	SyncSchedule      bool   // SYNC_SCHEDULE=on: serve keeps the synced data current
+	LiveCoach         bool   // LIVE_COACH=on: the live coach ticks (ADR-0014); off until benchmarked
+	LiveWriter        bool   // LIVE_WRITER=on: the writer words live events; off, templates do
 	PublicURL         string // where the web app is served; sign-in links and Steam return there
 	SMTPHost          string // empty: links go to the log in development, else e-mail sign-in is off
 	SMTPPort          string
@@ -86,6 +88,17 @@ func load(getenv func(string) string) (Config, error) {
 		c.SyncSchedule = v == "on"
 	default:
 		return c, fmt.Errorf("SYNC_SCHEDULE must be on or off, not %q", v)
+	}
+	for _, f := range []struct {
+		key string
+		dst *bool
+	}{{"LIVE_COACH", &c.LiveCoach}, {"LIVE_WRITER", &c.LiveWriter}} {
+		switch v := get(f.key, "off"); v {
+		case "on", "off":
+			*f.dst = v == "on"
+		default:
+			return c, fmt.Errorf("%s must be on or off, not %q", f.key, v)
+		}
 	}
 	if c.DatabaseURL == "" {
 		return c, errors.New("DATABASE_URL is required")

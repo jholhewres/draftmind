@@ -30,7 +30,7 @@ export default function PhotoCapture({ onPhoto, onLive }: Props) {
       <p className="muted lead">{t('photo.lead')}</p>
       {live && (
         <button type="button" className="live-start" onClick={share}>
-          <span className="live-dot" aria-hidden="true" />
+          <span className="share-dot" aria-hidden="true" />
           <span className="live-start-text">{t('live.start')}</span>
           <span className="muted camera-hint">{t('live.startHint')}</span>
         </button>

@@ -696,3 +696,18 @@ export async function fetchMyMode(signal?: AbortSignal): Promise<GameMode | '' |
   const { mode } = (await res.json()) as { mode: string }
   return (gameModes as readonly string[]).includes(mode) ? (mode as GameMode) : ''
 }
+
+// One live coach tick's outcome (ADR-0014); message is the stored coach
+// line when the tick spoke.
+export type LiveTick = { speak: boolean; event?: string; reason?: string; cost?: number; message?: MatchMessage }
+
+// Sends one frame of the shared window to the live coach. 503 means the
+// live coach is off on this server.
+export async function sendLiveFrame(id: string, frame: Blob, lang: string, persona: Persona, signal?: AbortSignal): Promise<LiveTick | null> {
+  const form = new FormData()
+  form.append('image', frame, 'frame.jpg')
+  const res = await fetch(`/api/match/${encodeURIComponent(id)}/live?${coachQuery(lang, persona)}`, { method: 'POST', body: form, signal })
+  if (res.status === 503) return null
+  if (!res.ok) throw new Error(`/api/match/live: HTTP ${res.status}`)
+  return (await res.json()) as LiveTick
+}
