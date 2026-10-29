@@ -250,7 +250,7 @@ func (s *Server) newTipRun(ctx context.Context, out *eventStream, ds draft.Datas
 			for _, names := range n.Heroes {
 				v.known = append(v.known, names...)
 			}
-			v.known = append(v.known, n.Abilities...)
+			v.known = append(append(v.known, n.Abilities...), n.Others...)
 			return v, nil
 		}),
 	}

@@ -207,7 +207,7 @@ func TestStreamSendsTheRankingBeforeAnyModelCallReturns(t *testing.T) {
 			if b.Lang != "pt-BR" || b.Position != 1 || len(b.Enemies) != 1 || b.Enemies[0] != (writer.Enemy{Name: "Axe", Delta: 5, Games: 100}) ||
 				!slices.Contains(b.Allowed, "Axe") || !slices.Contains(b.Allowed, "Juggernaut") || slices.Contains(b.Allowed, "Earthshaker") ||
 				!slices.Contains(b.Allowed, "Machado") || !slices.Contains(b.Known, "Earthshaker") ||
-				!slices.Contains(b.Known, "Berserker's Call") || slices.Contains(b.Known, "+6 Armor") {
+				!slices.Contains(b.Known, "Berserker's Call") || slices.Contains(b.Known, "+6 Armor") || !slices.Contains(b.Known, "Mirana") {
 				t.Fatalf("brief %+v", b)
 			}
 		}

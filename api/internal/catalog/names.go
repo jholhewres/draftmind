@@ -7,12 +7,14 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// Names are the current patch's entity names, for checking model text
-// against the database: each hero's names in every language, by id, and
-// every ability's (talents left out).
+// Names are the entity names model text is checked against: each current
+// hero's names in every language, by id; every ability's on the current
+// patch (talents left out); and every other hero the database knows, so a
+// hero off the patch is caught too.
 type Names struct {
 	Heroes    map[int][]string
 	Abilities []string
+	Others    []string
 }
 
 // Names loads the current patch's hero and ability names.
@@ -51,6 +53,17 @@ func (s *Store) Names(ctx context.Context) (Names, error) {
 		n.Abilities, err = pgx.CollectRows(rows, pgx.RowTo[string])
 		if err != nil {
 			return fmt.Errorf("ability names: %w", err)
+		}
+		rows, err = tx.Query(ctx, `
+			SELECT DISTINCT h.name FROM hero h
+			WHERE NOT EXISTS (SELECT 1 FROM hero_patch hp JOIN patch p ON p.id = hp.patch_id AND p.is_current WHERE hp.hero_id = h.id)
+			ORDER BY 1`)
+		if err != nil {
+			return fmt.Errorf("other hero names: %w", err)
+		}
+		n.Others, err = pgx.CollectRows(rows, pgx.RowTo[string])
+		if err != nil {
+			return fmt.Errorf("other hero names: %w", err)
 		}
 		return nil
 	})
