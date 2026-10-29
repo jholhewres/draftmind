@@ -39,30 +39,60 @@ func noiseHeroes(t *testing.T, n int) ([]catalog.Hero, *httptest.Server) {
 	return heroes, cdn
 }
 
-// pickScreen draws a 1568x882 photo: the clock panel at clock and, per the
-// layout, each slot's hero portrait (0 leaves the slot empty).
+// pickScreen draws a 1568x882 photo of the synthetic set's bar: the clock
+// panel at clock and each slot's hero portrait (0 leaves the slot empty).
 func pickScreen(clock image.Rectangle, slots [Slots]int) *image.RGBA {
+	return drawBar(clock, slots, false, nil)
+}
+
+// drawBar draws the top bar. The synthetic set's centres the slot nearest
+// the clock 177 px from the clock's centre for 66 px tall slots, under a
+// dim clock panel; the game's centres it 240 px from it, under the clock's
+// big white digits. A greyed slot shows its hero hovered, not locked:
+// desaturated and dim.
+func drawBar(clock image.Rectangle, slots [Slots]int, game bool, greyed map[int]bool) *image.RGBA {
 	img := image.NewRGBA(image.Rect(0, 0, 1568, 882))
 	draw.Draw(img, img.Bounds(), image.NewUniform(color.RGBA{14, 16, 20, 255}), image.Point{}, draw.Src)
-	draw.Draw(img, clock, image.NewUniform(color.RGBA{30, 32, 38, 255}), image.Point{}, draw.Src)
+	near := 177.0 / 66
+	if game {
+		near = 240.0 / 66
+		// "0:29": four white strokes across the middle of the box.
+		dw, dh := clock.Dx()/9, clock.Dy()/2
+		for k := range 4 {
+			x := clock.Min.X + clock.Dx()/9 + 2*k*dw
+			draw.Draw(img, image.Rect(x, clock.Min.Y+dh/2, x+dw/2, clock.Min.Y+dh/2+dh), image.NewUniform(color.White), image.Point{}, draw.Src)
+		}
+	} else {
+		draw.Draw(img, clock, image.NewUniform(color.RGBA{30, 32, 38, 255}), image.Point{}, draw.Src)
+	}
 	h := float64(clock.Dy()) * slotPerClockH
 	w, gap := h*slotAspect, h*slotGap
 	top := float64(clock.Min.Y) + slotTopShift*float64(clock.Dy())
 	cx := float64(clock.Min.X+clock.Max.X) / 2
 	for i, id := range slots {
-		k := float64(i % PerSide)
-		var x0 float64
-		if i < PerSide { // radiant, left to right, ending innerOffset left of the clock's centre
-			x0 = cx - innerOffset*h - (PerSide-k)*w - (PerSide-1-k)*gap
-		} else {
-			x0 = cx + innerOffset*h + k*(w+gap)
+		// k counts slots outward from the clock.
+		dir, k := 1.0, float64(i-PerSide)
+		if i < PerSide {
+			dir, k = -1, float64(PerSide-1-i)
 		}
-		r := image.Rect(int(x0), int(top), int(x0+w), int(top+h))
+		mid := cx + dir*(near*h+k*(w+gap))
+		r := image.Rect(int(mid-w/2), int(top), int(mid+w/2), int(top+h))
 		if id == 0 {
 			draw.Draw(img, r, image.NewUniform(color.RGBA{24, 27, 32, 255}), image.Point{}, draw.Src)
 			continue
 		}
-		draw.Draw(img, r, toRGB(noise(uint64(id))).resize(r.Dx(), r.Dy()).image(), image.Point{}, draw.Src)
+		pic := toRGB(noise(uint64(id))).resize(r.Dx(), r.Dy())
+		if greyed[i] {
+			for p := 0; p < len(pic.px); p += 3 {
+				// As the game greys a hover: a fifth of the colour and a
+				// quarter of the contrast left.
+				l := (pic.px[p] + pic.px[p+1] + pic.px[p+2]) / 3
+				for c := p; c < p+3; c++ {
+					pic.px[c] = 50 + 0.25*(l+0.2*(pic.px[c]-l))
+				}
+			}
+		}
+		draw.Draw(img, r, pic.image(), image.Point{}, draw.Src)
 	}
 	return img
 }
@@ -252,3 +282,112 @@ func TestJevFindsTheSlotsWhenTheClockBoxIsLoose(t *testing.T) {
 		}
 	}
 }
+
+// placedNames keys each slot's hero name, or empty, as fakeJev does.
+func placedNames(heroes []catalog.Hero, slots [Slots]int) map[string]string {
+	placed := map[string]string{}
+	for i, id := range slots {
+		name := optionEmpty
+		if id != 0 {
+			name = heroes[id-1].Name
+		}
+		placed[fmt.Sprintf("%s %d", teamOf(i), i%PerSide+1)] = name
+	}
+	return placed
+}
+
+func TestJevNumbersTheSlotsOfTheGameScreenLeftToRight(t *testing.T) {
+	heroes, cdn := noiseHeroes(t, 30)
+	clock := image.Rect(736, 60, 832, 116)
+	// As on the real pick screen (api/testdata/photos/real/pick-phase): the
+	// outermost radiant slot and two dire slots still empty, and the slot
+	// nearest the clock centred 240 px from it with 66 px tall slots.
+	slots := [Slots]int{0, 7, 12, 20, 21, 5, 0, 14, 0, 30}
+	fake := &fakeJev{
+		t: t, placed: placedNames(heroes, slots), options: map[string][]string{},
+		clock: gameBox,
+	}
+	r, err := newJev(t, cdn.URL, fake).Read(context.Background(), drawBar(clock, slots, true, nil), heroes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, s := range append(append([]Slot{}, r.Radiant...), r.Dire...) {
+		want := StatusHero
+		if slots[i] == 0 {
+			want = StatusEmpty
+		}
+		if s.HeroID != slots[i] || s.Status != want {
+			t.Errorf("slot %d: %+v, want hero %d (%s)", i, s, slots[i], want)
+		}
+	}
+}
+
+func TestJevNeverReadsAHoveredPortraitAsAHero(t *testing.T) {
+	heroes, cdn := noiseHeroes(t, 30)
+	clock := image.Rect(736, 60, 832, 116)
+	slots := [Slots]int{0, 7, 12, 20, 21, 5, 0, 14, 0, 30}
+	// Radiant 3 is hovered, not locked: Jev, sure of it, still names the hero.
+	fake := &fakeJev{
+		t: t, placed: placedNames(heroes, slots), options: map[string][]string{},
+		clock: gameBox,
+	}
+	img := drawBar(clock, slots, true, map[int]bool{2: true})
+	r, err := newJev(t, cdn.URL, fake).Read(context.Background(), img, heroes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s := r.Radiant[2]; s.Status == StatusHero {
+		t.Errorf("hovered radiant 3 read as hero %d", s.HeroID)
+	}
+	if s := r.Radiant[3]; s.Status != StatusHero || s.HeroID != 20 {
+		t.Errorf("locked radiant 4: %+v, want hero 20", s)
+	}
+}
+
+func TestJevNeverReadsALockedPortraitAsEmpty(t *testing.T) {
+	heroes, cdn := noiseHeroes(t, 30)
+	clock := image.Rect(736, 60, 832, 116)
+	slots := [Slots]int{0, 7, 12, 20, 21, 5, 0, 14, 0, 30}
+	fake := &fakeJev{
+		t: t, placed: placedNames(heroes, slots), options: map[string][]string{},
+		clock: gameBox,
+	}
+	j := newJev(t, cdn.URL, fake)
+	// Jev, sure of it, calls dire 5's locked portrait an empty slot.
+	j.Ask = askOverride{j.Ask, map[string]func(opts []string) string{
+		"dire 5": func(opts []string) string { return choose(optionEmpty, opts, 0.96) },
+	}}
+	r, err := j.Read(context.Background(), drawBar(clock, slots, true, nil), heroes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s := r.Dire[4]; s.Status != StatusUnknown {
+		t.Errorf("locked dire 5 read as %+v, want it flagged", s)
+	}
+	if s := r.Dire[3]; s.Status != StatusEmpty {
+		t.Errorf("empty dire 4 read as %+v", s)
+	}
+}
+
+func TestJevNumbersTheSyntheticBarWhenTheClockBoxIsOffCentre(t *testing.T) {
+	heroes, cdn := noiseHeroes(t, 30)
+	clock := image.Rect(720, 60, 848, 124)
+	// The two slots nearest the clock empty, as in synthetic-04.
+	slots := [Slots]int{3, 7, 12, 0, 0, 5, 9, 14, 25, 0}
+	// Jev's box sits 40 px left of the panel, as it did on synthetic-04.
+	off := decision.Edges{Left: 680.0 / 1568, Right: 808.0 / 1568, Top: 60.0 / 882, Bottom: 124.0 / 882}
+	fake := &fakeJev{t: t, placed: placedNames(heroes, slots), options: map[string][]string{}, clock: off}
+	r, err := newJev(t, cdn.URL, fake).Read(context.Background(), pickScreen(clock, slots), heroes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, s := range append(append([]Slot{}, r.Radiant...), r.Dire...) {
+		if s.HeroID != slots[i] {
+			t.Errorf("slot %d: %+v, want hero %d", i, s, slots[i])
+		}
+	}
+}
+
+// gameBox is Jev's Box answer for the game's clock drawn at 736,60-832,116:
+// 9 px right of it, as on the real pick-phase screenshot.
+var gameBox = decision.Edges{Left: 745.0 / 1568, Right: 841.0 / 1568, Top: 60.0 / 882, Bottom: 116.0 / 882}

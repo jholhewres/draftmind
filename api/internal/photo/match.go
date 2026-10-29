@@ -48,6 +48,31 @@ func dot(a, b []float32) float32 {
 	return s
 }
 
+// colourSpread is how far m's colours spread around their mean, apart
+// from brightness: the deviation of its red-green and yellow-blue
+// channels. A colour cast shifts their means and leaves it alone.
+func colourSpread(m rgb) float32 {
+	n := m.w * m.h
+	if n == 0 {
+		return 0
+	}
+	var s1, s2, q1, q2 float64
+	for i := 0; i < n; i++ {
+		r, g, b := float64(m.px[3*i]), float64(m.px[3*i+1]), float64(m.px[3*i+2])
+		rg, yb := r-g, (r+g)/2-b
+		s1, s2, q1, q2 = s1+rg, s2+yb, q1+rg*rg, q2+yb*yb
+	}
+	fn := float64(n)
+	v := q1/fn - (s1/fn)*(s1/fn) + q2/fn - (s2/fn)*(s2/fn)
+	return float32(math.Sqrt(max(v, 0)))
+}
+
+// inset is r without a 1/div margin on each side.
+func inset(r image.Rectangle, div int) image.Rectangle {
+	dx, dy := r.Dx()/div, r.Dy()/div
+	return image.Rect(r.Min.X+dx, r.Min.Y+dy, r.Max.X-dx, r.Max.Y-dy)
+}
+
 // candidate is a hero and how well its portrait fits a slot, -1 to 1.
 type candidate struct {
 	ID    int

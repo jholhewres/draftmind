@@ -1,0 +1,10 @@
+{
+  "synthetic": false,
+  "source": "1920x1080 screenshot of a random draft, enemy team's turn to pick; radiant 3 is hovered (greyed, not locked), so it counts as empty",
+  "radiant": [null, 33, null, 41, 86],
+  "dire": [13, null, 5, null, 38],
+  "names": {
+    "radiant": [null, "Enigma", null, "Faceless Void", "Rubick"],
+    "dire": ["Puck", null, "Crystal Maiden", null, "Beastmaster"]
+  }
+}

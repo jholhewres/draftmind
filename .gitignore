@@ -23,3 +23,7 @@ node_modules/
 
 # Local data: portrait cache
 /api/data/
+
+# Real pick-screen photos: only their expected drafts are committed
+/api/testdata/photos/real/*
+!/api/testdata/photos/real/*.json

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"image"
 	"image/png"
 	"io"
 	"net/http"
@@ -20,7 +21,10 @@ import (
 type portrait struct {
 	hero  catalog.Hero
 	thumb []float32 // normalized thumbnail for the shortlist
-	jpeg  []byte    // scaled into Jev's limits, for a choice's criteria
+	// colour is its centre's colourSpread, to tell a locked portrait from
+	// a greyed hover.
+	colour float32
+	jpeg   []byte // scaled into Jev's limits, for a choice's criteria
 }
 
 // Portraits fetches the heroes' portraits from the image CDN once, keeps
@@ -125,7 +129,10 @@ func (p *Portraits) load(ctx context.Context, h catalog.Hero) (*portrait, error)
 		return nil, fmt.Errorf("%s: %w", h.Name, err)
 	}
 	m := toRGB(img)
-	return &portrait{hero: h, thumb: thumbnail(m), jpeg: encodeJPEG(m.forJev(), qualitySmall)}, nil
+	return &portrait{
+		hero: h, thumb: thumbnail(m), jpeg: encodeJPEG(m.forJev(), qualitySmall),
+		colour: colourSpread(m.sub(inset(image.Rect(0, 0, m.w, m.h), 10))),
+	}, nil
 }
 
 func (p *Portraits) fetch(ctx context.Context, imgPath string) ([]byte, error) {
