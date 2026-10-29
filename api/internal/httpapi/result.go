@@ -198,7 +198,7 @@ func (s *Server) saveResult(w http.ResponseWriter, r *http.Request) {
 	// The result is kept even when the player has left.
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 5*time.Second)
 	defer cancel()
-	saved, err := s.matches.SaveResult(ctx, sess.ID, res)
+	saved, err := s.matches.SaveResult(ctx, sess.ID, s.userID(r), res)
 	if err != nil {
 		s.log.Error("save result", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "could not save the result"})

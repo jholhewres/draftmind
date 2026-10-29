@@ -198,13 +198,20 @@ func TestTheHistoryListsThePlayersMatchesNewestFirst(t *testing.T) {
 	play(2, "win", other)
 	play(3, "win") // a visitor's
 	second := play(2, "win", me)
+	// A match started before signing in is the player's once they end it signed in.
+	rec := send(h, http.MethodPost, "/api/match", `{"hero":3,"role":1,"enemies":[]}`)
+	var early match.Session
+	_ = json.Unmarshal(rec.Body.Bytes(), &early)
+	if rec := send(h, http.MethodPost, "/api/match/"+early.ID+"/result", `{"result":"loss","source":"tap"}`, me); rec.Code != http.StatusOK {
+		t.Fatalf("claim: %d %s", rec.Code, rec.Body)
+	}
 	// The player started a third match and has not ended it.
 	send(h, http.MethodPost, "/api/match", `{"hero":3,"role":1,"enemies":[]}`, me)
 
 	if rec := send(h, http.MethodGet, "/api/me/matches", ""); rec.Code != http.StatusUnauthorized {
 		t.Fatalf("visitor: %d, want 401", rec.Code)
 	}
-	rec := send(h, http.MethodGet, "/api/me/matches", "", me)
+	rec = send(h, http.MethodGet, "/api/me/matches", "", me)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("history: %d %s", rec.Code, rec.Body)
 	}
@@ -212,9 +219,9 @@ func TestTheHistoryListsThePlayersMatchesNewestFirst(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 2 || got[0].ID != second || got[0].HeroID != 2 || got[0].Result != "win" ||
-		got[1].ID != first || got[1].HeroID != 1 || got[1].Result != "loss" || !got[0].EndedAt.After(got[1].EndedAt) {
-		t.Fatalf("history %+v, want the player's two ended matches, newest first", got)
+	if len(got) != 3 || got[0].ID != early.ID || got[1].ID != second || got[1].HeroID != 2 || got[1].Result != "win" ||
+		got[2].ID != first || got[2].HeroID != 1 || got[2].Result != "loss" || !got[1].EndedAt.After(got[2].EndedAt) {
+		t.Fatalf("history %+v, want the player's three ended matches, newest first", got)
 	}
 
 	// Another player cannot end a match that is not theirs.

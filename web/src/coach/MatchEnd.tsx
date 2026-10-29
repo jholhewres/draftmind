@@ -20,12 +20,12 @@ const stat = (text: string): number | undefined => {
   return text.trim() !== '' && Number.isInteger(n) && n >= 0 && n <= 999 ? n : undefined
 }
 
-type Props = { session: MatchSession; heroName: string; signedIn: boolean }
+type Props = { session: MatchSession; heroName: string; signedIn: boolean; onEnded: (r: MatchResult) => void }
 
 // The end of a match: the player tells the result with a tap, a photo of
 // the end screen or a message, checks what was read, and confirms. Nothing
 // is saved until then; the saved result comes back with the coach's notes.
-export default function MatchEnd({ session, heroName, signedIn }: Props) {
+export default function MatchEnd({ session, heroName, signedIn, onEnded }: Props) {
   const { t, locale } = useI18n()
   const [result, setResult] = useState<Outcome | null>(null)
   const [source, setSource] = useState<Source>('tap')
@@ -113,6 +113,7 @@ export default function MatchEnd({ session, heroName, signedIn }: Props) {
       .then((r) => {
         saveSessionId(null) // the match is over: the Coach tab starts afresh
         setSaved(r)
+        onEnded(r)
       })
       .catch(() => setNote(t('end.saveError')))
       .finally(() => setBusy(null))

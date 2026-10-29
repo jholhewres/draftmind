@@ -56,9 +56,18 @@ export default function CoachTab({ view, signedIn }: { view?: CoachView; signedI
   if (view === 'history') return <History byId={byId} />
   if (state.status === 'ready' && view === 'end') {
     const s = state.session
-    return <MatchEnd key={s.id} session={s} heroName={byId.get(s.heroId)?.name ?? `#${s.heroId}`} signedIn={signedIn} />
+    return (
+      <MatchEnd
+        key={s.id}
+        session={s}
+        heroName={byId.get(s.heroId)?.name ?? `#${s.heroId}`}
+        signedIn={signedIn}
+        onEnded={(result) => setState({ status: 'ready', session: { ...s, result } })}
+      />
+    )
   }
-  if (state.status !== 'ready') {
+  // An ended match is over: the tab waits for the next one.
+  if (state.status !== 'ready' || state.session.result) {
     return (
       <section className="screen">
         <header className="screen-head">

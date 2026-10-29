@@ -50,7 +50,7 @@ Draftmind is an independent tool. It has no relation to Valve Corporation or the
 - `POST /api/draft/read` takes one image (JPEG/PNG/WebP, ≤ 5 MB, downscaled in the browser to ~1600 px on the long side).
 - The reader (Jev images or a vision model, chosen by benchmark, ADR-0006) returns both teams' picks, bans when visible, the player's side when it can tell, and a confidence per slot.
 - Every slot is resolved against the current patch's heroes; unresolved slots come back empty and flagged.
-- The same reader handles the end-of-match screen (result, duration, the player's KDA) and screenshots sent to the coach. Images are not stored by default.
+- The end-of-match screen (result, duration, the player's KDA) is read by the vision model (ADR-0006, amended in B4). Images are not stored by default.
 
 ### 4.3 Hero suggestions
 - Input: allies, enemies, bans, the player's role (pos 1–5) and optionally their hero pool.

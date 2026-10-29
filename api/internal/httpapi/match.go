@@ -21,7 +21,7 @@ type Matches interface {
 	Create(ctx context.Context, s match.Session) (match.Session, error)
 	Get(ctx context.Context, id string) (match.Session, error)
 	Add(ctx context.Context, sessionID string, m match.Message) (match.Message, error)
-	SaveResult(ctx context.Context, sessionID string, r match.Result) (match.Result, error)
+	SaveResult(ctx context.Context, sessionID string, userID *int64, r match.Result) (match.Result, error)
 	History(ctx context.Context, userID int64) ([]match.Past, error)
 }
 

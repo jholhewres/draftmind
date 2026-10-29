@@ -52,8 +52,9 @@ func (r Result) Validate() error {
 }
 
 // SaveResult stores the session's result, replacing any earlier one, and
-// marks the session ended.
-func (s *Store) SaveResult(ctx context.Context, sessionID string, r Result) (Result, error) {
+// marks the session ended. A visitor's session is claimed by userID, when
+// set: a player who signs in before ending the match keeps it.
+func (s *Store) SaveResult(ctx context.Context, sessionID string, userID *int64, r Result) (Result, error) {
 	if r.Notes == nil {
 		r.Notes = []string{}
 	}
@@ -67,7 +68,8 @@ func (s *Store) SaveResult(ctx context.Context, sessionID string, r Result) (Res
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	err = tx.QueryRow(ctx, `
-		UPDATE match_session SET ended_at = now() WHERE id = $1 RETURNING ended_at`, sessionID).Scan(&r.EndedAt)
+		UPDATE match_session SET ended_at = now(), user_id = coalesce(user_id, $2) WHERE id = $1 RETURNING ended_at`,
+		sessionID, userID).Scan(&r.EndedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return r, ErrNotFound
 	}

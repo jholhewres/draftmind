@@ -51,7 +51,10 @@ test('A tap or a message saying the match was won or lost records the result', a
   expect(saved).toEqual([{ result: 'loss', source: 'message' }])
   await expect(page.getByRole('region', { name: 'What the coach noted' }).getByRole('listitem')).toHaveText(notes)
 
-  // A tap is the result as it stands.
+  // The ended match leaves the Coach tab; a tap ends the next one.
+  await page.getByRole('link', { name: 'Coach' }).click()
+  await expect(page.getByText('Pick a hero on the Draft tab to start a match.')).toBeVisible()
+  await page.reload()
   await openEnd(page)
   await page.getByRole('radio', { name: 'Win' }).check()
   await page.getByRole('button', { name: 'Save result' }).click()
