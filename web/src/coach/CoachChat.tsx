@@ -13,6 +13,7 @@ import { useI18n } from '../i18n'
 import type { MessageKey } from '../locales/en'
 import PushToTalk, { type MicNote } from './PushToTalk'
 import { canSpeak, speak } from './speech'
+import { coachLang, usePersona } from '../settings/persona'
 
 const categoryLabel: Record<Category, MessageKey> = {
   lane: 'coach.category.lane',
@@ -52,6 +53,9 @@ const micIcon = (
 // the answer to it is read aloud in the UI language.
 export default function CoachChat({ session }: { session: MatchSession }) {
   const { t, locale } = useI18n()
+  const { persona } = usePersona()
+  // The coach answers, and speaks, in the persona's language.
+  const lang = coachLang(persona, locale)
   const [lines, setLines] = useState<Line[]>(() => session.messages.map(lineOf))
   const [text, setText] = useState('')
   const [pending, setPending] = useState(false)
@@ -87,7 +91,7 @@ export default function CoachChat({ session }: { session: MatchSession }) {
       }
       if (ev.type === 'reply') {
         setLines((cur) => [...cur, { ...ev.message, key: `c${Date.now()}` }])
-        if (spoken) speak(coachText(ev.message), locale)
+        if (spoken) speak(coachText(ev.message), lang)
       }
     }, ctrl.current.signal)
       .catch((err: unknown) => {
@@ -107,12 +111,12 @@ export default function CoachChat({ session }: { session: MatchSession }) {
     if (!msg || pending) return
     setLines((cur) => [...cur, { key: `p${Date.now()}`, author: 'player', kind: 'text', text: msg }])
     setText('')
-    turn((onEvent, signal) => sendMatchMessage(session.id, msg, locale, onEvent, signal), false)
+    turn((onEvent, signal) => sendMatchMessage(session.id, msg, locale, persona, onEvent, signal), false)
   }
 
   const sendVoice = (wav: Blob) => {
     if (pending) return
-    turn((onEvent, signal) => sendMatchVoice(session.id, wav, locale, onEvent, signal), true)
+    turn((onEvent, signal) => sendMatchVoice(session.id, wav, locale, persona, onEvent, signal), true)
   }
 
   return (
@@ -133,7 +137,7 @@ export default function CoachChat({ session }: { session: MatchSession }) {
             )}
             <span className="bubble-text">{l.author === 'player' ? l.text : coachText(l)}</span>
             {l.author === 'coach' && l.kind === 'answer' && canSpeak() && (
-              <button type="button" className="listen" onClick={() => speak(coachText(l), locale)}>
+              <button type="button" className="listen" onClick={() => speak(coachText(l), lang)}>
                 <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M11 5L6 9H2v6h4l5 4V5z" />
                   <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />

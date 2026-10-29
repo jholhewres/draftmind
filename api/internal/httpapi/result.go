@@ -10,6 +10,7 @@ import (
 
 	"github.com/jholhewres/draftmind/api/internal/auth"
 	"github.com/jholhewres/draftmind/api/internal/match"
+	"github.com/jholhewres/draftmind/api/internal/persona"
 	"github.com/jholhewres/draftmind/api/internal/photo"
 	"github.com/jholhewres/draftmind/api/internal/writer"
 )
@@ -21,7 +22,7 @@ type ResultParser interface {
 
 // Noter writes the coach's notes on an ended match.
 type Noter interface {
-	Notes(ctx context.Context, s match.Session, r match.Result, lang string) writer.Notes
+	Notes(ctx context.Context, s match.Session, r match.Result, lang string, p persona.Persona) writer.Notes
 }
 
 // WithResultParser reads end-of-match messages; without it that route answers 503.
@@ -187,13 +188,17 @@ func (s *Server) saveResult(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
+	p, ok := s.personaOf(w, r)
+	if !ok {
+		return
+	}
 	sess, ok := s.ownMatch(w, r)
 	if !ok {
 		return
 	}
 	res.Notes = []string{}
 	if s.noter != nil {
-		res.Notes = s.noter.Notes(r.Context(), sess, res, lang).Items
+		res.Notes = s.noter.Notes(r.Context(), sess, res, p.LangFor(lang), p).Items
 	}
 	// The result is kept even when the player has left.
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 5*time.Second)

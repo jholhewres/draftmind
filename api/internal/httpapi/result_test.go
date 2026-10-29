@@ -15,6 +15,7 @@ import (
 
 	"github.com/jholhewres/draftmind/api/internal/auth"
 	"github.com/jholhewres/draftmind/api/internal/match"
+	"github.com/jholhewres/draftmind/api/internal/persona"
 	"github.com/jholhewres/draftmind/api/internal/photo"
 	"github.com/jholhewres/draftmind/api/internal/writer"
 )
@@ -40,7 +41,7 @@ func (f *fakeEndReader) ReadEnd(_ context.Context, _ image.Image, hero string) (
 
 type fakeNoter struct{ got []match.Result }
 
-func (f *fakeNoter) Notes(_ context.Context, _ match.Session, r match.Result, _ string) writer.Notes {
+func (f *fakeNoter) Notes(_ context.Context, _ match.Session, r match.Result, _ string, _ persona.Persona) writer.Notes {
 	f.got = append(f.got, r)
 	return writer.Notes{Items: []string{"Axe won the lane.", "Black King Bar turned the fights."}, Source: writer.SourceWriter}
 }

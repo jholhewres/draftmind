@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/jholhewres/draftmind/api/internal/persona"
 )
 
 // Results a match can end with.
@@ -53,6 +55,7 @@ func (w *Writer) ParseResult(ctx context.Context, text string) (string, error) {
 // notes may use.
 type NotesBrief struct {
 	Lang     string
+	Persona  persona.Persona // shapes the wording only
 	Result   string
 	Messages []string // "player: …" and "coach: …" lines, oldest first
 	Facts    any
@@ -79,7 +82,7 @@ const notesInstructions = "You are a concise coach. A 5v5 hero match just ended.
 	"what went well or badly and one thing to try next time. Each note is one plain sentence under 160 characters, no " +
 	`markdown. Answer with one JSON object and nothing else: {"notes": [string]}. Name only the heroes, abilities and ` +
 	"items in the facts, exactly as written there, and never anything else. Start each sentence with a capital letter " +
-	"and write every other word that is not one of those names in lower case."
+	"and write every other word that is not one of those names in lower case. %s"
 
 // Notes writes two or three notes on the match. It never fails: each note
 // is held to the facts like an answer and dropped when it fails; with none
@@ -92,7 +95,7 @@ func (w *Writer) Notes(ctx context.Context, b NotesBrief) Notes {
 	input, err := json.Marshal(map[string]any{"result": b.Result, "chat": b.Messages, "facts": b.Facts})
 	raw := ""
 	if err == nil {
-		raw, err = w.chat(ctx, fmt.Sprintf(notesInstructions, b.Lang), string(input), 500, true, &call)
+		raw, err = w.chat(ctx, fmt.Sprintf(notesInstructions, b.Lang, b.Persona.Voice()), string(input), 500, true, &call)
 	}
 	call.Latency, call.Output = time.Since(start), raw
 	out := Notes{Items: []string{}, Source: SourceTemplate}

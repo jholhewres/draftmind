@@ -10,6 +10,8 @@ import (
 	"time"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/jholhewres/draftmind/api/internal/persona"
 )
 
 // Categories a player's message can be about; other is anything else the
@@ -103,6 +105,7 @@ func parseSituation(raw string, sit *Situation) error {
 // the names the answer may use.
 type AnswerBrief struct {
 	Lang     string
+	Persona  persona.Persona // shapes the wording only
 	Message  string
 	Category string
 	Priority string
@@ -120,8 +123,9 @@ type Answer struct {
 	Reason string `json:"reason,omitempty"`
 }
 
+// answerInstructions takes the language, then the persona's instructions.
 const answerInstructions = "You are a concise coach for a player in a live 5v5 hero match. Answer their message from " +
-	"the facts given and nothing else, in the language whose BCP 47 tag is %s. At most three short sentences, under 300 " +
+	"the facts given and nothing else, in the language whose BCP 47 tag is %s. %s Under 300 " +
 	"characters, plain text, no markdown, no lists. Focus on the decided category; do not restate the category or the " +
 	"priority. Name only the heroes, abilities and items in the facts, exactly as written there, and never anything else. " +
 	"Start each sentence with a capital letter and write every other word that is not one of those names in lower case."
@@ -140,7 +144,7 @@ func (w *Writer) Answer(ctx context.Context, b AnswerBrief) Answer {
 	})
 	text := ""
 	if err == nil {
-		text, err = w.chat(ctx, fmt.Sprintf(answerInstructions, b.Lang), string(facts), 400, false, &call)
+		text, err = w.chat(ctx, fmt.Sprintf(answerInstructions, b.Lang, b.Persona.Instructions()), string(facts), 400, false, &call)
 	}
 	call.Latency = time.Since(start)
 	a := Answer{Text: text, Source: SourceWriter}

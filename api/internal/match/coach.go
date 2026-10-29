@@ -11,6 +11,7 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/catalog"
 	"github.com/jholhewres/draftmind/api/internal/decision"
 	"github.com/jholhewres/draftmind/api/internal/draft"
+	"github.com/jholhewres/draftmind/api/internal/persona"
 	"github.com/jholhewres/draftmind/api/internal/writer"
 )
 
@@ -95,8 +96,9 @@ type Emit func(name string, v any)
 
 // Reply runs the pipeline on text for session s, emitting situation,
 // decision and then answer, or a single followup when the message cannot
-// be parsed. lang is the player's language.
-func (c *Coach) Reply(ctx context.Context, s Session, text, lang string, emit Emit) (Reply, error) {
+// be parsed. lang is the language to answer in; p, the player's persona,
+// shapes only the writer's wording.
+func (c *Coach) Reply(ctx context.Context, s Session, text, lang string, p persona.Persona, emit Emit) (Reply, error) {
 	parsed, err := c.Parse.Situation(ctx, text)
 	if errors.Is(err, writer.ErrUnclear) {
 		// A guess on an unread message is worse than a question.
@@ -133,7 +135,7 @@ func (c *Coach) Reply(ctx context.Context, s Session, text, lang string, emit Em
 	emit("decision", map[string]string{"category": r.Category, "priority": r.Priority, "source": r.Source})
 
 	a := c.Write.Answer(ctx, writer.AnswerBrief{
-		Lang: lang, Message: text, Category: r.Category, Priority: r.Priority, Facts: f.data,
+		Lang: lang, Persona: p, Message: text, Category: r.Category, Priority: r.Priority, Facts: f.data,
 		Allowed: f.allowed, Known: f.known,
 	})
 	r.Text, r.TextSource, r.Reason = a.Text, a.Source, a.Reason

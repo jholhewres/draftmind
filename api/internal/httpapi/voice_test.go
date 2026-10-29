@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/jholhewres/draftmind/api/internal/match"
+	"github.com/jholhewres/draftmind/api/internal/persona"
 	"github.com/jholhewres/draftmind/api/internal/writer"
 )
 
@@ -49,10 +50,13 @@ func (f *fakeTranscriber) Transcribe(_ context.Context, wav []byte, lang string)
 }
 
 // recordingCoach answers every message and keeps the texts it was given.
-type recordingCoach struct{ texts []string }
+type recordingCoach struct {
+	texts, langs []string
+	personas     []persona.Persona
+}
 
-func (c *recordingCoach) Reply(_ context.Context, _ match.Session, text, _ string, emit match.Emit) (match.Reply, error) {
-	c.texts = append(c.texts, text)
+func (c *recordingCoach) Reply(_ context.Context, _ match.Session, text, lang string, p persona.Persona, emit match.Emit) (match.Reply, error) {
+	c.texts, c.langs, c.personas = append(c.texts, text), append(c.langs, lang), append(c.personas, p)
 	r := match.Reply{Kind: "answer", Category: "lane", Priority: "high", Source: "jev", Text: "Stay behind your creeps.", TextSource: writer.SourceWriter}
 	emit("answer", r)
 	return r, nil

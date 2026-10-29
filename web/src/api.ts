@@ -397,8 +397,13 @@ export async function readEndScreen(id: string, image: Blob, signal?: AbortSigna
 }
 
 // Saves the confirmed result; the answer carries the coach's notes.
-export async function saveMatchResult(id: string, r: ResultFill & { result: Outcome; source: MatchResult['source'] }, lang: string): Promise<MatchResult> {
-  const path = matchPath(id, `result?${new URLSearchParams({ lang })}`)
+export async function saveMatchResult(
+  id: string,
+  r: ResultFill & { result: Outcome; source: MatchResult['source'] },
+  lang: string,
+  persona: Persona,
+): Promise<MatchResult> {
+  const path = matchPath(id, `result?${coachQuery(lang, persona)}`)
   const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(r) })
   if (!res.ok) throw new Error(`/api/match/result: HTTP ${res.status}`)
   return (await res.json()) as MatchResult
@@ -444,10 +449,11 @@ export async function sendMatchMessage(
   id: string,
   text: string,
   lang: string,
+  persona: Persona,
   onEvent: (e: CoachEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> {
-  const path = `/api/match/${encodeURIComponent(id)}/messages?${new URLSearchParams({ lang })}`
+  const path = `/api/match/${encodeURIComponent(id)}/messages?${coachQuery(lang, persona)}`
   const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }), signal })
   if (!res.ok || !res.body) throw new Error(`/api/match/messages: HTTP ${res.status}`)
   await readCoachTurn(res.body, onEvent)
@@ -468,10 +474,11 @@ export async function sendMatchVoice(
   id: string,
   wav: Blob,
   lang: string,
+  persona: Persona,
   onEvent: (e: CoachEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> {
-  const path = `/api/match/${encodeURIComponent(id)}/voice?${new URLSearchParams({ lang })}`
+  const path = `/api/match/${encodeURIComponent(id)}/voice?${coachQuery(lang, persona)}`
   const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'audio/wav' }, body: wav, signal })
   if (!res.ok || !res.body) throw new VoiceError(res.status)
   await readCoachTurn(res.body, onEvent)
@@ -510,6 +517,32 @@ async function readCoachTurn(body: ReadableStream<BufferSource>, onEvent: (e: Co
         break
     }
   })
+}
+
+// The player's own coach: how it talks, never what it decides.
+export type Persona = {
+  tone: 'direct' | 'encouraging' | 'analytic'
+  language: 'auto' | 'en' | 'pt-BR'
+  verbosity: 'short' | 'normal'
+  focus: 'laning' | 'teamfights' | 'items' | 'macro'
+}
+
+export const defaultPersona: Persona = { tone: 'direct', language: 'auto', verbosity: 'normal', focus: 'laning' }
+
+// The query a coach request carries: the UI language and the persona. The
+// server uses a signed-in player's saved persona instead.
+const coachQuery = (lang: string, persona: Persona) => new URLSearchParams({ lang, ...persona })
+
+// The signed-in player's persona.
+export async function fetchPersona(signal?: AbortSignal): Promise<Persona> {
+  const res = await fetch('/api/me/persona', { signal })
+  if (!res.ok) throw new Error(`/api/me/persona: HTTP ${res.status}`)
+  return (await res.json()) as Persona
+}
+
+export async function savePersona(p: Persona): Promise<void> {
+  const res = await fetch('/api/me/persona', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) })
+  if (!res.ok) throw new Error(`/api/me/persona: HTTP ${res.status}`)
 }
 
 // The signed-in account: an e-mail address, a SteamID or both.

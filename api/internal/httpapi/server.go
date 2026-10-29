@@ -58,6 +58,7 @@ type Server struct {
 	resultParser ResultParser
 	endReader    photo.EndReader
 	noter        Noter
+	personas     Personas
 	auth         *auth.Service
 	log          *slog.Logger
 
@@ -147,6 +148,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/match/{id}/end/read", read.wrap(http.HandlerFunc(s.readEnd)))
 	mux.Handle("POST /api/match/{id}/result", suggest.wrap(http.HandlerFunc(s.saveResult)))
 	mux.Handle("GET /api/me/matches", s.requireUser(http.HandlerFunc(s.myMatches)))
+	mux.Handle("GET /api/me/persona", s.requireUser(http.HandlerFunc(s.myPersona)))
+	mux.Handle("PUT /api/me/persona", s.requireUser(http.HandlerFunc(s.savePersona)))
 	if s.auth != nil {
 		s.auth.Mount(mux, newLimiter(s.mailIPLimit, s.now).wrap, newLimiter(s.mailLimit, s.now).take)
 	} else {

@@ -33,6 +33,11 @@ func (s *Server) matchVoice(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	p, ok := s.personaOf(w, r)
+	if !ok {
+		return
+	}
+	lang = p.LangFor(lang)
 	if s.stt == nil {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "voice is not configured"})
 		return
@@ -74,5 +79,5 @@ func (s *Server) matchVoice(w http.ResponseWriter, r *http.Request) {
 	if runes := []rune(text); len(runes) > match.MaxMessage {
 		text = string(runes[:match.MaxMessage])
 	}
-	s.coachTurn(w, r, sess, match.Message{Author: "player", Kind: "voice", Text: text}, lang)
+	s.coachTurn(w, r, sess, match.Message{Author: "player", Kind: "voice", Text: text}, lang, p)
 }

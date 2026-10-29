@@ -13,6 +13,7 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/decision"
 	"github.com/jholhewres/draftmind/api/internal/draft"
 	"github.com/jholhewres/draftmind/api/internal/items"
+	"github.com/jholhewres/draftmind/api/internal/persona"
 	"github.com/jholhewres/draftmind/api/internal/writer"
 )
 
@@ -123,7 +124,7 @@ func TestAnswersNameOnlyHeroesAbilitiesAndItemsInTheDatabaseForTheCurrentPatch(t
 			c := &Coach{Parse: m.server(t), Write: nil, Jev: &jev{}, Facts: fakeFacts{}}
 			c.Write = c.Parse.(*writer.Writer)
 			ev := &events{}
-			r, err := c.Reply(context.Background(), session(), "viper is killing me mid", "en", ev.emit)
+			r, err := c.Reply(context.Background(), session(), "viper is killing me mid", "en", persona.Default(), ev.emit)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -154,7 +155,7 @@ func TestAMessageThatCannotBeParsedGetsAFollowUpQuestionInsteadOfAGuess(t *testi
 		c := &Coach{Parse: m.server(t), Jev: j, Facts: fakeFacts{}}
 		c.Write = c.Parse.(*writer.Writer)
 		ev := &events{}
-		r, err := c.Reply(context.Background(), session(), "hm", "en", ev.emit)
+		r, err := c.Reply(context.Background(), session(), "hm", "en", persona.Default(), ev.emit)
 		if err != nil {
 			t.Fatal(err)
 		}

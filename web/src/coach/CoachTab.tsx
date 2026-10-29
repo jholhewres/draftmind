@@ -83,6 +83,9 @@ export default function CoachTab({ view, signedIn }: { view?: CoachView; signedI
         <a className="end-link" href="#/coach/history">
           {t('history.title')}
         </a>
+        <a className="end-link" href="#/settings">
+          {t('persona.title')}
+        </a>
       </section>
     )
   }
@@ -96,9 +99,16 @@ export default function CoachTab({ view, signedIn }: { view?: CoachView; signedI
           <h1>{t('coach.title', { hero: hero?.name ?? `#${s.heroId}`, position: t(position[s.role] ?? 'nav.coach') })}</h1>
           <MatchTimer id={s.id} />
         </div>
-        <a className="chip end-match" href="#/coach/end">
-          {t('end.open')}
-        </a>
+        <div className="coach-actions">
+          <a className="settings-entry" href="#/settings" aria-label={t('persona.title')}>
+            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" />
+            </svg>
+          </a>
+          <a className="chip end-match" href="#/coach/end">
+            {t('end.open')}
+          </a>
+        </div>
       </header>
       <div className="coach-body">
         <BuildCard build={s.itemPlan} byId={byId} />

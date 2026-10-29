@@ -544,7 +544,11 @@ footer p { margin: 0 0 4px; }
 }
 
 /* End of match and history, after the prototype's MatchEnd. */
-.end-match { margin-left: auto; text-decoration: none; flex-shrink: 0; }
+.coach-head { flex-wrap: wrap; row-gap: 8px; }
+.coach-head .coach-title { flex: 1 1 180px; }
+.coach-head .match-timer .chip { white-space: nowrap; }
+.coach-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.end-match { text-decoration: none; flex-shrink: 0; }
 .match-end h2, .match-history h2 { margin: 0; font-size: 15px; }
 .end-result { margin: 0; padding: 0; border: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .end-result legend { padding: 0; margin-bottom: 8px; font-weight: 600; }
@@ -593,3 +597,22 @@ footer p { margin: 0 0 4px; }
 @media (min-width: 1024px) {
   .match-end, .match-history { max-width: 640px; }
 }
+
+/* Coach settings: one row of choices per setting. */
+.settings-entry {
+  width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0;
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--fg);
+}
+.settings-entry:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.persona-settings { max-width: 640px; }
+.persona-field { margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px; }
+.persona-field legend { padding: 0; margin-bottom: 8px; font-weight: 600; }
+.persona-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.persona-option {
+  position: relative; min-height: 44px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--border-strong); background: var(--surface); font: 600 14px Barlow, system-ui, sans-serif;
+}
+.persona-option input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.persona-option:has(input:checked) { border-color: var(--gold); background: rgba(217, 174, 91, 0.16); color: var(--gold-light); }
+.persona-option:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
+.persona-note { margin: 0; min-height: 1.4em; font-size: 13px; }

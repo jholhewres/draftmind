@@ -4,6 +4,7 @@ import { prepareImage } from '../draft/prepare'
 import { useI18n } from '../i18n'
 import { clock } from './clock'
 import { saveSessionId } from './session'
+import { usePersona } from '../settings/persona'
 
 type Source = MatchResult['source']
 
@@ -27,6 +28,7 @@ type Props = { session: MatchSession; heroName: string; signedIn: boolean; onEnd
 // is saved until then; the saved result comes back with the coach's notes.
 export default function MatchEnd({ session, heroName, signedIn, onEnded }: Props) {
   const { t, locale } = useI18n()
+  const { persona } = usePersona()
   const [result, setResult] = useState<Outcome | null>(null)
   const [source, setSource] = useState<Source>('tap')
   const [duration, setDuration] = useState('')
@@ -109,7 +111,7 @@ export default function MatchEnd({ session, heroName, signedIn, onEnded }: Props
     const all = k !== undefined && d !== undefined && a !== undefined
     setBusy('save')
     setNote(null)
-    saveMatchResult(session.id, { result, source, durationS: seconds(duration), ...(all ? { kills: k, deaths: d, assists: a } : {}) }, locale)
+    saveMatchResult(session.id, { result, source, durationS: seconds(duration), ...(all ? { kills: k, deaths: d, assists: a } : {}) }, locale, persona)
       .then((r) => {
         saveSessionId(null) // the match is over: the Coach tab starts afresh
         setSaved(r)

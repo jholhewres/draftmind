@@ -10,6 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/jholhewres/draftmind/api/internal/persona"
 	"github.com/jholhewres/draftmind/api/internal/writer"
 )
 
@@ -134,7 +135,7 @@ const MaxNoteMessages = 40
 
 // Notes writes two or three notes on the ended match from the session's
 // chat and facts only, held to the session's names like an answer.
-func (c *Coach) Notes(ctx context.Context, s Session, r Result, lang string) writer.Notes {
+func (c *Coach) Notes(ctx context.Context, s Session, r Result, lang string, p persona.Persona) writer.Notes {
 	none := writer.Notes{Items: []string{}, Source: writer.SourceTemplate, Reason: writer.ReasonUnavailable}
 	if c.Note == nil {
 		return none
@@ -171,6 +172,6 @@ func (c *Coach) Notes(ctx context.Context, s Session, r Result, lang string) wri
 		}
 	}
 	return c.Note.Notes(ctx, writer.NotesBrief{
-		Lang: lang, Result: r.Outcome, Messages: lines, Facts: f.data, Allowed: f.allowed, Known: f.known,
+		Lang: lang, Persona: p, Result: r.Outcome, Messages: lines, Facts: f.data, Allowed: f.allowed, Known: f.known,
 	})
 }

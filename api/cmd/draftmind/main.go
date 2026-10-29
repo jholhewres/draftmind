@@ -24,6 +24,7 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/gamesync"
 	"github.com/jholhewres/draftmind/api/internal/httpapi"
 	"github.com/jholhewres/draftmind/api/internal/match"
+	"github.com/jholhewres/draftmind/api/internal/persona"
 	"github.com/jholhewres/draftmind/api/internal/writer"
 )
 
@@ -63,7 +64,7 @@ func run(ctx context.Context, cmd string, log *slog.Logger) error {
 		return runSync(ctx, cfg, pool, log)
 	case "serve":
 		cat := catalog.NewStore(pool)
-		srv := httpapi.New(pool, cat, log).WithMatches(match.NewStore(pool))
+		srv := httpapi.New(pool, cat, log).WithMatches(match.NewStore(pool)).WithPersonas(persona.NewStore(pool))
 		if cfg.OpenRouterAPIKey != "" {
 			jev := decision.New(cfg.OpenRouterBaseURL, cfg.OpenRouterAPIKey, cfg.DecisionModel,
 				cfg.DecisionProvider, decision.NewPGLog(pool, log))
