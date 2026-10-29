@@ -1,6 +1,6 @@
 # AGENTS.md — Draftmind
 
-Rules for coding agents working in this repository. Read [docs/SPEC.md](docs/SPEC.md), [docs/PLAN.md](docs/PLAN.md) and the ADRs in [docs/adr/](docs/adr/) before changing behaviour.
+Rules for coding agents working in this repository. Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the ADRs in [docs/adr/](docs/adr/) before changing behaviour.
 
 ## Layout
 

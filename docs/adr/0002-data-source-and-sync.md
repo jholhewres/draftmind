@@ -13,7 +13,7 @@ The coach must never invent heroes, items or matchups. The data has to be curren
 - `draftmind sync` writes everything into Postgres keyed by `patch`, with idempotent upserts and a `sync_run` row per run. Requests are rate limited under OpenDota's free tier (≈ 1 req/s); an optional `OPENDOTA_API_KEY` raises it.
 - Re-sync when dotaconstants reports a new patch, plus a periodic stats refresh.
 - Matchup win rates are shrunk toward 50 % by games played before ranking, because the matchup sample is small.
-- **STRATZ** stays optional, first candidate for hero-pair synergy (open question in the SPEC).
+- **STRATZ** stays optional, first candidate for hero-pair synergy (open question in [ARCHITECTURE](../ARCHITECTURE.md)).
 
 ## Consequences
 

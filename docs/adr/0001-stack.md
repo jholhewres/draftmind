@@ -4,7 +4,7 @@ Status: accepted · 2026-10-27
 
 ## Context
 
-Draftmind needs a low-latency API that fans out to several model calls, a small sync job, and a mobile-friendly web UI. Jhol's other projects (usewoo, cs2mix-engine) run Go + Postgres, and the operational pattern is one binary on the personal server.
+Draftmind needs a low-latency API that fans out to several model calls, a small sync job, and a mobile-friendly web UI. Go and Postgres keep it to one static binary and one database, which is simple to run on a small VPS.
 
 ## Decision
 

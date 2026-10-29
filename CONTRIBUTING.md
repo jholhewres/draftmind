@@ -1,6 +1,6 @@
 # Contributing to Draftmind
 
-Thanks for helping. Read [docs/SPEC.md](docs/SPEC.md) and the ADRs in [docs/adr/](docs/adr/) before changing behaviour; an ADR that no longer fits is reopened with a new ADR, not edited silently.
+Thanks for helping. Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the ADRs in [docs/adr/](docs/adr/) before changing behaviour; an ADR that no longer fits is reopened with a new ADR, not edited silently.
 
 ## Setup
 

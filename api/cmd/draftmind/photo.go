@@ -15,7 +15,7 @@ import (
 // heroImageBase is the CDN the synced hero image paths are relative to.
 const heroImageBase = "https://cdn.cloudflare.steamstatic.com"
 
-// Photo read timings (ADR-0006): the default reader has the SPEC's 3.5 s
+// Photo read timings (ADR-0006): the default reader has the 3.5 s photo-read budget (docs/ARCHITECTURE.md)
 // read budget; the fallback gets a little more, since it is the last try.
 const (
 	photoPrimaryDeadline   = 3500 * time.Millisecond

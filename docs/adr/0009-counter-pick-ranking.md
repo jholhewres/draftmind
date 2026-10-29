@@ -29,5 +29,5 @@ The Draft tab ranks every legal hero against a typed draft (ADR-0003, step 2). O
 
 - A strong counter on a thin sample ranks below a moderate one on a large sample; that is intended.
 - The deltas are against 50 %, so a hero that wins a lot in general also shows positive deltas; the patch term is kept small for that reason.
-- k, the weights and the role table are constants in `api/internal/draft`; revisit them once real drafts are validated (SPEC open question 3).
+- k, the weights and the role table are constants in `api/internal/draft`; revisit them once real drafts are validated (see the open questions in [ARCHITECTURE](../ARCHITECTURE.md)).
 - A core hero dotaconstants also lists as Support (Underlord, Sand King at Pos 3) drops below every fitting hero; dotaconstants roles cannot tell it from a real support. Positions 4–5 keep carries that list Disabler or Nuker at 0.5.

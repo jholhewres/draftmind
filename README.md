@@ -45,7 +45,7 @@ Photograph the pick screen and Draftmind reads the draft, suggests heroes, then 
 - Postgres 17 via `docker-compose.yml`.
 - Models through [OpenRouter](https://openrouter.ai/): Jev (System One) for decisions and photo reads, a vision model, a writer model and a speech-to-text model.
 
-More in [docs/SPEC.md](docs/SPEC.md), [docs/PLAN.md](docs/PLAN.md) and the ADRs in [docs/adr/](docs/adr/).
+More in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the ADRs in [docs/adr/](docs/adr/).
 
 ## Quick start
 

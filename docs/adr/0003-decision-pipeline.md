@@ -4,7 +4,7 @@ Status: accepted · 2026-10-27
 
 ## Context
 
-A chat model asked "what should I pick?" answers fluently and often wrongly: it names heroes that are already picked, quotes old patches, or invents items. Jhol's projects use a split where a calibrated decision model makes the choices and code owns every side effect.
+A chat model asked "what should I pick?" answers fluently and often wrongly: it names heroes that are already picked, quotes old patches, or invents items. A better split is one where a calibrated decision model makes the choices and code owns every side effect.
 
 ## Decision
 
@@ -15,7 +15,7 @@ Every suggestion goes through four steps:
 3. **Decide (Jev).** The top N candidates go to Jev (`typesafe/jev-*` on OpenRouter's System One endpoint, model pinned by `DECISION_MODEL`) as a `choice` question whose criteria are the candidates with their reasons, plus `score` questions where a level is needed (e.g. how urgent an item is). Jev returns the choice, probabilities and confidence.
 4. **Write (LLM).** A writer model turns the decided, structured result into a short tip in the player's language and coach persona. Code checks the text names only entities from the result; a failing text is replaced by a template.
 
-Client rules (our own implementation in `api/internal/decision`, not a copy of usewoo's):
+Client rules (implemented in `api/internal/decision`):
 
 - Strict parsing: every question asked must come back with the same type and a value, else the whole call fails.
 - Provider pinned with no fallbacks and zero data retention; snapshot drift is logged.

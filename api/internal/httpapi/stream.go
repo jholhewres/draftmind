@@ -44,7 +44,7 @@ type rankingEvent struct {
 }
 
 // stream serves POST /api/draft/stream: the suggestions as Server-Sent
-// Events, the code ranking first and the models' work after it (SPEC):
+// Events, the code ranking first and the models' work after it (docs/ARCHITECTURE.md):
 //
 //	read      the draft read from the photo, with the draft it seats (photo only)
 //	ranking   the code ranking, before any model call returns
