@@ -198,7 +198,7 @@ func (s *Server) saveResult(w http.ResponseWriter, r *http.Request) {
 	}
 	res.Notes = []string{}
 	if s.noter != nil {
-		res.Notes = s.noter.Notes(r.Context(), sess, res, p.LangFor(lang), p).Items
+		res.Notes = s.noter.Notes(r.Context(), sess, res, lang, p).Items
 	}
 	// The result is kept even when the player has left.
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 5*time.Second)

@@ -96,8 +96,9 @@ type Emit func(name string, v any)
 
 // Reply runs the pipeline on text for session s, emitting situation,
 // decision and then answer, or a single followup when the message cannot
-// be parsed. lang is the language to answer in; p, the player's persona,
-// shapes only the writer's wording.
+// be parsed. lang is the player's UI language, which the decision's facts
+// are read in; p, the player's persona, shapes only the writer: its
+// wording and the language it answers in.
 func (c *Coach) Reply(ctx context.Context, s Session, text, lang string, p persona.Persona, emit Emit) (Reply, error) {
 	parsed, err := c.Parse.Situation(ctx, text)
 	if errors.Is(err, writer.ErrUnclear) {
@@ -134,9 +135,16 @@ func (c *Coach) Reply(ctx context.Context, s Session, text, lang string, p perso
 	r.Category, r.Priority, r.Source = c.decide(ctx, sit, f.data)
 	emit("decision", map[string]string{"category": r.Category, "priority": r.Priority, "source": r.Source})
 
+	// The writer reads the facts in the persona's language; Jev never does.
+	wf := f
+	if wlang := p.LangFor(lang); wlang != lang {
+		if wf, err = c.facts(ctx, s, sit, heroes, names, wlang); err != nil {
+			return Reply{}, err
+		}
+	}
 	a := c.Write.Answer(ctx, writer.AnswerBrief{
-		Lang: lang, Persona: p, Message: text, Category: r.Category, Priority: r.Priority, Facts: f.data,
-		Allowed: f.allowed, Known: f.known,
+		Lang: p.LangFor(lang), Persona: p, Message: text, Category: r.Category, Priority: r.Priority, Facts: wf.data,
+		Allowed: wf.allowed, Known: wf.known,
 	})
 	r.Text, r.TextSource, r.Reason = a.Text, a.Source, a.Reason
 	emit("answer", r)

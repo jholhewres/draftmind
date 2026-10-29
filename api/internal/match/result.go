@@ -134,8 +134,10 @@ type Noter interface {
 const MaxNoteMessages = 40
 
 // Notes writes two or three notes on the ended match from the session's
-// chat and facts only, held to the session's names like an answer.
+// chat and facts only, held to the session's names like an answer; lang is
+// the UI language and p the persona, which sets the notes' language.
 func (c *Coach) Notes(ctx context.Context, s Session, r Result, lang string, p persona.Persona) writer.Notes {
+	lang = p.LangFor(lang)
 	none := writer.Notes{Items: []string{}, Source: writer.SourceTemplate, Reason: writer.ReasonUnavailable}
 	if c.Note == nil {
 		return none

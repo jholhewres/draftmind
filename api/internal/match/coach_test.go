@@ -61,10 +61,10 @@ var heroes = []catalog.Hero{{ID: 13, Slug: "puck", Name: "Puck"}, {ID: 14, Slug:
 
 func (fakeFacts) Heroes(context.Context) (string, []catalog.Hero, error) { return "7.41", heroes, nil }
 
-func (fakeFacts) HeroDetail(_ context.Context, slug, _ string) (catalog.HeroDetail, error) {
+func (fakeFacts) HeroDetail(_ context.Context, slug, lang string) (catalog.HeroDetail, error) {
 	abilities := map[string][]catalog.Ability{
 		"puck":  {{Name: "Illusory Orb"}, {Name: "Phase Shift", Description: "Puck briefly shifts out of the world."}},
-		"viper": {{Name: "Poison Attack"}, {Name: "Viper Strike"}},
+		"viper": {{Name: "Poison Attack"}, {Name: "Viper Strike", Description: "Slows and poisons a target (" + lang + ")."}},
 		"pudge": {{Name: "Meat Hook"}, {Name: "Rot"}},
 	}
 	return catalog.HeroDetail{Abilities: abilities[slug]}, nil

@@ -37,7 +37,6 @@ func (s *Server) matchVoice(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	lang = p.LangFor(lang)
 	if s.stt == nil {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "voice is not configured"})
 		return

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -103,8 +104,12 @@ func TestTheCoachAnswersInThePersonasLanguage(t *testing.T) {
 	send(h, http.MethodPost, "/api/match/"+id+"/messages?lang=en&tone=analytic&language=pt-BR&verbosity=short&focus=items", `{"text":"pudge is roaming"}`)
 	send(h, http.MethodPost, "/api/match/"+id+"/messages?lang=en&language=auto", `{"text":"pudge is roaming"}`)
 
-	if len(coach.langs) != 3 || coach.langs[0] != "pt-BR" || coach.langs[1] != "pt-BR" || coach.langs[2] != "en" {
-		t.Fatalf("answered in %v, want pt-BR, pt-BR, en", coach.langs)
+	answered := []string{}
+	for i, l := range coach.langs {
+		answered = append(answered, coach.personas[i].LangFor(l))
+	}
+	if strings.Join(answered, ",") != "pt-BR,pt-BR,en" {
+		t.Fatalf("answered in %v, want pt-BR, pt-BR, en", answered)
 	}
 	if coach.personas[0].Tone != "encouraging" || coach.personas[1] != (persona.Persona{Tone: "analytic", Language: "pt-BR", Verbosity: "short", Focus: "items"}) ||
 		coach.personas[2] != persona.Default() {

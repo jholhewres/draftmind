@@ -4,13 +4,26 @@ import { defaultPersona, type Persona } from '../api'
 // A visitor's persona lives in this browser; a signed-in player's on the server.
 const key = 'draftmind.persona'
 
+const allowed: { [F in keyof Persona]: readonly Persona[F][] } = {
+  tone: ['direct', 'encouraging', 'analytic'],
+  language: ['auto', 'en', 'pt-BR'],
+  verbosity: ['short', 'normal'],
+  focus: ['laning', 'teamfights', 'items', 'macro'],
+}
+
+const pick = <F extends keyof Persona>(raw: Record<string, unknown>, f: F): Persona[F] =>
+  allowed[f].find((v) => v === raw[f]) ?? defaultPersona[f]
+
+// The persona kept in this browser; a missing or unknown value is the default.
 export function storedPersona(): Persona {
+  let raw: unknown = null
   try {
-    const p = JSON.parse(window.localStorage.getItem(key) ?? '') as Partial<Persona>
-    return { ...defaultPersona, ...p }
+    raw = JSON.parse(window.localStorage.getItem(key) ?? 'null')
   } catch {
-    return defaultPersona
+    // nothing kept, or storage is blocked
   }
+  const r = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
+  return { tone: pick(r, 'tone'), language: pick(r, 'language'), verbosity: pick(r, 'verbosity'), focus: pick(r, 'focus') }
 }
 
 export function storePersona(p: Persona) {

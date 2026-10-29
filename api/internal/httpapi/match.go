@@ -153,7 +153,7 @@ func (s *Server) matchMessage(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	s.coachTurn(w, r, sess, match.Message{Author: "player", Kind: "text", Text: req.Text}, p.LangFor(lang), p)
+	s.coachTurn(w, r, sess, match.Message{Author: "player", Kind: "text", Text: req.Text}, lang, p)
 }
 
 // queryLang reads the ?lang= tag, en when absent; a bad one answers 400.
@@ -170,7 +170,7 @@ func queryLang(w http.ResponseWriter, r *http.Request) (string, bool) {
 }
 
 // coachTurn stores the player's message, then streams the coach's turn on
-// its text and stores the reply.
+// its text and stores the reply; lang is the UI language.
 func (s *Server) coachTurn(w http.ResponseWriter, r *http.Request, sess match.Session, msg match.Message, lang string, p persona.Persona) {
 	mine, err := s.matches.Add(r.Context(), sess.ID, msg)
 	if err != nil {

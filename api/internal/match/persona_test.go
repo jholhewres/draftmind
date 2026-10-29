@@ -33,7 +33,7 @@ func TestTwoPersonasGivenTheSameMatchDecideTheSameAdvice(t *testing.T) {
 		m := &model{parse: laneParse, answer: "Stay behind your creeps."}
 		c := &Coach{Parse: m.server(t), Jev: j, Facts: fakeFacts{}}
 		c.Write = c.Parse.(*writer.Writer)
-		r, err := c.Reply(context.Background(), session(), "viper is killing me mid", p.LangFor("en"), p, (&events{}).emit)
+		r, err := c.Reply(context.Background(), session(), "viper is killing me mid", "en", p, (&events{}).emit)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -41,7 +41,10 @@ func TestTwoPersonasGivenTheSameMatchDecideTheSameAdvice(t *testing.T) {
 	}
 
 	// The decision is the same: Jev was asked the same question and answered alike.
-	if len(j.asked) != 2 || j.asked[0] != j.asked[1] {
+	if len(j.asked) != 2 {
+		t.Fatalf("Jev asked %d times, want 2", len(j.asked))
+	}
+	if j.asked[0] != j.asked[1] {
 		t.Fatalf("Jev was asked differently by persona:\n%s\n%s", j.asked[0], j.asked[1])
 	}
 	a, b := replies[0], replies[1]
