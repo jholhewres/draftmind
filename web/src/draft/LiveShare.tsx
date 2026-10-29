@@ -91,7 +91,7 @@ export default function LiveDraft({ stream, onStop }: { stream: MediaStream; onS
         </button>
       </section>
       {frame ? (
-        <PhotoSuggest photo={frame} onNewPhoto={stop} onRead={onRead} />
+        <PhotoSuggest photo={frame} onNewPhoto={stop} onRead={onRead} live />
       ) : (
         <p role="status" className="muted live-wait">
           {t('live.watching')}

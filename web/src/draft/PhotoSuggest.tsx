@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { mergeLive } from './liveMerge'
 import { fetchHeroes, pooledModes, type DraftInput, type HeroCatalog, type ReadSlot, type StreamRead, type StreamRequest } from '../api'
 import { useI18n } from '../i18n'
 import HeroPicker from './HeroPicker'
@@ -18,6 +19,8 @@ type Props = {
   onNewPhoto: () => void
   // Each read of a photo, for a live session's count and cost.
   onRead?: (read: StreamRead) => void
+  // A live session: each new frame's read is merged into the draft on screen.
+  live?: boolean
 }
 
 type Team = 'radiant' | 'dire'
@@ -49,7 +52,7 @@ const heroIds = (slots: Slots, at: number[]) => at.flatMap((i) => (slots[i].stat
 // below. One stream reads the photo and ranks the draft the server seats
 // the player in; fixing a slot, the team or the position streams the new
 // draft, and the list updates in place.
-export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto, onRead: onReadProp }: Props) {
+export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto, onRead: onReadProp, live = false }: Props) {
   const { t, locale } = useI18n()
   const [catalog, setCatalog] = useState<HeroCatalog | null>(null)
   const [slots, setSlots] = useState<Slots | null>(null)
@@ -93,11 +96,25 @@ export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto
   // followed again until they edit it too.
   const [editedOn, setEditedOn] = useState<File | null>(null)
   const readProp = useRef(onReadProp)
+  const liveRef = useRef(live)
+  const photoRef = useRef(photo)
+  const slotsRef = useRef(slots)
   useEffect(() => {
     readProp.current = onReadProp
+    liveRef.current = live
+    photoRef.current = photo
+    slotsRef.current = slots
   })
   const onRead = useCallback((read: StreamRead) => {
-    setSlots([...read.radiant, ...read.dire])
+    const next = [...read.radiant, ...read.dire]
+    if (liveRef.current) {
+      // A live frame adds to the draft on screen instead of replacing it;
+      // when that differs from this read, the merged draft is ranked.
+      const merged = mergeLive(slotsRef.current, next, read.reader)
+      slotsRef.current = merged
+      setSlots(merged)
+      if (merged.some((s, i) => s !== next[i])) setEditedOn(photoRef.current)
+    } else setSlots(next)
     setLayout(read.layout)
     setSeated(read.draft)
     readProp.current?.(read)
