@@ -88,6 +88,8 @@ export const test = base.extend<Fixtures>({
       await page.route('**/api/sync/status', (route) => route.fulfill({ json: syncStatus(3) }))
       // A visitor unless a spec signs in.
       await page.route('**/api/me', (route) => route.fulfill({ status: 401, json: { error: 'sign in first' } }))
+      // Production today: password and Steam, no mailer for e-mail links.
+      await page.route('**/api/auth/methods', (route) => route.fulfill({ json: { password: true, steam: true, emailLink: false } }))
       await page.route('**/api/heroes', (route) => route.fulfill({ path: fixture('heroes.json') }))
       await page.route('**/api/patches', (route) => route.fulfill({ path: fixture('patches.json') }))
       await page.route('**/api/patches/*', (route) => {

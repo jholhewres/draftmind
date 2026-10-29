@@ -26,6 +26,10 @@ var (
 	// not flooded from many addresses.
 	DefaultMailIPLimit = Limit{Burst: 5, Every: time.Minute}
 	DefaultMailLimit   = Limit{Burst: 3, Every: 5 * time.Minute}
+	// Password attempts: per client IP, and per e-mail address so one
+	// account is not guessed at from many IPs.
+	DefaultPasswordIPLimit = Limit{Burst: 10, Every: 30 * time.Second}
+	DefaultPasswordLimit   = Limit{Burst: 5, Every: time.Minute}
 )
 
 // limiter keeps one token bucket per key (a client IP, an e-mail address), in memory.

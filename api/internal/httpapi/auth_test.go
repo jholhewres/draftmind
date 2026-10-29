@@ -122,6 +122,43 @@ func TestSignInLinksAreLimitedPerIPAndPerAddress(t *testing.T) {
 	}
 }
 
+func TestPasswordSignInIsLimitedPerIPAndPerAddress(t *testing.T) {
+	srv, pool := buildPatchesPool(t)
+	a, err := auth.New(pool, "https://draftmind.example", quietLog())
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := srv.WithAuth(a).Handler()
+	login := func(ip, email string) int {
+		req := httptest.NewRequest(http.MethodPost, "/api/auth/login", strings.NewReader(`{"email": "`+email+`", "password": "12345678"}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.RemoteAddr = ip + ":40000"
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		return rec.Code
+	}
+
+	// One address, from many IPs: refused after its burst.
+	for i := range DefaultPasswordLimit.Burst {
+		if code := login("10.0.0."+string(rune('1'+i)), "player@example.com"); code != http.StatusUnauthorized {
+			t.Fatalf("attempt %d on the address: %d", i+1, code)
+		}
+	}
+	if code := login("10.0.1.1", " PLAYER@example.com"); code != http.StatusTooManyRequests {
+		t.Fatalf("one attempt too many on the address: %d, want 429", code)
+	}
+
+	// One IP, many addresses: refused after its burst.
+	for i := range DefaultPasswordIPLimit.Burst {
+		if code := login("10.0.2.1", "p"+string(rune('a'+i))+"@example.com"); code != http.StatusUnauthorized {
+			t.Fatalf("attempt %d from the IP: %d", i+1, code)
+		}
+	}
+	if code := login("10.0.2.1", "fresh@example.com"); code != http.StatusTooManyRequests {
+		t.Fatalf("one attempt too many from the IP: %d, want 429", code)
+	}
+}
+
 func TestAccountRoutesAnswer401WithoutAuth(t *testing.T) {
 	rec := httptest.NewRecorder()
 	New(fakeDB{}, nil, quietLog()).Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/me", nil))

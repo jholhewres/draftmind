@@ -63,7 +63,7 @@ func newHarness(t *testing.T) *harness {
 	svc.WithMailer(h.mail)
 	svc.now = func() time.Time { return h.now }
 	mux := http.NewServeMux()
-	svc.Mount(mux, nil, nil)
+	svc.Mount(mux, Limits{})
 	h.h = mux
 	return h
 }

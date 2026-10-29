@@ -1,5 +1,5 @@
-// Package auth signs people in with an e-mail link or Steam and keeps
-// their server-side sessions (ADR-0008).
+// Package auth signs people in with a password, an e-mail link or Steam and keeps
+// their server-side sessions (ADR-0008, ADR-0010).
 package auth
 
 import (
@@ -71,16 +71,29 @@ func (s *Service) WithMailer(m Mailer) *Service {
 	return s
 }
 
-// Mount adds the sign-in routes to mux. limitIP wraps the route that
-// sends e-mail; limitEmail, given the address, says how long until it may
-// get another link (0: now). Either may be nil.
-func (s *Service) Mount(mux *http.ServeMux, limitIP func(http.Handler) http.Handler, limitEmail func(email string) time.Duration) {
-	sendLink := s.requestLink(limitEmail)
-	if limitIP != nil {
-		sendLink = limitIP(sendLink)
+// Limits are the rate limits Mount puts on the sign-in routes. Each IP
+// field wraps routes per client IP; each Email field, given the address,
+// says how long until it may try again (0: now). Any may be nil.
+type Limits struct {
+	LinkIP        func(http.Handler) http.Handler // asking for a magic link
+	LinkEmail     func(email string) time.Duration
+	PasswordIP    func(http.Handler) http.Handler // register and password sign-in
+	PasswordEmail func(email string) time.Duration
+}
+
+// Mount adds the sign-in routes to mux.
+func (s *Service) Mount(mux *http.ServeMux, l Limits) {
+	limitIP := func(wrap func(http.Handler) http.Handler, h http.Handler) http.Handler {
+		if wrap == nil {
+			return h
+		}
+		return wrap(h)
 	}
-	mux.Handle("POST /api/auth/email", sendLink)
+	mux.Handle("POST /api/auth/email", limitIP(l.LinkIP, s.requestLink(l.LinkEmail)))
 	mux.HandleFunc("POST /api/auth/email/verify", s.verifyLink)
+	mux.Handle("POST /api/auth/register", limitIP(l.PasswordIP, s.register(l.PasswordEmail)))
+	mux.Handle("POST /api/auth/login", limitIP(l.PasswordIP, s.passwordLogin(l.PasswordEmail)))
+	mux.HandleFunc("GET /api/auth/methods", s.methods)
 	mux.HandleFunc("GET /api/auth/steam", s.steamStart)
 	mux.HandleFunc("GET /api/auth/steam/callback", s.steamCallback)
 	mux.HandleFunc("POST /api/auth/signout", s.signOut)

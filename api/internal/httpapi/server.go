@@ -69,6 +69,8 @@ type Server struct {
 	suggestLimit, readLimit Limit
 	voiceLimit              Limit
 	mailIPLimit, mailLimit  Limit // sign-in links per client IP and per address
+	passwordIPLimit         Limit // register and password sign-in per client IP
+	passwordLimit           Limit // and per address
 	now                     func() time.Time
 	reads                   chan struct{} // a slot per photo read running
 }
@@ -76,7 +78,8 @@ type Server struct {
 // New builds the server.
 func New(db Pinger, cat Catalog, log *slog.Logger) *Server {
 	return &Server{db: db, catalog: cat, log: log, suggestLimit: DefaultSuggestLimit, readLimit: DefaultReadLimit, voiceLimit: DefaultVoiceLimit,
-		mailIPLimit: DefaultMailIPLimit, mailLimit: DefaultMailLimit, now: time.Now,
+		mailIPLimit: DefaultMailIPLimit, mailLimit: DefaultMailLimit,
+		passwordIPLimit: DefaultPasswordIPLimit, passwordLimit: DefaultPasswordLimit, now: time.Now,
 		reads: make(chan struct{}, maxConcurrentReads)}
 }
 
@@ -156,7 +159,10 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/me/persona", s.requireUser(http.HandlerFunc(s.myPersona)))
 	mux.Handle("PUT /api/me/persona", s.requireUser(http.HandlerFunc(s.savePersona)))
 	if s.auth != nil {
-		s.auth.Mount(mux, newLimiter(s.mailIPLimit, s.now).wrap, newLimiter(s.mailLimit, s.now).take)
+		s.auth.Mount(mux, auth.Limits{
+			LinkIP: newLimiter(s.mailIPLimit, s.now).wrap, LinkEmail: newLimiter(s.mailLimit, s.now).take,
+			PasswordIP: newLimiter(s.passwordIPLimit, s.now).wrap, PasswordEmail: newLimiter(s.passwordLimit, s.now).take,
+		})
 	} else {
 		mux.Handle("GET /api/me", s.requireUser(nil))
 	}

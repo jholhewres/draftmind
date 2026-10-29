@@ -11,6 +11,7 @@ async function mockSignIn(page: Page) {
   await page.route('**/api/me', (route) =>
     signedIn ? route.fulfill({ json: { email: 'player@example.com' } }) : route.fulfill({ status: 401, json: { error: 'sign in first' } }),
   )
+  await page.route('**/api/auth/methods', (route) => route.fulfill({ json: { password: true, steam: true, emailLink: true } }))
   await page.route('**/api/auth/email', (route) => {
     asked.push(route.request().postDataJSON())
     return route.fulfill({ status: 202, json: { status: 'sent', minutes: 15 } })

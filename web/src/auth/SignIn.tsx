@@ -1,5 +1,15 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { openSignInLink, requestSignInLink, signOut, steamSignInPath, type Account } from '../api'
+import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from 'react'
+import {
+  fetchSignInMethods,
+  openSignInLink,
+  PasswordError,
+  registerWithPassword,
+  requestSignInLink,
+  signInWithPassword,
+  signOut,
+  steamSignInPath,
+  type Account,
+} from '../api'
 import { useI18n } from '../i18n'
 
 type Props = {
@@ -12,18 +22,25 @@ type Props = {
 
 type Link = { status: 'idle' } | { status: 'opening' } | { status: 'used' } | { status: 'error'; error: string }
 
+type Pass = { status: 'idle' } | { status: 'busy'; action: 'signin' | 'register' } | { status: 'error'; error: string }
+
 type Send = { status: 'idle' } | { status: 'sending' } | { status: 'sent'; email: string; minutes: number } | { status: 'error'; error: string }
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e))
 
-// Sign in with an e-mailed link or Steam (ADR-0008), after the prototype's
-// Login screen; signed in, the account and a way out. An e-mailed link
-// opens #/signin/link/<token>, which is spent here and dropped from the
-// address bar.
+// Sign in with an e-mail and password, Steam, or an e-mailed link when the
+// server has a mailer (ADR-0008, ADR-0010), after the prototype's Login
+// screen; signed in, the account and a way out. An e-mailed link opens
+// #/signin/link/<token>, which is spent here and dropped from the address
+// bar.
 export default function SignIn({ token, failed, account, onAccount }: Props) {
   const { t, locale } = useI18n()
   const [link, setLink] = useState<Link>({ status: token ? 'opening' : 'idle' })
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [pass, setPass] = useState<Pass>({ status: 'idle' })
+  // Off until the server says it has a mailer.
+  const [emailLink, setEmailLink] = useState(false)
   const [send, setSend] = useState<Send>({ status: 'idle' })
   const [signOutError, setSignOutError] = useState<string | null>(null)
   // The token already posted: StrictMode runs effects twice, and a second
@@ -44,8 +61,46 @@ export default function SignIn({ token, failed, account, onAccount }: Props) {
       .catch((e: unknown) => setLink({ status: 'error', error: message(e) }))
   }, [token, onAccount])
 
-  const submit = (e: FormEvent) => {
+  useEffect(() => {
+    const ctl = new AbortController()
+    fetchSignInMethods(ctl.signal)
+      .then((m) => setEmailLink(m.emailLink))
+      .catch(() => setEmailLink(false))
+    return () => ctl.abort()
+  }, [])
+
+  const passwordError = (err: unknown) => {
+    if (!(err instanceof PasswordError)) return t('signin.passwordFailed', { error: message(err) })
+    if (err.reason === 'rate') return t('signin.tooMany')
+    if (err.reason === 'invalid') return t('signin.passwordRules', { min: 8, max: 200 })
+    return t('signin.badLogin')
+  }
+
+  const signInOrRegister = (action: 'signin' | 'register') => {
+    setPass({ status: 'busy', action })
+    const go = action === 'register' ? registerWithPassword : signInWithPassword
+    go(email.trim(), password)
+      .then((a) => {
+        setPass({ status: 'idle' })
+        setPassword('')
+        onAccount(a)
+      })
+      .catch((err: unknown) => setPass({ status: 'error', error: passwordError(err) }))
+  }
+
+  const submitPassword = (e: FormEvent) => {
     e.preventDefault()
+    signInOrRegister('signin')
+  }
+
+  const createAccount = (e: MouseEvent<HTMLButtonElement>) => {
+    // The browser's checks (e-mail, 8 to 200 characters) apply to both buttons.
+    const form = e.currentTarget.form
+    if (form && !form.reportValidity()) return
+    signInOrRegister('register')
+  }
+
+  const sendLink = () => {
     const to = email.trim()
     setSend({ status: 'sending' })
     requestSignInLink(to, locale)
@@ -99,7 +154,7 @@ export default function SignIn({ token, failed, account, onAccount }: Props) {
             {failed && <p role="alert">{t('signin.steamFailed')}</p>}
             {link.status === 'used' && <p role="alert">{t('signin.linkUsed')}</p>}
             {link.status === 'error' && <p role="alert">{t('signin.openError', { error: link.error })}</p>}
-            <form className="signin-form" onSubmit={submit}>
+            <form className="signin-form" onSubmit={submitPassword}>
               <label>
                 {t('signin.email')}
                 <input
@@ -111,17 +166,30 @@ export default function SignIn({ token, failed, account, onAccount }: Props) {
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </label>
-              <button type="submit" className="primary" disabled={send.status === 'sending'}>
-                {send.status === 'sending' ? t('signin.sending') : t('signin.send')}
-              </button>
-              {send.status === 'sent' ? (
-                <p className="sent" role="status">
-                  {t('signin.sent', { email: send.email, minutes: send.minutes })}
-                </p>
-              ) : send.status === 'error' ? (
-                <p role="alert">{t('signin.sendError', { error: send.error })}</p>
+              <label>
+                {t('signin.password')}
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  maxLength={200}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </label>
+              <div className="signin-actions">
+                <button type="submit" className="primary" disabled={pass.status === 'busy'}>
+                  {pass.status === 'busy' && pass.action === 'signin' ? t('signin.signingIn') : t('signin.passwordSignIn')}
+                </button>
+                <button type="button" className="option" disabled={pass.status === 'busy'} onClick={createAccount}>
+                  {pass.status === 'busy' && pass.action === 'register' ? t('signin.creating') : t('signin.register')}
+                </button>
+              </div>
+              {pass.status === 'error' ? (
+                <p role="alert">{pass.error}</p>
               ) : (
-                <p className="muted hint">{t('signin.hint')}</p>
+                <p className="muted hint">{t('signin.passwordHint', { min: 8 })}</p>
               )}
             </form>
             <div className="signin-or" aria-hidden="true">
@@ -137,6 +205,22 @@ export default function SignIn({ token, failed, account, onAccount }: Props) {
               </svg>
               {t('signin.steam')}
             </a>
+            {emailLink && (
+              <div className="signin-link">
+                <button type="button" className="option" disabled={send.status === 'sending' || !email.trim()} onClick={sendLink}>
+                  {send.status === 'sending' ? t('signin.sending') : t('signin.send')}
+                </button>
+                {send.status === 'sent' ? (
+                  <p className="sent" role="status">
+                    {t('signin.sent', { email: send.email, minutes: send.minutes })}
+                  </p>
+                ) : send.status === 'error' ? (
+                  <p role="alert">{t('signin.sendError', { error: send.error })}</p>
+                ) : (
+                  <p className="muted hint">{t('signin.hint')}</p>
+                )}
+              </div>
+            )}
           </>
         )}
       </main>

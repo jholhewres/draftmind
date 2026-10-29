@@ -482,6 +482,12 @@ footer p { margin: 0 0 4px; }
 }
 .signin .option:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .signin .sent { padding: 12px; border-radius: 10px; background: rgba(156, 203, 74, 0.12); border: 1px solid #5e8a2a; font-size: 14px; }
+.signin-actions { display: grid; gap: 10px; }
+.signin .option:disabled { opacity: 0.6; cursor: progress; }
+.signin-link { display: flex; flex-direction: column; gap: 10px; }
+@media (min-width: 720px) {
+  .signin-actions { grid-template-columns: 1fr 1fr; }
+}
 .signin-or { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--muted); }
 .signin-or span { flex: 1; height: 1px; background: var(--border); }
 .signin-foot { padding: 16px 24px 24px; text-align: center; }

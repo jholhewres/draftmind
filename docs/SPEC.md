@@ -82,7 +82,7 @@ Draftmind is an independent tool. It has no relation to Valve Corporation or the
 
 ### 4.8 Accounts and landing page
 - **Landing page:** one page with three sections (what it does, how it works, always on the current patch) and the trademark note.
-- **Sign-in:** e-mail magic link or Steam (ADR-0008).
+- **Sign-in:** e-mail and password, Steam, or an e-mail magic link when SMTP is set (ADR-0008, ADR-0010).
 - A visitor can try a draft read without an account. Saving history and coach settings needs one.
 
 ## 5. Out of scope (v1)

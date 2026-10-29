@@ -121,7 +121,7 @@ func newAccounts(cfg config.Config, pool *pgxpool.Pool, log *slog.Logger) (*auth
 		}
 		log.Info("SMTP_HOST is not set: sign-in links are written to this log (development)")
 	default:
-		log.Warn("SMTP_HOST is not set: sign-in by e-mail link is off, Steam sign-in still works")
+		log.Warn("SMTP_HOST is not set: sign-in by e-mail link is off, password and Steam sign-in still work")
 	}
 	return accounts, nil
 }

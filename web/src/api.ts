@@ -565,6 +565,46 @@ export async function fetchAccount(signal?: AbortSignal): Promise<Account | null
 const postJSON = (path: string, body: unknown) =>
   fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
 
+// The ways in the server has on; the e-mail link needs a mailer.
+export type SignInMethods = { password: boolean; steam: boolean; emailLink: boolean }
+
+export async function fetchSignInMethods(signal?: AbortSignal): Promise<SignInMethods> {
+  const res = await fetch('/api/auth/methods', { signal })
+  if (!res.ok) throw new Error(`/api/auth/methods: HTTP ${res.status}`)
+  return (await res.json()) as SignInMethods
+}
+
+// Why a password sign-in or register was refused: bad credentials (one
+// answer for a wrong password and an unknown e-mail), too many attempts,
+// or a password outside 8 to 200 characters.
+export class PasswordError extends Error {
+  readonly reason: 'credentials' | 'rate' | 'invalid'
+  constructor(reason: PasswordError['reason'], message: string) {
+    super(message)
+    this.reason = reason
+  }
+}
+
+async function passwordCall(path: string, email: string, password: string): Promise<Response> {
+  const res = await postJSON(path, { email, password })
+  if (res.status === 401) throw new PasswordError('credentials', `${path}: HTTP 401`)
+  if (res.status === 429) throw new PasswordError('rate', `${path}: HTTP 429`)
+  if (res.status === 400) throw new PasswordError('invalid', `${path}: HTTP 400`)
+  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
+  return res
+}
+
+export async function signInWithPassword(email: string, password: string): Promise<Account> {
+  return (await (await passwordCall('/api/auth/login', email, password)).json()) as Account
+}
+
+// Creates the account, then signs in. A taken e-mail gets the same answer
+// from register, so the sign-in that follows is what fails.
+export async function registerWithPassword(email: string, password: string): Promise<Account> {
+  await passwordCall('/api/auth/register', email, password)
+  return signInWithPassword(email, password)
+}
+
 // E-mails a sign-in link written in lang; resolves to the minutes it works.
 export async function requestSignInLink(email: string, lang: string): Promise<number> {
   const path = '/api/auth/email'

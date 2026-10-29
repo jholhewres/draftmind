@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 var (
@@ -98,9 +99,14 @@ func (s *Service) steamSession(ctx context.Context, steamID string, now time.Tim
 	return session, tx.Commit(ctx)
 }
 
-func createSession(ctx context.Context, tx pgx.Tx, userID int64, now time.Time) (string, error) {
+// execer is a pool or a transaction.
+type execer interface {
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
+}
+
+func createSession(ctx context.Context, db execer, userID int64, now time.Time) (string, error) {
 	token, hash := newSecret()
-	_, err := tx.Exec(ctx, `INSERT INTO user_session (id_hash, user_id, created_at, expires_at) VALUES ($1, $2, $3, $4)`,
+	_, err := db.Exec(ctx, `INSERT INTO user_session (id_hash, user_id, created_at, expires_at) VALUES ($1, $2, $3, $4)`,
 		hash, userID, now, now.Add(SessionTTL))
 	return token, err
 }
