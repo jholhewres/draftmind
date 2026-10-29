@@ -14,14 +14,15 @@ export const tabLabel: Record<Tab, MessageKey> = {
 
 const isTab = (id: string): id is Tab => (tabs as readonly string[]).includes(id)
 
-export type Route = { tab: Tab; hero: string | null }
+export type Route = { tab: Tab; hero: string | null; manual: boolean }
 
-// "#/heroes" names the Heroes tab and "#/heroes/<slug>" a hero in it; an
-// empty or unknown hash opens Draft.
+// "#/heroes" names the Heroes tab and "#/heroes/<slug>" a hero in it;
+// "#/draft/manual" is the draft board built by hand. An empty or unknown
+// hash opens Draft.
 export function routeFromHash(hash: string): Route {
-  const [id, slug] = hash.replace(/^#\/?/, '').split('/')
-  if (!isTab(id)) return { tab: 'draft', hero: null }
-  return { tab: id, hero: id === 'heroes' && slug ? decodeSlug(slug) : null }
+  const [id, sub] = hash.replace(/^#\/?/, '').split('/')
+  if (!isTab(id)) return { tab: 'draft', hero: null, manual: false }
+  return { tab: id, hero: id === 'heroes' && sub ? decodeSlug(sub) : null, manual: id === 'draft' && sub === 'manual' }
 }
 
 // A malformed percent sequence opens the hero list rather than throwing.

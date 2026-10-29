@@ -1,19 +1,12 @@
-import { useEffect, useId, useMemo, useState, type ReactNode } from 'react'
-import {
-  fetchHeroes,
-  fetchSuggestions,
-  heroImageBase,
-  type FallbackReason,
-  type Hero,
-  type HeroCatalog,
-  type SuggestResult,
-} from '../api'
+import { useEffect, useMemo, useState } from 'react'
+import { fetchHeroes, type Hero, type HeroCatalog } from '../api'
 import { useI18n } from '../i18n'
-import type { MessageKey } from '../locales/en'
-import { formatDelta, formatScore } from './format'
 import HeroPicker from './HeroPicker'
+import { sideLabel as label, type Side } from './labels'
+import { Row, SlotButton } from './slots'
+import SuggestionList from './Suggestions'
+import { useRanking } from './useRanking'
 
-type Side = 'ally' | 'enemy' | 'ban'
 type Board = { ally: (number | null)[]; enemy: (number | null)[]; ban: number[] }
 type Slot = { side: Side; index: number }
 
@@ -22,24 +15,9 @@ type Slot = { side: Side; index: number }
 const ALLIES = 4
 const ENEMIES = 5
 const MAX_BANS = 10
-const SHOWN = 5
 const roles = [1, 2, 3, 4, 5]
 
 const emptyBoard = (): Board => ({ ally: Array(ALLIES).fill(null), enemy: Array(ENEMIES).fill(null), ban: [] })
-
-const label: Record<Side, { row: MessageKey; add: MessageKey; slot: MessageKey; choose: MessageKey }> = {
-  ally: { row: 'draft.allies', add: 'draft.add.ally', slot: 'draft.slot.ally', choose: 'draft.choose.ally' },
-  enemy: { row: 'draft.enemies', add: 'draft.add.enemy', slot: 'draft.slot.enemy', choose: 'draft.choose.enemy' },
-  ban: { row: 'draft.bans', add: 'draft.add.ban', slot: 'draft.slot.ban', choose: 'draft.choose.ban' },
-}
-
-// What the fallback label says when hovered: why the code ranking stands.
-const fallbackReason: Record<FallbackReason, MessageKey> = {
-  timeout: 'draft.source.timeout',
-  error: 'draft.source.error',
-  unavailable: 'draft.source.unavailable',
-  few_candidates: 'draft.source.fewCandidates',
-}
 
 const ids = (slots: (number | null)[]) => slots.filter((id): id is number => id !== null)
 
@@ -56,14 +34,12 @@ function place(board: Board, { side, index }: Slot, id: number | null): Board {
 }
 
 export default function DraftBoard() {
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
   const [catalog, setCatalog] = useState<HeroCatalog | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [board, setBoard] = useState<Board>(emptyBoard)
   const [role, setRole] = useState(1)
   const [picking, setPicking] = useState<Slot | null>(null)
-  const [result, setResult] = useState<SuggestResult | null>(null)
-  const [rankError, setRankError] = useState<string | null>(null)
 
   useEffect(() => {
     const ctrl = new AbortController()
@@ -80,43 +56,20 @@ export default function DraftBoard() {
     [board, role],
   )
 
-  useEffect(() => {
-    const ctrl = new AbortController()
-    fetchSuggestions(input, ctrl.signal)
-      .then((r) => {
-        setResult(r)
-        setRankError(null)
-      })
-      .catch((e: unknown) => {
-        if (!ctrl.signal.aborted) setRankError(e instanceof Error ? e.message : String(e))
-      })
-    return () => ctrl.abort()
-  }, [input])
+  const ranking = useRanking(input)
 
   const byId = useMemo(() => new Map((catalog?.heroes ?? []).map((h) => [h.id, h])), [catalog])
   const taken = new Set([...input.allies, ...input.enemies, ...input.bans])
-  const name = (id: number) => byId.get(id)?.name ?? `#${id}`
 
-  const slotButton = (side: Side, index: number, id: number | null) => {
-    const hero = id === null ? undefined : byId.get(id)
-    return (
-      <button
-        key={`${side}-${index}`}
-        type="button"
-        className={`slot ${id === null ? 'empty' : 'filled'}`}
-        aria-label={id === null ? t(label[side].add) : t(label[side].slot, { hero: name(id) })}
-        onClick={() => setPicking({ side, index })}
-      >
-        {hero ? (
-          <img src={heroImageBase + hero.img} alt="" width={128} height={72} />
-        ) : (
-          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        )}
-      </button>
-    )
-  }
+  const slotButton = (side: Side, index: number, id: number | null) => (
+    <SlotButton
+      key={`${side}-${index}`}
+      side={side}
+      heroId={id}
+      hero={id === null ? undefined : byId.get(id)}
+      onClick={() => setPicking({ side, index })}
+    />
+  )
 
   const pickingId = picking ? (picking.side === 'ban' ? board.ban[picking.index] : board[picking.side][picking.index]) : undefined
 
@@ -159,54 +112,7 @@ export default function DraftBoard() {
             </fieldset>
             <p className="muted hint">{t('draft.hint')}</p>
           </div>
-          <section className="suggestions" aria-label={t('draft.suggestions')}>
-            <div className="suggestions-head">
-              <h2>{t('draft.suggestions')}</h2>
-              {result?.source === 'ranking' && !rankError && (
-                <span className="source-label" title={t(fallbackReason[result.reason ?? 'error'])}>
-                  {t('draft.source.ranking')}
-                </span>
-              )}
-            </div>
-            {rankError ? (
-              <p role="alert">{t('draft.rankError', { error: rankError })}</p>
-            ) : !result ? (
-              <p role="status">{t('draft.ranking')}</p>
-            ) : result.suggestions.length === 0 ? (
-              <p className="muted">{t('draft.none')}</p>
-            ) : (
-              <ol className="suggestion-list" aria-label={t('draft.suggestions')}>
-                {result.suggestions.slice(0, SHOWN).map((s) => {
-                  const hero = byId.get(s.heroId)
-                  return (
-                    <li key={s.heroId} className="suggestion">
-                      {hero && <img src={heroImageBase + hero.img} alt="" width={128} height={72} />}
-                      <div className="suggestion-main">
-                        <span className="suggestion-name">{name(s.heroId)}</span>
-                        {s.enemies.length > 0 && (
-                          <span className="deltas">
-                            {s.enemies.map((e) => {
-                              const { arrow, text } = formatDelta(locale, e.delta)
-                              const dir = arrow === '▲' ? 'up' : arrow === '▼' ? 'down' : 'even'
-                              return (
-                                <span key={e.heroId} className={`delta ${dir}`}>
-                                  {t('draft.delta', { arrow, hero: name(e.heroId), delta: text }).trim()}
-                                </span>
-                              )
-                            })}
-                          </span>
-                        )}
-                      </div>
-                      <span className="score">
-                        <span className="score-label">{t('draft.score')}</span>
-                        <span className="score-value">{formatScore(locale, s.score)}</span>
-                      </span>
-                    </li>
-                  )
-                })}
-              </ol>
-            )}
-          </section>
+          <SuggestionList {...ranking} byId={byId} />
         </div>
       )}
       {picking && catalog && (
@@ -226,17 +132,5 @@ export default function DraftBoard() {
         />
       )}
     </section>
-  )
-}
-
-function Row({ side, title, children }: { side: Side; title: string; children: ReactNode }) {
-  const id = useId()
-  return (
-    <div className={`slot-row ${side}`} role="group" aria-labelledby={id}>
-      <span id={id} className="row-label">
-        {title}
-      </span>
-      <div className="slots">{children}</div>
-    </div>
   )
 }

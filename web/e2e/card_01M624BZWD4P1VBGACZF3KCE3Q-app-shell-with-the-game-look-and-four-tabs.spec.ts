@@ -1,4 +1,4 @@
-import { expect, imagesLoaded, portraitsLoaded, test } from './fixtures.ts'
+import { expect, portraitsLoaded, test } from './fixtures.ts'
 import heroes from './fixtures/heroes.json' with { type: 'json' }
 
 const tabs = ['Draft', 'Coach', 'Heroes', 'Patches']
@@ -16,7 +16,7 @@ test('The tab bar switches between Draft, Coach, Heroes and Patches and marks th
   for (const tab of tabs) {
     await nav.getByRole('link', { name: tab }).click()
     await expect(page).toHaveURL(new RegExp(`#/${tab.toLowerCase()}$`))
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(tab)
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(tab === 'Draft' ? 'Photograph the pick' : tab)
     await expect(nav.locator('[aria-current="page"]')).toHaveText(tab)
   }
   await expect(page.getByText('Coming soon.')).toBeVisible()
@@ -55,7 +55,8 @@ test('The trademark and fair-play note renders on every main tab', async ({ page
   // Ends on Coach, the one screen no other baseline covers.
   for (const tab of ['Draft', 'Heroes', 'Patches', 'Coach']) {
     await page.goto(`/#/${tab.toLowerCase()}`)
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(tab)
+    // The Draft tab opens on the photo of the pick.
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(tab === 'Draft' ? 'Photograph the pick' : tab)
     await expect(page.getByRole('contentinfo').getByText(note)).toBeVisible()
   }
   expect(escaped).toEqual([])
@@ -85,9 +86,7 @@ test('Visual tests match the shell and hero grid baselines at 390x844 (bottom ta
   expect(escaped).toEqual([])
   await expect(page).toHaveScreenshot('shell-heroes.png')
   await page.goto('/')
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Draft')
-  // The Draft tab ranks the empty draft; its portraits come from the fixture.
-  await expect(page.getByRole('list', { name: 'Suggestions' }).getByRole('listitem')).toHaveCount(5)
-  await imagesLoaded(page.locator('main'))
+  // The Draft tab opens on the photo of the pick.
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Photograph the pick')
   await expect(page).toHaveScreenshot('shell-draft.png')
 })

@@ -6,6 +6,7 @@ package decision
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -47,12 +48,34 @@ func Score(instructions string, levels ...any) Question {
 	return Question{Type: "score", Instructions: instructions, Criteria: levels}
 }
 
+// Box asks where something is in an image (Jev 1.14 and later).
+func Box(instructions string) Question {
+	return Question{Type: "box", Instructions: instructions}
+}
+
+// Asset is an image the state, instructions or criteria refer to by its key
+// in Request.Assets.
+type Asset struct {
+	Format string // png or jpg
+	Data   []byte
+}
+
 // Request is the state and the named questions about it. Purpose names the
 // caller in the log; it is not sent.
 type Request struct {
 	Purpose   string
 	State     any
+	Assets    map[string]Asset
 	Questions map[string]Question
+}
+
+// Edges is a Box answer: fractions of the image's width and height from its
+// top-left corner.
+type Edges struct {
+	Top    float64 `json:"top"`
+	Bottom float64 `json:"bottom"`
+	Left   float64 `json:"left"`
+	Right  float64 `json:"right"`
 }
 
 // Answer is one question's answer; the fields set depend on its type.
@@ -63,6 +86,7 @@ type Answer struct {
 	Score         float64            `json:"score,omitempty"`
 	Confidence    float64            `json:"confidence,omitempty"`
 	Probabilities map[string]float64 `json:"probabilities,omitempty"`
+	Box           *Edges             `json:"box,omitempty"`
 }
 
 // Usage is what a call consumed; Cost is in USD when the endpoint reports it.
@@ -168,8 +192,49 @@ type providerPrefs struct {
 type wireRequest struct {
 	Model     string              `json:"model"`
 	State     any                 `json:"state"`
+	Assets    map[string]any      `json:"assets,omitempty"`
 	Questions map[string]Question `json:"questions"`
 	Provider  providerPrefs       `json:"provider"`
+}
+
+type wireAsset struct {
+	Type       string `json:"type"`
+	Format     string `json:"format"`
+	DataBase64 string `json:"data_base64,omitempty"`
+	Bytes      int    `json:"bytes,omitempty"` // in the log, in place of the data
+}
+
+// wireAssets encodes the images for the endpoint, or, for the log, only
+// their format and size: images are never stored.
+func wireAssets(assets map[string]Asset, forLog bool) map[string]any {
+	if len(assets) == 0 {
+		return nil
+	}
+	out := make(map[string]any, len(assets))
+	for ref, a := range assets {
+		w := wireAsset{Type: "image", Format: a.Format}
+		if forLog {
+			w.Bytes = len(a.Data)
+		} else {
+			w.DataBase64 = base64.StdEncoding.EncodeToString(a.Data)
+		}
+		out[ref] = w
+	}
+	return out
+}
+
+// needsImages says whether a request must turn on images: it sends an image
+// or asks a Box question.
+func needsImages(req Request) bool {
+	if len(req.Assets) > 0 {
+		return true
+	}
+	for _, q := range req.Questions {
+		if q.Type == "box" {
+			return true
+		}
+	}
+	return false
 }
 
 // outcome is what one lane of the race ended with.
@@ -185,35 +250,42 @@ type outcome struct {
 // Each call is logged once, whatever its outcome.
 func (c *Client) Ask(ctx context.Context, req Request) (Result, error) {
 	start := time.Now()
-	body, err := json.Marshal(wireRequest{
+	wire := wireRequest{
 		Model: c.Model, State: req.State, Questions: req.Questions,
 		Provider: providerPrefs{DataCollection: "deny", Only: []string{c.Provider}, ZDR: true},
-	})
+	}
+	wire.Assets = wireAssets(req.Assets, true)
+	logged, err := json.Marshal(wire)
+	var body []byte
+	if err == nil {
+		wire.Assets = wireAssets(req.Assets, false)
+		body, err = json.Marshal(wire)
+	}
 	if err == nil {
 		err = validQuestions(req.Questions)
 	}
 	if err != nil {
 		err = fmt.Errorf("decision: request: %w", err)
-		c.record(ctx, req, body, start, outcome{err: err}, false)
+		c.record(ctx, req, logged, start, outcome{err: err}, false)
 		return Result{}, err
 	}
 	ctx, cancel := context.WithTimeout(ctx, c.Deadline)
 	defer cancel()
-	o, hedged := c.race(ctx, body, req.Questions)
+	o, hedged := c.race(ctx, body, needsImages(req), req.Questions)
 	if o.err != nil && ctx.Err() != nil {
 		o.err = fmt.Errorf("decision: no answer within %v: %w", c.Deadline, ctx.Err())
 	}
-	c.record(ctx, req, body, start, o, hedged)
+	c.record(ctx, req, logged, start, o, hedged)
 	return o.res, o.err
 }
 
 // race runs a lane and, while it is unanswered after HedgeAfter, a second
 // one; the first answer wins and cancels the other.
-func (c *Client) race(ctx context.Context, body []byte, qs map[string]Question) (outcome, bool) {
+func (c *Client) race(ctx context.Context, body []byte, images bool, qs map[string]Question) (outcome, bool) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	done := make(chan outcome, 2)
-	run := func() { done <- c.lane(ctx, body, qs) }
+	run := func() { done <- c.lane(ctx, body, images, qs) }
 	go run()
 	running, hedged := 1, false
 	var hedge <-chan time.Time
@@ -244,10 +316,10 @@ func (c *Client) race(ctx context.Context, body []byte, qs map[string]Question) 
 
 // lane sends the request, retrying a retryable failure while the deadline
 // leaves room for the wait.
-func (c *Client) lane(ctx context.Context, body []byte, qs map[string]Question) outcome {
+func (c *Client) lane(ctx context.Context, body []byte, images bool, qs map[string]Question) outcome {
 	wait := c.Backoff
 	for attempt := 1; ; attempt++ {
-		res, raw, err := c.once(ctx, body, qs)
+		res, raw, err := c.once(ctx, body, images, qs)
 		if err == nil || !retryable(err) || attempt >= c.MaxAttempts {
 			return outcome{res: res, raw: raw, err: err, attempts: attempt}
 		}
@@ -270,13 +342,16 @@ func (c *Client) lane(ctx context.Context, body []byte, qs map[string]Question) 
 }
 
 // once makes one request and parses its answer strictly.
-func (c *Client) once(ctx context.Context, body []byte, qs map[string]Question) (Result, []byte, error) {
+func (c *Client) once(ctx context.Context, body []byte, images bool, qs map[string]Question) (Result, []byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/v1/systemone", bytes.NewReader(body))
 	if err != nil {
 		return Result{}, nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+c.APIKey)
 	req.Header.Set("Content-Type", "application/json")
+	if images {
+		req.Header.Set("TypeSafe-Danger-Zone-Images", "true") // beta: images and Box (ADR-0006)
+	}
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
 		return Result{}, nil, err

@@ -10,6 +10,7 @@ import (
 
 	"github.com/jholhewres/draftmind/api/internal/catalog"
 	"github.com/jholhewres/draftmind/api/internal/draft"
+	"github.com/jholhewres/draftmind/api/internal/photo"
 )
 
 // Pinger reports whether the database answers.
@@ -31,12 +32,16 @@ type Server struct {
 	db      Pinger
 	catalog Catalog
 	jev     draft.Asker
+	reader  photo.Reader
 	log     *slog.Logger
+
+	suggestLimit, readLimit Limit
+	now                     func() time.Time
 }
 
 // New builds the server.
 func New(db Pinger, cat Catalog, log *slog.Logger) *Server {
-	return &Server{db: db, catalog: cat, log: log}
+	return &Server{db: db, catalog: cat, log: log, suggestLimit: DefaultSuggestLimit, readLimit: DefaultReadLimit, now: time.Now}
 }
 
 // WithDecider lets jev choose among the draft suggestions; nil keeps the
@@ -52,7 +57,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/health", s.health)
 	mux.HandleFunc("GET /api/heroes", s.listHeroes)
 	mux.HandleFunc("GET /api/heroes/{slug}", s.heroDetail)
-	mux.HandleFunc("POST /api/draft/suggest", s.suggest)
+	// Both spend money on model calls and need no login.
+	mux.Handle("POST /api/draft/suggest", newLimiter(s.suggestLimit, s.now).wrap(http.HandlerFunc(s.suggest)))
+	mux.Handle("POST /api/draft/read", newLimiter(s.readLimit, s.now).wrap(http.HandlerFunc(s.readDraft)))
 	return mux
 }
 

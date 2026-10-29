@@ -1,0 +1,33 @@
+{
+  "synthetic": true,
+  "radiant": [
+    28,
+    53,
+    52,
+    60,
+    null
+  ],
+  "dire": [
+    86,
+    71,
+    77,
+    null,
+    null
+  ],
+  "names": {
+    "radiant": [
+      "Slardar",
+      "Nature's Prophet",
+      "Leshrac",
+      "Night Stalker",
+      null
+    ],
+    "dire": [
+      "Rubick",
+      "Spirit Breaker",
+      "Lycan",
+      null,
+      null
+    ]
+  }
+}

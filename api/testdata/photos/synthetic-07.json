@@ -1,0 +1,33 @@
+{
+  "synthetic": true,
+  "radiant": [
+    104,
+    43,
+    null,
+    null,
+    null
+  ],
+  "dire": [
+    26,
+    85,
+    null,
+    null,
+    null
+  ],
+  "names": {
+    "radiant": [
+      "Legion Commander",
+      "Death Prophet",
+      null,
+      null,
+      null
+    ],
+    "dire": [
+      "Lion",
+      "Undying",
+      null,
+      null,
+      null
+    ]
+  }
+}

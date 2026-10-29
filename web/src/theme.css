@@ -255,9 +255,47 @@ footer p { margin: 0 0 4px; }
 .picker-grid span { padding: 3px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .picker-grid button:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
 
+/* Draft tab, photo first: the camera target, the other ways in, the privacy note. */
+.photo-capture .lead { margin: 0; font-size: 15px; line-height: 1.45; }
+.camera {
+  position: relative; min-height: 260px; border-radius: 14px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  background: rgba(21, 25, 31, 0.82); border: 1px solid var(--border-strong); color: var(--fg); text-align: center; padding: 24px;
+}
+.camera:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
+.camera .corner { position: absolute; width: 28px; height: 28px; border: 0 solid var(--gold); }
+.camera .tl { top: 14px; left: 14px; border-top-width: 3px; border-left-width: 3px; }
+.camera .tr { top: 14px; right: 14px; border-top-width: 3px; border-right-width: 3px; }
+.camera .bl { bottom: 14px; left: 14px; border-bottom-width: 3px; border-left-width: 3px; }
+.camera .br { bottom: 14px; right: 14px; border-bottom-width: 3px; border-right-width: 3px; }
+.camera-icon { width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center; background: var(--gold); color: var(--gold-text); margin-bottom: 8px; }
+.camera-text { font-size: 18px; font-weight: 600; }
+.camera-hint { font-size: 14px; }
+.photo-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.photo-options .option {
+  height: 50px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+  border: 1px solid var(--border-strong); background: rgba(21, 25, 31, 0.82); color: var(--fg); text-decoration: none;
+  font-size: 15px; font-weight: 600;
+}
+.photo-options .option:has(input:focus-visible), .photo-options a.option:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.privacy { margin: 0; display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 10px; background: rgba(21, 25, 31, 0.82); font-size: 14px; color: #d5dae0; }
+.privacy svg { flex-shrink: 0; color: var(--muted); }
+
+/* Suggestions for a photo: the read draft on top, flagged slots in gold. */
+.screen-head.with-back { justify-content: flex-start; align-items: center; gap: 6px; margin-left: -10px; }
+.back { width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: none; color: var(--fg); cursor: pointer; border-radius: 8px; }
+.back:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+.read-draft { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 12px; background: rgba(21, 25, 31, 0.88); border: 1px solid var(--border); }
+.read-draft p { margin: 0; }
+.read-draft .chip { align-self: flex-start; text-decoration: none; }
+.slot.flagged { border: 2px dashed var(--gold); background: rgba(217, 174, 91, 0.12); color: var(--gold); }
+.unread-note { font-size: 13px; color: #d5dae0; }
+
 @media (min-width: 1024px) {
   .draft-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
   .picker-backdrop { align-items: center; }
   .picker { max-width: 760px; max-height: 80dvh; border: 1px solid var(--border-strong); border-radius: 14px; }
   .picker-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .photo-capture { max-width: 640px; }
+  .camera { min-height: 320px; }
 }

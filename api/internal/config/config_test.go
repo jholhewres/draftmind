@@ -31,3 +31,19 @@ func TestStringHidesKey(t *testing.T) {
 		t.Fatal("String leaks the API key")
 	}
 }
+
+func TestLoadAppliesThePhotoReaderDefaults(t *testing.T) {
+	c, err := load(env(map[string]string{"DATABASE_URL": "postgres://x"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.PhotoReader != "jev" || c.VisionModel != "google/gemini-3.1-flash-lite" || c.PhotoJevModel != "typesafe/jev-1.14" || c.DataDir != "data" {
+		t.Fatalf("photo defaults: reader %q, vision %q, jev %q, data %q", c.PhotoReader, c.VisionModel, c.PhotoJevModel, c.DataDir)
+	}
+}
+
+func TestLoadRejectsAnUnknownPhotoReader(t *testing.T) {
+	if _, err := load(env(map[string]string{"DATABASE_URL": "postgres://x", "PHOTO_READER": "ocr"})); err == nil {
+		t.Fatal("PHOTO_READER=ocr accepted")
+	}
+}

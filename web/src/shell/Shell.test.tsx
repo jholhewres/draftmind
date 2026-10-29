@@ -22,7 +22,7 @@ const current = () => within(tabBar()).getByRole('link', { current: 'page' })
 
 test('the tab bar switches between Draft, Coach, Heroes and Patches and marks the current tab', async () => {
   render(<App />)
-  expect(screen.getByRole('heading', { level: 1, name: 'Draft' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { level: 1, name: 'Photograph the pick' })).toBeInTheDocument()
   expect(current()).toHaveTextContent('Draft')
 
   fireEvent.click(within(tabBar()).getByRole('link', { name: 'Coach' }))

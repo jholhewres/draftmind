@@ -13,7 +13,7 @@ async function answer(page: Page, body: object) {
 
 test('A timeout falls back to the code ranking with a label', async ({ page, escaped }) => {
   await answer(page, { source: 'ranking', reason: 'timeout', suggestions: ranking.suggestions })
-  await page.goto('/#/draft')
+  await page.goto('/#/draft/manual')
   const label = suggestions(page).getByText('Ranked from stats')
   await expect(label).toBeVisible()
   await expect(label).toHaveAttribute('title', 'The decision model did not answer in time.')
@@ -26,7 +26,7 @@ test('A timeout falls back to the code ranking with a label', async ({ page, esc
 test("Jev's order shows without the fallback label", async ({ page, escaped }) => {
   const [jugg, am, bs, ...rest] = ranking.suggestions
   await answer(page, { source: 'jev', confidence: 0.35, suggestions: [bs, jugg, am, ...rest] })
-  await page.goto('/#/draft')
+  await page.goto('/#/draft/manual')
   await expect(names(page)).toHaveText(['Bloodseeker', 'Juggernaut', 'Anti-Mage', 'Axe', 'Drow Ranger'])
   await expect(suggestions(page).getByText('Ranked from stats')).toHaveCount(0)
   await imagesLoaded(page.locator('main'))

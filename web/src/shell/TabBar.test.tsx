@@ -22,12 +22,17 @@ test('the hash names the tab, and an empty or unknown hash opens Draft', () => {
 })
 
 test('a hero hash opens that hero under the Heroes tab', () => {
-  expect(routeFromHash('#/heroes/puck')).toEqual({ tab: 'heroes', hero: 'puck' })
-  expect(routeFromHash('#/heroes')).toEqual({ tab: 'heroes', hero: null })
-  expect(routeFromHash('#/heroes/')).toEqual({ tab: 'heroes', hero: null })
-  expect(routeFromHash('#/draft/puck')).toEqual({ tab: 'draft', hero: null })
+  expect(routeFromHash('#/heroes/puck')).toEqual({ tab: 'heroes', hero: 'puck', manual: false })
+  expect(routeFromHash('#/heroes')).toEqual({ tab: 'heroes', hero: null, manual: false })
+  expect(routeFromHash('#/heroes/')).toEqual({ tab: 'heroes', hero: null, manual: false })
+  expect(routeFromHash('#/draft/puck')).toEqual({ tab: 'draft', hero: null, manual: false })
+})
+
+test('#/draft/manual opens the draft board built by hand', () => {
+  expect(routeFromHash('#/draft/manual')).toEqual({ tab: 'draft', hero: null, manual: true })
+  expect(routeFromHash('#/heroes/manual')).toEqual({ tab: 'heroes', hero: 'manual', manual: false })
 })
 
 test('a malformed hero hash opens the hero list instead of throwing', () => {
-  expect(routeFromHash('#/heroes/%E0%A4%A')).toEqual({ tab: 'heroes', hero: null })
+  expect(routeFromHash('#/heroes/%E0%A4%A')).toEqual({ tab: 'heroes', hero: null, manual: false })
 })

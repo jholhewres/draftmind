@@ -59,6 +59,10 @@ e2e: ## Run the visual tests at phone and desktop sizes against a mocked API
 e2e-update: ## Rewrite the visual baselines after an intended UI change
 	cd $(WEB) && pnpm exec playwright install --only-shell chromium && pnpm exec playwright test --update-snapshots
 
+.PHONY: bench-photo
+bench-photo: ## Read every photo in api/testdata/photos with both readers, live: slot accuracy, latency and cost
+	cd $(API) && go run ./cmd/draftmind bench photo testdata/photos
+
 .PHONY: lint
 lint: lint-api lint-web ## Run all linters and type checks
 

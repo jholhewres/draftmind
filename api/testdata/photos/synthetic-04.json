@@ -1,0 +1,33 @@
+{
+  "synthetic": true,
+  "radiant": [
+    126,
+    64,
+    112,
+    null,
+    null
+  ],
+  "dire": [
+    23,
+    56,
+    37,
+    119,
+    null
+  ],
+  "names": {
+    "radiant": [
+      "Void Spirit",
+      "Jakiro",
+      "Winter Wyvern",
+      null,
+      null
+    ],
+    "dire": [
+      "Kunkka",
+      "Clinkz",
+      "Warlock",
+      "Dark Willow",
+      null
+    ]
+  }
+}

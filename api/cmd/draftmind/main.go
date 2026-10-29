@@ -22,7 +22,7 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/httpapi"
 )
 
-const usage = "usage: draftmind <serve|migrate|sync heroes|sync details|sync stats>"
+const usage = "usage: draftmind <serve|migrate|sync heroes|sync details|sync stats|bench photo [dir]>"
 
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
@@ -57,14 +57,20 @@ func run(ctx context.Context, cmd string, log *slog.Logger) error {
 	case "sync":
 		return runSync(ctx, cfg, pool, log)
 	case "serve":
-		srv := httpapi.New(pool, catalog.NewStore(pool), log)
+		cat := catalog.NewStore(pool)
+		srv := httpapi.New(pool, cat, log)
 		if cfg.OpenRouterAPIKey != "" {
 			srv.WithDecider(decision.New(cfg.OpenRouterBaseURL, cfg.OpenRouterAPIKey, cfg.DecisionModel,
 				cfg.DecisionProvider, decision.NewPGLog(pool, log)))
+			readers := newPhotoReaders(cfg, decision.NewPGLog(pool, log))
+			srv.WithPhotoReader(readers.chain(cfg.PhotoReader))
+			go warmPortraits(ctx, cat, readers.jev.Portraits, log)
 		} else {
-			log.Warn("OPENROUTER_API_KEY is not set: suggestions keep the code ranking")
+			log.Warn("OPENROUTER_API_KEY is not set: suggestions keep the code ranking and photos cannot be read")
 		}
 		return serve(ctx, cfg, srv.Handler(), log)
+	case "bench":
+		return runBench(ctx, cfg, pool, log)
 	default:
 		return fmt.Errorf("unknown command %q; %s", cmd, usage)
 	}

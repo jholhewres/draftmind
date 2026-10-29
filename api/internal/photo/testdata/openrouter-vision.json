@@ -1,0 +1,54 @@
+{
+  "id": "gen-1793230666-eb6A5xPnCxg49QkQShnQ",
+  "object": "chat.completion",
+  "created": 1793230666,
+  "model": "google/gemini-3.1-flash-lite",
+  "provider": "Google",
+  "system_fingerprint": null,
+  "service_tier": "default",
+  "choices": [
+    {
+      "index": 0,
+      "logprobs": null,
+      "finish_reason": "stop",
+      "native_finish_reason": "STOP",
+      "message": {
+        "role": "assistant",
+        "content": "{\n  \"radiant\": [\n    {\n      \"hero\": \"Clockwerk\",\n      \"empty\": false,\n      \"confidence\": 0.95\n    },\n    {\n      \"hero\": \"Anti-Mage\",\n      \"empty\": false,\n      \"confidence\": 0.95\n    },\n    {\n      \"hero\": \"Puck\",\n      \"empty\": false,\n      \"confidence\": 0.95\n    },\n    {\n      \"hero\": \"Sand King\",\n      \"empty\": false,\n      \"confidence\": 0.95\n    },\n    {\n      \"hero\": \"\",\n      \"empty\": true,\n      \"confidence\": 0.0\n    }\n  ],\n  \"dire\": [\n    {\n      \"hero\": \"Disruptor\",\n      \"empty\": false,\n      \"confidence\": 0.95\n    },\n    {\n      \"hero\": \"Shadow Shaman\",\n      \"empty\": false,\n      \"confidence\": 0.95\n    },\n    {\n      \"hero\": \"Io\",\n      \"empty\": false,\n      \"confidence\": 0.95\n    },\n    {\n      \"hero\": \"Spectre\",\n      \"empty\": false,\n      \"confidence\": 0.95\n    },\n    {\n      \"hero\": \"Ember Spirit\",\n      \"empty\": false,\n      \"confidence\": 0.95\n    }\n  ]\n}",
+        "refusal": null,
+        "reasoning": null,
+        "reasoning_details": [
+          {
+            "type": "reasoning.encrypted",
+            "data": "AY89a19suRVv4lt28d8MHKxBsLpkzF14kPOX5EV7jJA4PtrDOjeTGWYpUrZGnei1hztOpRGcR6A2dc45KrwZP3gko91oRCBxqyc/tgZO7CW2mUYe/W7qCo71WC0=",
+            "format": "google-gemini-v1",
+            "index": 0
+          }
+        ]
+      }
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 1908,
+    "completion_tokens": 342,
+    "total_tokens": 2250,
+    "cost": 0.00099,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.00099,
+      "upstream_inference_prompt_cost": 0.000477,
+      "upstream_inference_completions_cost": 0.000513
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  }
+}

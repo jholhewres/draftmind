@@ -16,7 +16,7 @@ func validQuestions(qs map[string]Question) error {
 	}
 	for name, q := range qs {
 		switch q.Type {
-		case "noul":
+		case "noul", "box":
 		case "choice":
 			if opts, ok := q.Criteria.(map[string]any); !ok || len(opts) == 0 {
 				return fmt.Errorf("choice %q needs options", name)
@@ -46,6 +46,9 @@ type wireAnswer struct {
 	Score         *float64            `json:"score"`
 	Confidence    *float64            `json:"confidence"`
 	Probabilities map[string]*float64 `json:"probabilities"` // a null is not a 0
+	Box           *struct {
+		Top, Bottom, Left, Right *float64
+	} `json:"box"`
 }
 
 // parse reads a 200 answer: every question asked must come back with its
@@ -112,6 +115,20 @@ func parseAnswer(raw json.RawMessage, q Question) (Answer, error) {
 			keys[i] = strconv.Itoa(i)
 		}
 		return a, probabilities(&a, w, keys)
+	case "box":
+		b := w.Box
+		if b == nil || b.Top == nil || b.Bottom == nil || b.Left == nil || b.Right == nil {
+			return Answer{}, errors.New("box missing or incomplete")
+		}
+		e := Edges{Top: *b.Top, Bottom: *b.Bottom, Left: *b.Left, Right: *b.Right}
+		if !unit(e.Top) || !unit(e.Bottom) || !unit(e.Left) || !unit(e.Right) || e.Left >= e.Right || e.Top >= e.Bottom {
+			return Answer{}, fmt.Errorf("box %+v outside the image or inverted", e)
+		}
+		if w.Confidence == nil || !unit(*w.Confidence) {
+			return Answer{}, errors.New("confidence missing or outside 0..1")
+		}
+		a.Box, a.Confidence = &e, *w.Confidence
+		return a, nil
 	}
 	return Answer{}, fmt.Errorf("unknown type %q", q.Type)
 }

@@ -1,0 +1,33 @@
+{
+  "synthetic": true,
+  "radiant": [
+    1,
+    136,
+    68,
+    120,
+    76
+  ],
+  "dire": [
+    42,
+    62,
+    16,
+    123,
+    25
+  ],
+  "names": {
+    "radiant": [
+      "Anti-Mage",
+      "Marci",
+      "Ancient Apparition",
+      "Pangolier",
+      "Outworld Devourer"
+    ],
+    "dire": [
+      "Wraith King",
+      "Bounty Hunter",
+      "Sand King",
+      "Hoodwink",
+      "Lina"
+    ]
+  }
+}

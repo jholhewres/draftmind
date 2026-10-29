@@ -127,3 +127,29 @@ export async function fetchSuggestions(input: DraftInput, signal?: AbortSignal):
     suggestions: body.suggestions ?? [],
   }
 }
+
+// One slot of a draft read from a photo: a hero of the current patch, an
+// empty slot, or one the reader could not read, which the player picks.
+export type ReadSlot = { heroId?: number; status: 'hero' | 'empty' | 'unknown'; confidence: number }
+
+// The draft POST /api/draft/read read, five slots a team, left to right.
+export type DraftRead = { patch: string; reader: string; fallback?: string; radiant: ReadSlot[]; dire: ReadSlot[] }
+
+const asSlots = (v: unknown): ReadSlot[] =>
+  Array.from({ length: 5 }, (_, i) => {
+    const s = Array.isArray(v) ? (v[i] as Partial<ReadSlot> | undefined) : undefined
+    return s?.status === 'hero' && typeof s.heroId === 'number'
+      ? { heroId: s.heroId, status: 'hero', confidence: s.confidence ?? 0 }
+      : { status: s?.status === 'empty' ? 'empty' : 'unknown', confidence: s?.confidence ?? 0 }
+  })
+
+// Sends the photo to be read; it is not kept by the server.
+export async function readDraft(image: Blob, signal?: AbortSignal): Promise<DraftRead> {
+  const path = '/api/draft/read'
+  const form = new FormData()
+  form.append('image', image, 'pick.jpg')
+  const res = await fetch(path, { method: 'POST', body: form, signal })
+  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
+  const body = (await res.json()) as Partial<DraftRead>
+  return { patch: body.patch ?? '', reader: body.reader ?? '', fallback: body.fallback, radiant: asSlots(body.radiant), dire: asSlots(body.dire) }
+}

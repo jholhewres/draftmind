@@ -17,6 +17,9 @@ type Config struct {
 	DecisionModel     string
 	DecisionProvider  string
 	VisionModel       string
+	PhotoReader       string // the default photo reader, jev or vision; the other is its fallback
+	PhotoJevModel     string // Jev model for photo reads; Box questions need 1.14
+	DataDir           string // local data outside git, e.g. the portrait cache
 	WriterModel       string
 	STTModel          string
 	OpenDotaAPIKey    string
@@ -42,7 +45,10 @@ func load(getenv func(string) string) (Config, error) {
 		OpenRouterAPIKey:  get("OPENROUTER_API_KEY", ""),
 		DecisionModel:     get("DECISION_MODEL", "typesafe/jev-1.13"),
 		DecisionProvider:  get("DECISION_PROVIDER", "typesafe"),
-		VisionModel:       get("VISION_MODEL", ""),
+		VisionModel:       get("VISION_MODEL", "google/gemini-3.1-flash-lite"),
+		PhotoReader:       get("PHOTO_READER", "jev"),
+		PhotoJevModel:     get("PHOTO_JEV_MODEL", "typesafe/jev-1.14"),
+		DataDir:           get("DATA_DIR", "data"),
 		WriterModel:       get("WRITER_MODEL", ""),
 		STTModel:          get("STT_MODEL", ""),
 		OpenDotaAPIKey:    get("OPENDOTA_API_KEY", ""),
@@ -50,6 +56,9 @@ func load(getenv func(string) string) (Config, error) {
 	}
 	if c.DatabaseURL == "" {
 		return c, errors.New("DATABASE_URL is required")
+	}
+	if c.PhotoReader != "jev" && c.PhotoReader != "vision" {
+		return c, fmt.Errorf("PHOTO_READER must be jev or vision, not %q", c.PhotoReader)
 	}
 	return c, nil
 }

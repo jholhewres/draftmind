@@ -12,7 +12,7 @@ async function pick(page: Page, row: string, slot: string, dialog: string, searc
 
 // Axe and Drow Ranger on the enemy team, Bane banned, the player at Pos 1.
 async function typeDraft(page: Page) {
-  await page.goto('/#/draft')
+  await page.goto('/#/draft/manual')
   await pick(page, 'Enemies', 'Add enemy', 'Choose an enemy', 'axe', 'Axe')
   await pick(page, 'Enemies', 'Add enemy', 'Choose an enemy', 'drow', 'Drow Ranger')
   await pick(page, 'Bans', 'Add ban', 'Choose a ban', 'bane', 'Bane')
@@ -78,7 +78,7 @@ test.describe(() => {
   test.use({ locale: 'pt-BR' })
 
   test('The Draft tab is in Portuguese with a decimal comma when the UI is in pt-BR', async ({ page, escaped }) => {
-    await page.goto('/#/draft')
+    await page.goto('/#/draft/manual')
     await pick(page, 'Inimigos', 'Adicionar inimigo', 'Escolha um inimigo', 'axe', 'Axe')
     await pick(page, 'Inimigos', 'Adicionar inimigo', 'Escolha um inimigo', 'drow', 'Drow Ranger')
     const first = page.getByRole('list', { name: 'Sugestões' }).getByRole('listitem').first()

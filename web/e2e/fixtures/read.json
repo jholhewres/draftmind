@@ -1,0 +1,52 @@
+{
+  "patch": "7.41",
+  "reader": "jev",
+  "radiant": [
+    {
+      "heroId": 5,
+      "status": "hero",
+      "confidence": 0.93
+    },
+    {
+      "status": "empty",
+      "confidence": 0.88
+    },
+    {
+      "heroId": 3,
+      "status": "hero",
+      "confidence": 0.9
+    },
+    {
+      "status": "empty",
+      "confidence": 0.91
+    },
+    {
+      "status": "empty",
+      "confidence": 0.9
+    }
+  ],
+  "dire": [
+    {
+      "heroId": 2,
+      "status": "hero",
+      "confidence": 0.95
+    },
+    {
+      "heroId": 7,
+      "status": "hero",
+      "confidence": 0.87
+    },
+    {
+      "status": "unknown",
+      "confidence": 0.31
+    },
+    {
+      "status": "empty",
+      "confidence": 0.9
+    },
+    {
+      "status": "empty",
+      "confidence": 0.92
+    }
+  ]
+}

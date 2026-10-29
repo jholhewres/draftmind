@@ -86,6 +86,23 @@ export const en = {
   'draft.source.error': 'The decision model failed.',
   'draft.source.unavailable': 'No decision model is configured.',
   'draft.source.fewCandidates': 'Nothing to choose between.',
+  'photo.title': 'Photograph the pick',
+  'photo.lead': 'Suggestions show in about 5 seconds, still in time to pick.',
+  'photo.camera': 'Tap to photograph',
+  'photo.cameraHint': 'Frame the hero bar at the top of the screen',
+  'photo.gallery': 'From the gallery',
+  'photo.manual': 'Build by hand',
+  'photo.privacy': 'The photo is read and dropped, never stored.',
+  'photo.back': 'New photo',
+  'photo.reading': 'Reading the photo…',
+  'photo.readError': 'Could not read the photo: {error}',
+  'photo.read': 'Draft read from the photo',
+  'photo.yourTeam': 'Your team',
+  'photo.enemy': 'Enemy',
+  'photo.unread': 'Unread hero, choose',
+  'photo.unreadOne': '1 hero was not read. Tap + to choose it; the ranking already uses the others.',
+  'photo.unreadMany': '{count} heroes were not read. Tap + to choose them; the ranking already uses the others.',
+  'photo.swap': 'Swap teams',
 }
 
 export type MessageKey = keyof typeof en

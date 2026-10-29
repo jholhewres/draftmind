@@ -1,0 +1,33 @@
+{
+  "synthetic": true,
+  "radiant": [
+    106,
+    110,
+    103,
+    155,
+    59
+  ],
+  "dire": [
+    15,
+    98,
+    129,
+    96,
+    61
+  ],
+  "names": {
+    "radiant": [
+      "Ember Spirit",
+      "Phoenix",
+      "Elder Titan",
+      "Largo",
+      "Huskar"
+    ],
+    "dire": [
+      "Razor",
+      "Timbersaw",
+      "Mars",
+      "Centaur Warrunner",
+      "Broodmother"
+    ]
+  }
+}

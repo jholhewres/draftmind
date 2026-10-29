@@ -1,0 +1,33 @@
+{
+  "synthetic": true,
+  "radiant": [
+    155,
+    32,
+    6,
+    57,
+    112
+  ],
+  "dire": [
+    43,
+    79,
+    71,
+    108,
+    null
+  ],
+  "names": {
+    "radiant": [
+      "Largo",
+      "Riki",
+      "Drow Ranger",
+      "Omniknight",
+      "Winter Wyvern"
+    ],
+    "dire": [
+      "Death Prophet",
+      "Shadow Demon",
+      "Spirit Breaker",
+      "Underlord",
+      null
+    ]
+  }
+}

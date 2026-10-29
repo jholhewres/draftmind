@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchHealth, type Health } from './api'
-import DraftBoard from './draft/DraftBoard'
+import DraftTab from './draft/DraftTab'
 import HeroGrid from './heroes/HeroGrid'
 import HeroPage from './heroes/HeroPage'
 import { useI18n } from './i18n'
@@ -10,7 +10,7 @@ import TabBar from './shell/TabBar'
 
 export default function App() {
   const { t } = useI18n()
-  const { tab, hero } = useRoute()
+  const { tab, hero, manual } = useRoute()
   const [health, setHealth] = useState<Health | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -40,7 +40,7 @@ export default function App() {
           ) : tab === 'heroes' ? (
             <HeroGrid />
           ) : tab === 'draft' ? (
-            <DraftBoard />
+            <DraftTab manual={manual} />
           ) : (
             <Placeholder title={tabLabel[tab]} />
           )}

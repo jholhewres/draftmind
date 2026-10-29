@@ -1,0 +1,33 @@
+{
+  "synthetic": true,
+  "radiant": [
+    138,
+    81,
+    73,
+    90,
+    94
+  ],
+  "dire": [
+    76,
+    129,
+    6,
+    89,
+    29
+  ],
+  "names": {
+    "radiant": [
+      "Muerta",
+      "Chaos Knight",
+      "Alchemist",
+      "Keeper of the Light",
+      "Medusa"
+    ],
+    "dire": [
+      "Outworld Devourer",
+      "Mars",
+      "Drow Ranger",
+      "Naga Siren",
+      "Tidehunter"
+    ]
+  }
+}

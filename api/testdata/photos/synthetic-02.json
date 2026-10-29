@@ -1,0 +1,33 @@
+{
+  "synthetic": true,
+  "radiant": [
+    105,
+    1,
+    13,
+    16,
+    null
+  ],
+  "dire": [
+    87,
+    98,
+    91,
+    113,
+    106
+  ],
+  "names": {
+    "radiant": [
+      "Techies",
+      "Anti-Mage",
+      "Puck",
+      "Sand King",
+      null
+    ],
+    "dire": [
+      "Disruptor",
+      "Timbersaw",
+      "Io",
+      "Arc Warden",
+      "Ember Spirit"
+    ]
+  }
+}
