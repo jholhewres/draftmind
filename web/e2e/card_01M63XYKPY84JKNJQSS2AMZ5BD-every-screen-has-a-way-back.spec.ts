@@ -77,6 +77,8 @@ test("Browser back and forward move through the app's screens in order, and a de
   await fresh.goto('/#/heroes/axe')
   await fresh.getByRole('link', { name: 'Back to heroes' }).click()
   await expect.poll(() => hashOf(fresh)).toBe('#/heroes')
+  // The parent took the deep link's place, so it is still the tab's first screen.
+  expect(await fresh.evaluate(() => (history.state as { dmDepth?: number }).dmDepth)).toBe(0)
   await expect(fresh.getByRole('navigation')).toBeVisible()
   await expect(fresh).toHaveScreenshot('deep-link-parent.png')
 })
@@ -116,4 +118,8 @@ test('Modals and sheets (hero picker, confirmations) close with Esc, a close but
   await page.keyboard.press('Escape')
   await expect(dialog).toHaveCount(0)
   await expect.poll(() => page.evaluate(() => (history.state as { dmModal?: true } | null)?.dmModal ?? null)).toBeNull()
+  // Forward onto the closed sheet's entry steps back off it.
+  await page.goForward()
+  await expect.poll(() => page.evaluate(() => (history.state as { dmModal?: true } | null)?.dmModal ?? null)).toBeNull()
+  await expect(dialog).toHaveCount(0)
 })

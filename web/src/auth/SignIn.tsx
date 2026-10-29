@@ -12,6 +12,7 @@ import {
 } from '../api'
 import { useI18n } from '../i18n'
 import BackButton from '../shell/BackButton'
+import { replaceHash } from '../shell/nav'
 import LanguageSwitch from '../shell/LanguageSwitch'
 
 type Props = {
@@ -58,7 +59,7 @@ export default function SignIn({ token, failed, account, onAccount }: Props) {
         if (!a) return setLink({ status: 'used' })
         setLink({ status: 'idle' })
         onAccount(a)
-        window.location.replace('#/signin')
+        replaceHash('#/signin')
       })
       .catch((e: unknown) => setLink({ status: 'error', error: message(e) }))
   }, [token, onAccount])

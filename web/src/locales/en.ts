@@ -218,6 +218,7 @@ export const en = {
   'history.visitor': 'Your history is kept once you sign in.',
   'history.error': 'Could not load your matches.',
   'history.empty': 'No matches yet. End a match to see it here.',
+  'persona.back': 'Back to the coach',
   'persona.title': 'Coach settings',
   'persona.lead': 'Shape how your coach talks. It changes the wording only: the picks, items and advice stay the same.',
   'persona.tone': 'Tone',

@@ -42,7 +42,7 @@ export default function PersonaSettings({ signedIn }: { signedIn: boolean }) {
   return (
     <section className="screen persona-settings">
       <header className="screen-head with-back">
-        <BackButton parent="#/coach" label={t('end.back')} />
+        <BackButton parent="#/coach" label={t('persona.back')} />
         <h1>{t('persona.title')}</h1>
       </header>
       <p className="muted lead">{t('persona.lead')}</p>

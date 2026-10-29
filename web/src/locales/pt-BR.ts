@@ -219,6 +219,7 @@ export const ptBR: Messages = {
   'history.visitor': 'Seu histórico fica guardado depois que você entra.',
   'history.error': 'Não foi possível carregar suas partidas.',
   'history.empty': 'Nenhuma partida ainda. Encerre uma partida para vê-la aqui.',
+  'persona.back': 'Voltar ao coach',
   'persona.title': 'Ajustes do coach',
   'persona.lead': 'Escolha como seu coach fala. Muda só o texto: os picks, os itens e o conselho continuam os mesmos.',
   'persona.tone': 'Tom',

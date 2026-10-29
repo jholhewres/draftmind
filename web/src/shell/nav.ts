@@ -10,6 +10,8 @@ const depthOf = (s: unknown): number | undefined => {
 }
 
 let depth = 0
+// Set while replaceHash swaps the current entry, which keeps its depth.
+let replacing = false
 
 // Called once at start-up, before the app renders.
 export function trackHistory() {
@@ -22,19 +24,25 @@ export function trackHistory() {
   })
   window.addEventListener('hashchange', () => {
     const d = depthOf(history.state)
-    // A new entry (a link, location.hash) has no depth yet.
+    // A new entry (a link, location.hash) has no depth yet; a replaced one
+    // keeps the depth of the entry it took over.
     if (d === undefined) {
-      depth += 1
+      if (!replacing) depth += 1
+      replacing = false
       history.replaceState({ ...(history.state as object), dmDepth: depth }, '')
     } else depth = d
   })
 }
 
-// Whether the entry before this one is a screen of this app.
-export const canGoBack = () => depth > 0
+// Swaps the current entry for hash, as location.replace does, keeping its depth.
+export function replaceHash(hash: string) {
+  if (location.hash === hash) return
+  replacing = true
+  location.replace(hash)
+}
 
 // Back to the previous screen, or to parent when there is none in the app.
 export function goBack(parent: string) {
-  if (canGoBack()) history.back()
-  else location.replace(parent)
+  if (depth > 0) history.back()
+  else replaceHash(parent)
 }
