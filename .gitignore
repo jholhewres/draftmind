@@ -21,8 +21,9 @@ node_modules/
 .vscode/
 .DS_Store
 
-# Local data: portrait cache
+# Local data (DATA_DIR): portrait cache, wherever serve runs from
 /api/data/
+/data/
 
 # Real pick-screen photos: only their expected drafts are committed
 /api/testdata/photos/real/*
