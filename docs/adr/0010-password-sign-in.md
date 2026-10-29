@@ -10,7 +10,7 @@ ADR-0008 chose a magic link and Steam, with no passwords. Production has no SMTP
 
 - A third way in: **e-mail and password**. `POST /api/auth/register` creates the account, `POST /api/auth/login` opens the same server-side session as the other two.
 - The password is kept only as an **argon2id** hash in PHC form (`$argon2id$v=19$m=19456,t=2,p=1$salt$key`, OWASP's minimum), in `app_user.password_hash`. The parameters travel with the hash, so raising them later still checks old hashes. 8 to 200 characters.
-- Register answers the same whether the address is new or taken, and never sets a password on an existing account: without e-mail there is no proof the address is yours. An account from a magic link or Steam has no password and cannot gain one this way.
+- Register answers the same whether the address is new or taken, and never sets a password on an existing account: without e-mail there is no proof the address is yours. An account from a magic link or Steam has no password and cannot gain one this way. Since register proves nothing, a password set before the address is proved is dropped by the first magic link to it, which also ends the sessions that password opened (`app_user.email_verified_at`).
 - Login answers one generic error for a wrong password, an unknown address or an account without a password, and always runs one hash compare (against a dummy hash when there is no account) so the timing matches.
 - Both routes are rate limited per client IP and per address, in memory, like the link route. At most 4 hashes run at once.
 - `GET /api/auth/methods` says which ways in are on. The web app shows the magic link only when the server has a mailer (SMTP, or the log in development).

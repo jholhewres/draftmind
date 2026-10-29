@@ -128,3 +128,25 @@ func TestMethodsSayWhetherEmailLinksAreOn(t *testing.T) {
 		t.Fatalf("without a mailer: %d %s", rec.Code, rec.Body)
 	}
 }
+
+func TestAMagicLinkDropsAPasswordSetWithoutProofOfTheAddress(t *testing.T) {
+	h := newHarness(t)
+	// Someone registers an address that is not theirs and signs in.
+	if rec := h.register("victim@example.com", "attacker-pass"); rec.Code != http.StatusOK {
+		t.Fatalf("register: status %d", rec.Code)
+	}
+	squatter := sessionCookie(h.login("victim@example.com", "attacker-pass"))
+	if squatter == nil {
+		t.Fatal("login set no cookie")
+	}
+	// The owner proves the address with a link: the squatter is out.
+	if rec := h.openLink(h.requestLink("victim@example.com")); rec.Code != http.StatusOK {
+		t.Fatalf("magic link: status %d", rec.Code)
+	}
+	if me := h.do(http.MethodGet, "/api/me", "", squatter); me.Code != http.StatusUnauthorized {
+		t.Fatalf("the squatter's session outlived the owner's link: status %d", me.Code)
+	}
+	if rec := h.login("victim@example.com", "attacker-pass"); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("the squatter's password still works: status %d", rec.Code)
+	}
+}

@@ -63,11 +63,21 @@ func (s *Service) useLoginToken(ctx context.Context, token string, now time.Time
 	if err != nil {
 		return User{}, "", err
 	}
+	// A password set before the address was proved is not the owner's:
+	// the link drops it and ends the sessions it opened (ADR-0010).
+	if _, err := tx.Exec(ctx, `
+		WITH squatted AS (
+			UPDATE app_user SET password_hash = NULL
+			WHERE email = $1 AND email_verified_at IS NULL AND password_hash IS NOT NULL
+			RETURNING id)
+		DELETE FROM user_session WHERE user_id IN (SELECT id FROM squatted)`, email); err != nil {
+		return User{}, "", err
+	}
 	u := User{Email: email}
 	if err := tx.QueryRow(ctx, `
-		INSERT INTO app_user (email) VALUES ($1)
-		ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
-		RETURNING id, coalesce(steam_id, '')`, email).Scan(&u.ID, &u.SteamID); err != nil {
+		INSERT INTO app_user (email, email_verified_at) VALUES ($1, $2)
+		ON CONFLICT (email) DO UPDATE SET email_verified_at = coalesce(app_user.email_verified_at, EXCLUDED.email_verified_at)
+		RETURNING id, coalesce(steam_id, '')`, email, now).Scan(&u.ID, &u.SteamID); err != nil {
 		return User{}, "", err
 	}
 	session, err := createSession(ctx, tx, u.ID, now)
