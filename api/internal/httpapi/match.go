@@ -79,7 +79,7 @@ func (s *Server) startMatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sess, err := s.matches.Create(r.Context(), match.Session{
-		HeroID: req.Hero, Role: req.Role, Allies: draftReq.Allies, Enemies: draftReq.Enemies, Bans: draftReq.Bans, ItemPlan: plan,
+		UserID: s.userID(r), HeroID: req.Hero, Role: req.Role, Allies: draftReq.Allies, Enemies: draftReq.Enemies, Bans: draftReq.Bans, ItemPlan: plan,
 	})
 	if err != nil {
 		s.log.Error("start match", "err", err)

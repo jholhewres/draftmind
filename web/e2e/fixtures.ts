@@ -69,6 +69,8 @@ export const test = base.extend<Fixtures>({
     async ({ page, drafts }, provide) => {
       void drafts
       await page.route('**/api/health', (route) => route.fulfill({ path: fixture('health.json') }))
+      // A visitor unless a spec signs in.
+      await page.route('**/api/me', (route) => route.fulfill({ status: 401, json: { error: 'sign in first' } }))
       await page.route('**/api/heroes', (route) => route.fulfill({ path: fixture('heroes.json') }))
       await page.route('**/api/patches', (route) => route.fulfill({ path: fixture('patches.json') }))
       await page.route('**/api/patches/*', (route) => {

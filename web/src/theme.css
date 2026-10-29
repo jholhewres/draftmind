@@ -423,3 +423,50 @@ footer p { margin: 0 0 4px; }
   .coach-body { display: grid; grid-template-columns: minmax(300px, 2fr) 3fr; align-items: start; gap: 20px; }
   .chat-input { bottom: 0; }
 }
+
+/* Account entry in the header; the sign-in screen after the prototype's Login. */
+.account-entry {
+  margin-left: auto; min-height: 44px; padding: 0 12px; border-radius: 10px; display: flex; align-items: center; gap: 8px;
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--fg); text-decoration: none;
+  font: 600 14px Barlow, system-ui, sans-serif;
+}
+.account-entry:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.signin-screen { min-height: 100dvh; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; }
+.signin-top { display: flex; align-items: center; padding: 10px; }
+.signin-top .back { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: var(--fg); }
+.signin-top .back:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.signin { flex: 1; display: flex; flex-direction: column; gap: 24px; padding: 32px 24px 0; }
+.signin p { margin: 0; }
+.signin [role='alert'] { color: var(--dire); }
+.signin-head { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.signin-mark {
+  width: 56px; height: 56px; border-radius: 10px; display: grid; place-items: center;
+  background: var(--gold); color: var(--gold-text); font: 700 32px Cinzel, Georgia, serif;
+}
+.signin-head h1 { font-size: 28px; }
+.signin .lead { font-size: 15px; line-height: 1.45; }
+.signin-status { text-align: center; }
+.signin-form { display: flex; flex-direction: column; gap: 12px; }
+.signin-form label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; }
+.signin-form input {
+  height: 50px; padding: 0 14px; border-radius: 10px;
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--fg); font: inherit; font-size: 16px; font-weight: 400;
+}
+.signin-form input:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.signin .hint { font-size: 13px; text-align: center; }
+.signin .primary {
+  height: 52px; border: 0; border-radius: 10px; cursor: pointer;
+  background: var(--gold); color: var(--gold-text); font: inherit; font-size: 16px; font-weight: 600;
+}
+.signin .primary:disabled { opacity: 0.6; cursor: progress; }
+.signin .primary:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; }
+.signin .option {
+  height: 52px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--fg); text-decoration: none;
+  font: inherit; font-size: 16px; font-weight: 600;
+}
+.signin .option:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.signin .sent { padding: 12px; border-radius: 10px; background: rgba(156, 203, 74, 0.12); border: 1px solid #5e8a2a; font-size: 14px; }
+.signin-or { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--muted); }
+.signin-or span { flex: 1; height: 1px; background: var(--border); }
+.signin-foot { padding: 16px 24px 24px; text-align: center; }

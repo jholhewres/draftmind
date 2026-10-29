@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/jholhewres/draftmind/api/internal/catalog"
 	"github.com/jholhewres/draftmind/api/internal/dbtest"
 	"github.com/jholhewres/draftmind/api/internal/match"
@@ -17,6 +19,12 @@ import (
 // 200 is on 7.40 only, where hero 1 bought it in every game; on 7.41 hero 1
 // buys item 116, and hero 3, who beats hero 2, buys item 300.
 func buildPatches(t *testing.T) *Server {
+	t.Helper()
+	srv, _ := buildPatchesPool(t)
+	return srv
+}
+
+func buildPatchesPool(t *testing.T) (*Server, *pgxpool.Pool) {
 	t.Helper()
 	pool := dbtest.New(t)
 	if _, err := pool.Exec(context.Background(), `
@@ -37,7 +45,7 @@ func buildPatches(t *testing.T) *Server {
 		SELECT id, 3, 2, 1000, 700 FROM patch WHERE name = '7.41'`); err != nil {
 		t.Fatal(err)
 	}
-	return New(fakeDB{}, catalog.NewStore(pool), quietLog()).WithMatches(match.NewStore(pool))
+	return New(fakeDB{}, catalog.NewStore(pool), quietLog()).WithMatches(match.NewStore(pool)), pool
 }
 
 func TestBuildSuggestsOnlyItemsOfTheCurrentPatch(t *testing.T) {

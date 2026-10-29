@@ -14,13 +14,20 @@ export const tabLabel: Record<Tab, MessageKey> = {
 
 const isTab = (id: string): id is Tab => (tabs as readonly string[]).includes(id)
 
-export type Route = { tab: Tab; hero: string | null; manual: boolean }
+// The sign-in screen: a link's token to spend, or Steam's failed return.
+export type SignInRoute = { token: string | null; failed: boolean }
+
+export type Route = { tab: Tab; hero: string | null; manual: boolean; signin?: SignInRoute }
 
 // "#/heroes" names the Heroes tab and "#/heroes/<slug>" a hero in it;
-// "#/draft/manual" is the draft board built by hand. A query after "?" is
-// the screen's own. An empty or unknown hash opens Draft.
+// "#/draft/manual" is the draft board built by hand. "#/signin" is the
+// sign-in screen, outside the tabs: "#/signin/link/<token>" an e-mailed
+// link, "#/signin/failed" a Steam sign-in that did not finish. A query
+// after "?" is the screen's own. An empty or unknown hash opens Draft.
 export function routeFromHash(hash: string): Route {
-  const [id, sub] = hash.replace(/^#\/?/, '').split('?')[0].split('/')
+  const [id, sub, arg] = hash.replace(/^#\/?/, '').split('?')[0].split('/')
+  if (id === 'signin')
+    return { tab: 'draft', hero: null, manual: false, signin: { token: sub === 'link' && arg ? arg : null, failed: sub === 'failed' } }
   if (!isTab(id)) return { tab: 'draft', hero: null, manual: false }
   return { tab: id, hero: id === 'heroes' && sub ? decodeSlug(sub) : null, manual: id === 'draft' && sub === 'manual' }
 }

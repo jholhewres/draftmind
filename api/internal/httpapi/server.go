@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/jholhewres/draftmind/api/internal/auth"
 	"github.com/jholhewres/draftmind/api/internal/catalog"
 	"github.com/jholhewres/draftmind/api/internal/draft"
 	"github.com/jholhewres/draftmind/api/internal/items"
@@ -51,16 +52,19 @@ type Server struct {
 	tips    Tipper
 	matches Matches
 	coach   Replier
+	auth    *auth.Service
 	log     *slog.Logger
 
 	suggestLimit, readLimit Limit
+	mailIPLimit, mailLimit  Limit // sign-in links per client IP and per address
 	now                     func() time.Time
 	reads                   chan struct{} // a slot per photo read running
 }
 
 // New builds the server.
 func New(db Pinger, cat Catalog, log *slog.Logger) *Server {
-	return &Server{db: db, catalog: cat, log: log, suggestLimit: DefaultSuggestLimit, readLimit: DefaultReadLimit, now: time.Now,
+	return &Server{db: db, catalog: cat, log: log, suggestLimit: DefaultSuggestLimit, readLimit: DefaultReadLimit,
+		mailIPLimit: DefaultMailIPLimit, mailLimit: DefaultMailLimit, now: time.Now,
 		reads: make(chan struct{}, maxConcurrentReads)}
 }
 
@@ -80,6 +84,35 @@ type Tipper interface {
 func (s *Server) WithWriter(t Tipper) *Server {
 	s.tips = t
 	return s
+}
+
+// WithAuth adds sign-in, sessions and GET /api/me; without it requireUser
+// answers 401 and every visitor stays one.
+func (s *Server) WithAuth(a *auth.Service) *Server {
+	s.auth = a
+	return s
+}
+
+// requireUser answers 401 unless the request has a live session; next
+// reads the user with auth.UserFrom.
+func (s *Server) requireUser(next http.Handler) http.Handler {
+	if s.auth == nil {
+		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "sign in first"})
+		})
+	}
+	return s.auth.Require(next)
+}
+
+// userID is the signed-in user's id, or nil for a visitor.
+func (s *Server) userID(r *http.Request) *int64 {
+	if s.auth == nil {
+		return nil
+	}
+	if u, ok := s.auth.UserOf(r); ok {
+		return &u.ID
+	}
+	return nil
 }
 
 // Handler returns the routed handler.
@@ -102,6 +135,11 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/match", suggest.wrap(http.HandlerFunc(s.startMatch)))
 	mux.HandleFunc("GET /api/match/{id}", s.getMatch)
 	mux.Handle("POST /api/match/{id}/messages", suggest.wrap(http.HandlerFunc(s.matchMessage)))
+	if s.auth != nil {
+		s.auth.Mount(mux, newLimiter(s.mailIPLimit, s.now).wrap, newLimiter(s.mailLimit, s.now).take)
+	} else {
+		mux.Handle("GET /api/me", s.requireUser(nil))
+	}
 	return mux
 }
 

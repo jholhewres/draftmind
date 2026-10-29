@@ -20,6 +20,10 @@ type Limit struct {
 var (
 	DefaultSuggestLimit = Limit{Burst: 30, Every: 2 * time.Second}
 	DefaultReadLimit    = Limit{Burst: 6, Every: 20 * time.Second}
+	// Sign-in links: per client IP, and per e-mail address so one inbox is
+	// not flooded from many addresses.
+	DefaultMailIPLimit = Limit{Burst: 5, Every: time.Minute}
+	DefaultMailLimit   = Limit{Burst: 3, Every: 5 * time.Minute}
 )
 
 // limiter keeps one token bucket per client IP, in memory.
@@ -53,16 +57,16 @@ func (l *limiter) wrap(next http.Handler) http.Handler {
 	})
 }
 
-// take spends one of ip's tokens, or says how long until one is back.
-func (l *limiter) take(ip string) time.Duration {
+// take spends one of key's tokens, or says how long until one is back.
+func (l *limiter) take(key string) time.Duration {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	now := l.now()
 	l.sweep(now)
-	b, ok := l.buckets[ip]
+	b, ok := l.buckets[key]
 	if !ok {
 		b = &bucket{tokens: float64(l.limit.Burst), at: now}
-		l.buckets[ip] = b
+		l.buckets[key] = b
 	}
 	b.tokens = min(float64(l.limit.Burst), b.tokens+now.Sub(b.at).Seconds()/l.limit.Every.Seconds())
 	b.at = now

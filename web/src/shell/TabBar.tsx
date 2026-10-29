@@ -32,8 +32,9 @@ const icons: Record<Tab, ReactNode> = {
   ),
 }
 
-// Bottom bar on a phone, left rail from 1024 px (see theme.css).
-export default function TabBar({ current }: { current: Tab }) {
+// Bottom bar on a phone, left rail from 1024 px (see theme.css). current
+// is null on a screen outside the tabs.
+export default function TabBar({ current }: { current: Tab | null }) {
   const { t } = useI18n()
   return (
     <nav className="tabbar" aria-label={t('nav.label')}>

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/jholhewres/draftmind/api/internal/auth"
 	"github.com/jholhewres/draftmind/api/internal/catalog"
 	"github.com/jholhewres/draftmind/api/internal/config"
 	"github.com/jholhewres/draftmind/api/internal/db"
@@ -75,12 +77,39 @@ func run(ctx context.Context, cmd string, log *slog.Logger) error {
 		} else {
 			log.Warn("OPENROUTER_API_KEY is not set: suggestions keep the code ranking, tips and coach answers are templates and photos cannot be read")
 		}
+		accounts, err := newAccounts(cfg, pool, log)
+		if err != nil {
+			return err
+		}
+		srv.WithAuth(accounts)
 		return serve(ctx, cfg, srv.Handler(), log)
 	case "bench":
 		return runBench(ctx, cfg, pool, log)
 	default:
 		return fmt.Errorf("unknown command %q; %s", cmd, usage)
 	}
+}
+
+// newAccounts sets up sign-in (ADR-0008): links by SMTP, else to the log
+// in development, else e-mail sign-in is off and Steam still works.
+func newAccounts(cfg config.Config, pool *pgxpool.Pool, log *slog.Logger) (*auth.Service, error) {
+	accounts, err := auth.New(pool, cfg.PublicURL, log)
+	if err != nil {
+		return nil, err
+	}
+	switch {
+	case cfg.SMTPHost != "":
+		accounts.WithMailer(auth.SMTP{Addr: net.JoinHostPort(cfg.SMTPHost, cfg.SMTPPort), Username: cfg.SMTPUser,
+			Password: cfg.SMTPPass, From: cfg.MailFrom})
+	case accounts.Dev():
+		if err := accounts.WithLogMailer(); err != nil {
+			return nil, err
+		}
+		log.Info("SMTP_HOST is not set: sign-in links are written to this log (development)")
+	default:
+		log.Warn("SMTP_HOST is not set: sign-in by e-mail link is off, Steam sign-in still works")
+	}
+	return accounts, nil
 }
 
 func runSync(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, log *slog.Logger) error {

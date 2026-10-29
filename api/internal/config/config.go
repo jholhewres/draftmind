@@ -24,6 +24,12 @@ type Config struct {
 	STTModel          string
 	OpenDotaAPIKey    string
 	DotaconstantsRef  string
+	PublicURL         string // where the web app is served; sign-in links and Steam return there
+	SMTPHost          string // empty: links go to the log in development, else e-mail sign-in is off
+	SMTPPort          string
+	SMTPUser          string
+	SMTPPass          string
+	MailFrom          string
 }
 
 // Load reads the environment, applying defaults where a value is optional.
@@ -53,6 +59,12 @@ func load(getenv func(string) string) (Config, error) {
 		STTModel:          get("STT_MODEL", ""),
 		OpenDotaAPIKey:    get("OPENDOTA_API_KEY", ""),
 		DotaconstantsRef:  get("DOTACONSTANTS_REF", "master"),
+		PublicURL:         get("PUBLIC_URL", "http://localhost:5173"),
+		SMTPHost:          get("SMTP_HOST", ""),
+		SMTPPort:          get("SMTP_PORT", "587"),
+		SMTPUser:          get("SMTP_USER", ""),
+		SMTPPass:          get("SMTP_PASS", ""),
+		MailFrom:          get("MAIL_FROM", ""),
 	}
 	if c.DatabaseURL == "" {
 		return c, errors.New("DATABASE_URL is required")
@@ -60,11 +72,14 @@ func load(getenv func(string) string) (Config, error) {
 	if c.PhotoReader != "jev" && c.PhotoReader != "vision" {
 		return c, fmt.Errorf("PHOTO_READER must be jev or vision, not %q", c.PhotoReader)
 	}
+	if c.SMTPHost != "" && c.MailFrom == "" {
+		return c, errors.New("MAIL_FROM is required with SMTP_HOST")
+	}
 	return c, nil
 }
 
 // String describes the config without secrets.
 func (c Config) String() string {
-	return fmt.Sprintf("addr=%s decision_model=%s openrouter_key_set=%t",
-		c.HTTPAddr, c.DecisionModel, c.OpenRouterAPIKey != "")
+	return fmt.Sprintf("addr=%s public_url=%s decision_model=%s openrouter_key_set=%t smtp_set=%t",
+		c.HTTPAddr, c.PublicURL, c.DecisionModel, c.OpenRouterAPIKey != "", c.SMTPHost != "")
 }

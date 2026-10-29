@@ -21,6 +21,7 @@ import (
 // Session is one match being coached.
 type Session struct {
 	ID        string      `json:"id"`
+	UserID    *int64      `json:"-"` // the signed-in player's account; nil for a visitor
 	Patch     string      `json:"patch"`
 	HeroID    int         `json:"heroId"`
 	Role      int         `json:"role"`
@@ -68,10 +69,10 @@ func (s *Store) Create(ctx context.Context, in Session) (Session, error) {
 		return in, err
 	}
 	err = s.pool.QueryRow(ctx, `
-		INSERT INTO match_session (patch_id, hero_id, role, allies, enemies, bans, item_plan)
-		SELECT id, $1, $2, $3, $4, $5, $6 FROM patch WHERE is_current
+		INSERT INTO match_session (patch_id, hero_id, role, allies, enemies, bans, item_plan, user_id)
+		SELECT id, $1, $2, $3, $4, $5, $6, $7 FROM patch WHERE is_current
 		RETURNING id::text, (SELECT name FROM patch WHERE is_current), created_at`,
-		in.HeroID, in.Role, in.Allies, in.Enemies, in.Bans, plan).Scan(&in.ID, &in.Patch, &in.CreatedAt)
+		in.HeroID, in.Role, in.Allies, in.Enemies, in.Bans, plan, in.UserID).Scan(&in.ID, &in.Patch, &in.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return in, errors.New("no current patch")
 	}

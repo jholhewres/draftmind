@@ -434,3 +434,44 @@ export async function sendMatchMessage(
     }
   })
 }
+
+// The signed-in account: an e-mail address, a SteamID or both.
+export type Account = { email?: string; steamId?: string }
+
+// The account of this browser's session, or null without one.
+export async function fetchAccount(signal?: AbortSignal): Promise<Account | null> {
+  const res = await fetch('/api/me', { signal })
+  if (res.status === 401) return null
+  if (!res.ok) throw new Error(`/api/me: HTTP ${res.status}`)
+  return (await res.json()) as Account
+}
+
+const postJSON = (path: string, body: unknown) =>
+  fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+
+// E-mails a sign-in link written in lang; resolves to the minutes it works.
+export async function requestSignInLink(email: string, lang: string): Promise<number> {
+  const path = '/api/auth/email'
+  const res = await postJSON(path, { email, lang })
+  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
+  const body = (await res.json()) as { minutes?: number }
+  return body.minutes ?? 15
+}
+
+// Spends a sign-in link's token: the account it signed in, or null when
+// the link expired or was already used.
+export async function openSignInLink(token: string): Promise<Account | null> {
+  const path = '/api/auth/email/verify'
+  const res = await postJSON(path, { token })
+  if (res.status === 401) return null
+  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
+  return (await res.json()) as Account
+}
+
+export async function signOut(): Promise<void> {
+  const res = await fetch('/api/auth/signout', { method: 'POST' })
+  if (!res.ok) throw new Error(`/api/auth/signout: HTTP ${res.status}`)
+}
+
+// Sends the browser to Steam; Steam returns it to #/signin or #/signin/failed.
+export const steamSignInPath = '/api/auth/steam'
