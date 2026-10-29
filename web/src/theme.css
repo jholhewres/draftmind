@@ -403,16 +403,33 @@ footer p { margin: 0 0 4px; }
 .bubble { max-width: 88%; display: flex; flex-direction: column; gap: 6px; padding: 9px 12px; font-size: 15px; line-height: 1.4; }
 .bubble.mine { align-self: flex-end; max-width: 82%; border-radius: 14px 14px 4px 14px; background: #2a3a1c; }
 .bubble.coach { align-self: flex-start; border-radius: 14px 14px 14px 4px; background: rgba(21, 25, 31, 0.94); border: 1px solid var(--border); }
-.bubble.pending .bubble-text { color: var(--muted); font-style: italic; }
+.bubble.failed { border-color: rgba(226, 85, 62, 0.6); }
+.typing { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; }
+.typing-dots { display: inline-flex; gap: 4px; }
+.typing-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); animation: typing 1.2s infinite ease-in-out; }
+.typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes typing { 0%, 60%, 100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .typing-dots span { animation: none; opacity: 0.7; } }
+.chat-end { scroll-margin-bottom: calc(var(--tabbar) + 140px); }
+.chat-unseen {
+  position: sticky; bottom: calc(var(--tabbar) + 132px + env(safe-area-inset-bottom, 0px)); z-index: 2;
+  align-self: center; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.quick-actions { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -20px; padding: 2px 20px; }
+.quick-actions::-webkit-scrollbar { display: none; }
+.quick-actions .chip { flex-shrink: 0; white-space: nowrap; }
+.quick-actions .chip:disabled { opacity: 0.5; cursor: default; }
 .advice-tag {
   align-self: flex-start; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
   background: rgba(217, 174, 91, 0.14); color: var(--gold-light);
 }
-.chat-input {
+.composer {
   position: sticky; bottom: calc(var(--tabbar) + env(safe-area-inset-bottom, 0px)); z-index: 1;
-  display: flex; align-items: center; gap: 8px; padding: 10px 0;
+  display: flex; flex-direction: column; gap: 8px; padding: 10px 0;
   background: linear-gradient(to bottom, transparent, var(--bg) 12px);
 }
+.chat-input { display: flex; align-items: center; gap: 8px; }
 .chat-field { flex: 1; min-width: 0; }
 .chat-field input {
   width: 100%; height: 46px; padding: 0 14px; border-radius: 23px; border: 1px solid var(--border-strong);
@@ -443,7 +460,7 @@ footer p { margin: 0 0 4px; }
 .mic-note { margin: 0; font-size: 13px; color: var(--muted); }
 @media (min-width: 1024px) {
   .coach-body { display: grid; grid-template-columns: minmax(300px, 2fr) 3fr; align-items: start; gap: 20px; }
-  .chat-input { bottom: 0; }
+  .composer { bottom: 0; }
 }
 
 /* Account entry in the header; the sign-in screen after the prototype's Login. */
