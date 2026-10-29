@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { fetchHeroes, fetchMatch, heroImageBase, type Hero, type MatchMessage, type MatchSession } from '../api'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { fetchGsiStatus, fetchHeroes, fetchMatch, heroImageBase, type Hero, type MatchMessage, type MatchSession } from '../api'
 import { useI18n } from '../i18n'
 import type { MessageKey } from '../locales/en'
 import BuildCard from './BuildCard'
@@ -18,6 +18,9 @@ const position: Record<number, MessageKey> = {
   4: 'draft.position.4',
   5: 'draft.position.5',
 }
+
+// How often the match is read while the game posts its state.
+const GSI_POLL_MS = 8000
 
 type State = { status: 'loading' } | { status: 'none' } | { status: 'error'; error: string } | { status: 'ready'; session: MatchSession }
 
@@ -53,6 +56,37 @@ export default function CoachTab({ view, signedIn }: { view?: CoachView; signedI
       })
     return () => ctrl.abort()
   }, [id])
+
+  // With the game posting its state (ADR-0015), the live lines its code
+  // triggers store are fetched every few seconds, and the match ends by itself.
+  const readyId = state.status === 'ready' && !state.session.result ? state.session.id : null
+  // Every message id the page shows: from the load, and live lines pushed since.
+  const shown = useRef(new Set<number>())
+  useEffect(() => {
+    if (state.status === 'ready') state.session.messages.forEach((m) => shown.current.add(m.id))
+    live.forEach((m) => shown.current.add(m.id))
+  }, [state, live])
+  useEffect(() => {
+    if (!readyId || !signedIn) return
+    const ctrl = new AbortController()
+    const poll = async () => {
+      const gsi = await fetchGsiStatus(ctrl.signal).catch(() => null)
+      if (!gsi?.receiving) return
+      const s = await fetchMatch(readyId, ctrl.signal).catch(() => null)
+      if (!s) return
+      // Lines the page already shows, from the load or the shared window, are skipped.
+      const fresh = s.messages.filter((m) => m.source === 'live' && !shown.current.has(m.id))
+      fresh.forEach((m) => shown.current.add(m.id))
+      if (fresh.length) setLive((cur) => [...cur, ...fresh])
+      if (s.result) setState({ status: 'ready', session: s })
+    }
+    void poll()
+    const timer = window.setInterval(() => void poll(), GSI_POLL_MS)
+    return () => {
+      ctrl.abort()
+      window.clearInterval(timer)
+    }
+  }, [readyId, signedIn])
 
   const byId = useMemo(() => new Map(heroes.map((h) => [h.id, h])), [heroes])
   if (view === 'history') return <History byId={byId} />

@@ -57,7 +57,11 @@ func (s *Server) liveTick(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "the frame must be a JPEG or PNG of at most 2048 px a side"})
 		return
 	}
-	f := match.LiveFrame{Format: "png", Data: data}
+	f := match.LiveFrame{Format: "png", Data: data, Facts: s.gsiFacts(r.Context(), s.userID(r))}
+	if f.Facts != nil {
+		// The game's own state replaces reading the HUD (ADR-0015).
+		f.Data = nil
+	}
 	if format == "jpeg" {
 		f.Format = "jpg"
 	}

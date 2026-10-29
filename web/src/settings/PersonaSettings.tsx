@@ -3,6 +3,7 @@ import type { Persona } from '../api'
 import { useI18n } from '../i18n'
 import BackButton from '../shell/BackButton'
 import type { MessageKey } from '../locales/en'
+import GameIntegration from './GameIntegration'
 import { usePersona } from './persona'
 
 type Field = keyof Persona
@@ -67,6 +68,7 @@ export default function PersonaSettings({ signedIn }: { signedIn: boolean }) {
           {t('persona.visitor')} <a href="#/signin">{t('account.signIn')}</a>
         </p>
       )}
+      {signedIn && <GameIntegration />}
     </section>
   )
 }

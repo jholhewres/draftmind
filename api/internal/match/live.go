@@ -28,6 +28,8 @@ const (
 	EventObjective  = "objective"   // a tower, Roshan or a rune is up for grabs
 	EventPhase      = "phase"       // the game moved into a new phase
 	EventMap        = "map"         // something on the minimap the player should see
+	// EventBuyback comes only from Game State Integration's code triggers.
+	EventBuyback = "buyback"
 )
 
 // LiveEvents are the events a tick can speak, in the order the UI lists them.
@@ -60,10 +62,13 @@ const (
 	LiveTimeout       = 8 * time.Second
 )
 
-// LiveFrame is one frame of the shared window, never stored.
+// LiveFrame is one frame of the shared window, never stored. With Game
+// State Integration on, Facts carries the game's own state and Data may be
+// empty: Jev then reads the facts instead of the HUD.
 type LiveFrame struct {
 	Format string // jpg or png
 	Data   []byte
+	Facts  any
 }
 
 // LiveDecision is one tick's outcome. Reply is set only when Speak.
@@ -100,6 +105,7 @@ func NewLive(jev Asker) *Live { return &Live{Jev: jev, per: map[string]*liveStat
 // eventCategory is the chat category each event is tagged with.
 var eventCategory = map[string]string{
 	EventItemTiming: "items", EventDeaths: "teamfight", EventObjective: "objective", EventPhase: "other", EventMap: "lane",
+	EventBuyback: "teamfight",
 }
 
 // Tick decides on one frame of session s at now.
@@ -149,12 +155,40 @@ func (l *Live) Tick(ctx context.Context, s Session, f LiveFrame, now time.Time) 
 		d.Reason = LiveReasonNoItem
 		return d
 	}
+	return l.admit(s, st, d, a.Choice, conf, reply, now)
+}
 
+// Trigger speaks a code trigger (from Game State Integration) with no model
+// call, through the same cooldown and cap as Jev's events; item, when set,
+// is the card of the item the trigger is about.
+func (l *Live) Trigger(s Session, event string, item *items.Card, now time.Time) LiveDecision {
+	if s.Result != nil {
+		return LiveDecision{Reason: LiveReasonEnded}
+	}
+	reply, ok := liveReply(s, event)
+	if !ok && item == nil {
+		return LiveDecision{Reason: LiveReasonNoItem}
+	}
+	if item != nil {
+		reply.Items = []items.Card{*item}
+	}
+	l.mu.Lock()
+	st := l.per[s.ID]
+	if st == nil {
+		st = &liveState{spoken: map[string]time.Time{}}
+		l.per[s.ID] = st
+	}
+	l.mu.Unlock()
+	return l.admit(s, st, LiveDecision{}, event, 1, reply, now)
+}
+
+// admit applies cooldown, dedupe and the per-minute cap to a spoken event.
+func (l *Live) admit(s Session, st *liveState, d LiveDecision, event string, conf float64, reply Reply, now time.Time) LiveDecision {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	// Turbo's clock runs about twice as fast, so its cooldown is shorter (ADR-0012).
 	cooldown := time.Duration(float64(LiveCooldown) * draft.TimeScale(draft.Mode(s.Mode)))
-	if at, ok := st.spoken[a.Choice]; ok && now.Sub(at) < cooldown {
+	if at, ok := st.spoken[event]; ok && now.Sub(at) < cooldown {
 		d.Reason = LiveReasonCooldown
 		return d
 	}
@@ -163,9 +197,9 @@ func (l *Live) Tick(ctx context.Context, s Session, f LiveFrame, now time.Time) 
 		d.Reason = LiveReasonCap
 		return d
 	}
-	st.spoken[a.Choice] = now
+	st.spoken[event] = now
 	st.recent = append(st.recent, now)
-	d.Speak, d.Event, d.Confidence, d.Reply = true, a.Choice, conf, reply
+	d.Speak, d.Event, d.Confidence, d.Reply = true, event, conf, reply
 	return d
 }
 
@@ -191,15 +225,20 @@ func liveRequest(s Session, f LiveFrame) decision.Request {
 	for _, c := range planCards(s) {
 		next = append(next, c.Name)
 	}
-	return decision.Request{
-		Purpose: "live.tick",
-		State:   map[string]any{"frame": "frame", "hero": s.HeroID, "position": s.Role, "mode": s.Mode, "next_items": next},
-		Assets:  map[string]decision.Asset{"frame": {Format: f.Format, Data: f.Data}},
-		Questions: map[string]decision.Question{
-			"event": decision.Choice("`frame` is the player's own game screen during a match. Pick the one event the "+
-				"player most needs to hear about now, judged only from what the screen shows; silent unless one clearly applies.", options),
-		},
+	state := map[string]any{"hero": s.HeroID, "position": s.Role, "mode": s.Mode, "next_items": next}
+	req := decision.Request{Purpose: "live.tick", State: state}
+	if f.Facts != nil {
+		// The game's own state: exact gold, items and clock, no image.
+		state["game"] = f.Facts
+		req.Questions = map[string]decision.Question{"event": decision.Choice("`game` is the player's own state as the game "+
+			"reports it during a match. Pick the one event the player most needs to hear about now; silent unless one clearly applies.", options)}
+		return req
 	}
+	state["frame"] = "frame"
+	req.Assets = map[string]decision.Asset{"frame": {Format: f.Format, Data: f.Data}}
+	req.Questions = map[string]decision.Question{"event": decision.Choice("`frame` is the player's own game screen during a match. "+
+		"Pick the one event the player most needs to hear about now, judged only from what the screen shows; silent unless one clearly applies.", options)}
+	return req
 }
 
 // liveReply is the spoken event as a template: the UI words it from the
@@ -219,8 +258,12 @@ func liveReply(s Session, event string) (Reply, bool) {
 
 // planCards are the plan's items in the order the player should buy them:
 // urgent situational items, then the mid and late core.
-func planCards(s Session) []items.Card {
-	return QuickItems(s, func(string, any) {}).Items
+func planCards(s Session) []items.Card { return PlanCards(s) }
+
+// PlanCards are the session's plan items in buying order.
+func PlanCards(s Session) []items.Card {
+	r := QuickItems(s, func(string, any) {})
+	return r.Items
 }
 
 // Word asks the writer for the spoken event's line when Write is set, in

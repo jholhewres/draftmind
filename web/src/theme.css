@@ -704,3 +704,14 @@ footer p { margin: 0 0 4px; }
   align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px;
   font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--radiant); background: rgba(156, 203, 74, 0.12);
 }
+/* Game integration settings (ADR-0015). */
+.game-integration { margin-top: 24px; display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; }
+.game-integration h2 { margin: 0; font-size: 18px; }
+.gsi-status { margin: 0; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.gsi-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--border-strong); }
+.gsi-status.on { color: var(--radiant); }
+.gsi-status.on .gsi-dot { background: var(--radiant); }
+.gsi-steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+.gsi-steps code { overflow-wrap: anywhere; }
+.gsi-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.gsi-note { font-size: 13px; margin: 0; }

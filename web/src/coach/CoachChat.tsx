@@ -40,6 +40,7 @@ const liveText: Record<string, MessageKey> = {
   objective: 'liveCoach.event.objective',
   phase: 'liveCoach.event.phase',
   map: 'liveCoach.event.map',
+  buyback: 'liveCoach.event.buyback',
 }
 
 // One tap sends the chip's own words as the player's message; a chip with an

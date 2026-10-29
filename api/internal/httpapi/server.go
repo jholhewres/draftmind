@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/netip"
+	"sync"
 	"time"
 
 	"github.com/jholhewres/draftmind/api/internal/auth"
@@ -48,15 +49,20 @@ type Catalog interface {
 
 // Server wires the routes to their dependencies.
 type Server struct {
-	db      Pinger
-	catalog Catalog
-	jev     draft.Asker
-	reader  photo.Reader
-	tips    Tipper
-	matches Matches
-	coach   Replier
-	live    *match.Live
-	stt     match.Transcriber
+	db          Pinger
+	catalog     Catalog
+	jev         draft.Asker
+	reader      photo.Reader
+	tips        Tipper
+	matches     Matches
+	coach       Replier
+	live        *match.Live
+	gsi         GSIStore
+	openMatches OpenMatches
+	public      string
+	gsiOnce     sync.Once
+	gsiLive     *match.Live
+	stt         match.Transcriber
 
 	resultParser ResultParser
 	endReader    photo.EndReader
@@ -163,6 +169,10 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/me/language", s.requireUser(http.HandlerFunc(s.myLanguage)))
 	mux.Handle("PUT /api/me/language", s.requireUser(http.HandlerFunc(s.saveLanguage)))
 	mux.Handle("GET /api/me/mode", s.requireUser(http.HandlerFunc(s.myMode)))
+	mux.Handle("POST /api/gsi", newLimiter(DefaultGSILimit, s.now).wrap(http.HandlerFunc(s.gsiPost)))
+	mux.Handle("GET /api/me/gsi", s.requireUser(http.HandlerFunc(s.myGSI)))
+	mux.Handle("POST /api/me/gsi/token", s.requireUser(http.HandlerFunc(s.issueGSI)))
+	mux.Handle("DELETE /api/me/gsi/token", s.requireUser(http.HandlerFunc(s.revokeGSI)))
 	if s.auth != nil {
 		s.auth.Mount(mux, auth.Limits{
 			LinkIP: newLimiter(s.mailIPLimit, s.now).wrap, LinkEmail: newLimiter(s.mailLimit, s.now).take,

@@ -1,0 +1,8 @@
+{
+  "provider": {"name": "Dota 2", "appid": 570, "version": 47, "timestamp": 1793313600},
+  "map": {"name": "start", "matchid": "8123456789", "game_time": 2470, "clock_time": 2410, "daytime": false, "game_state": "DOTA_GAMERULES_STATE_POST_GAME", "paused": false, "win_team": "radiant", "customgamename": ""},
+  "player": {"steamid": "76561198000000000", "name": "player", "activity": "playing", "kills": 12, "deaths": 4, "assists": 17, "last_hits": 301, "denies": 14, "team_name": "radiant", "gold": 1450, "gpm": 655, "xpm": 701},
+  "hero": {"id": 8, "name": "npc_dota_hero_juggernaut", "level": 25, "alive": true, "respawn_seconds": 0, "buyback_cost": 2900, "buyback_cooldown": 0},
+  "items": {"slot0": {"name": "item_power_treads"}, "slot1": {"name": "item_bfury"}, "slot2": {"name": "item_manta"}, "slot3": {"name": "item_black_king_bar"}, "slot4": {"name": "empty"}, "slot5": {"name": "empty"}},
+  "auth": {"token": "TOKEN"}
+}

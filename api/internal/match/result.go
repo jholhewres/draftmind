@@ -22,13 +22,13 @@ type Result struct {
 	Kills     *int      `json:"kills,omitempty"`
 	Deaths    *int      `json:"deaths,omitempty"`
 	Assists   *int      `json:"assists,omitempty"`
-	Source    string    `json:"source"` // tap, message or photo
+	Source    string    `json:"source"` // tap, message, photo or gsi
 	Notes     []string  `json:"notes"`
 	EndedAt   time.Time `json:"endedAt"`
 }
 
 // Sources a result can come from.
-var Sources = []string{"tap", "message", "photo"}
+var Sources = []string{"tap", "message", "photo", "gsi"}
 
 // MaxDuration is the longest match a result can record.
 const MaxDuration = 4 * 3600
@@ -176,4 +176,21 @@ func (c *Coach) Notes(ctx context.Context, s Session, r Result, lang string, p p
 	return c.Note.Notes(ctx, writer.NotesBrief{
 		Lang: lang, Persona: p, Result: r.Outcome, Messages: lines, Facts: f.data, Allowed: f.allowed, Known: f.known,
 	})
+}
+
+// OpenFor is the id of the player's latest match session without a
+// result, started within the last six hours, or "" when there is none.
+func (s *Store) OpenFor(ctx context.Context, userID int64) (string, error) {
+	var id string
+	err := s.pool.QueryRow(ctx, `
+		SELECT id::text FROM match_session
+		WHERE user_id = $1 AND ended_at IS NULL AND created_at > now() - interval '6 hours'
+		ORDER BY created_at DESC LIMIT 1`, userID).Scan(&id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("open match session: %w", err)
+	}
+	return id, nil
 }

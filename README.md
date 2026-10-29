@@ -27,6 +27,7 @@ Photograph the pick screen and Draftmind reads the draft, suggests heroes, then 
 
 - **Draft read from a photo.** A phone photo or screenshot of the pick screen becomes both teams' picks, with a confidence per slot; any slot can be fixed in one tap. The reader uses TypeSafe's Jev image questions (a beta feature) and falls back to a vision model ([ADR-0006](docs/adr/0006-photo-read-with-jev.md)).
 - **Live draft from a shared window.** On a PC, share the game window and each pick is read on its own: the browser checks the portraits every 2 s for free and sends one frame only when a slot changes. A Live bar shows the read count and cost, with a Stop button; no frame is stored ([ADR-0013](docs/adr/0013-live-screen-read.md)).
+- **Live coach and game integration.** During a match, share the game window or connect the game's own Game State Integration: code triggers (gold for the next item, repeated deaths, buyback, laning over) speak in the chat with no model call, and the match result is recorded by itself ([ADR-0014](docs/adr/0014-live-coach.md), [ADR-0015](docs/adr/0015-game-state-integration.md)).
 - **Counter suggestions.** Code ranks every legal hero by matchups, synergy, role fit and patch win rate; the Jev decision model chooses among the top candidates. The ranking shows first and is refined in place.
 - **Streaming tips.** A short written reason per suggestion, streamed as it is written, built only from the decided result.
 - **Item build** for the locked hero against the enemy lineup.

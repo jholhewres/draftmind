@@ -92,6 +92,8 @@ export const test = base.extend<Fixtures>({
       await page.route('**/api/me/language', (route) =>
         route.fulfill({ json: route.request().method() === 'PUT' ? route.request().postDataJSON() : { language: '' } }),
       )
+      // No game integration on this server unless a spec turns it on.
+      await page.route('**/api/me/gsi', (route) => route.fulfill({ status: 503, json: { error: 'game integration is not configured' } }))
       // A visitor has no remembered game mode.
       await page.route('**/api/me/mode', (route) => route.fulfill({ status: 401, json: { error: 'sign in first' } }))
       // Production today: password and Steam, no mailer for e-mail links.

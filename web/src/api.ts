@@ -711,3 +711,25 @@ export async function sendLiveFrame(id: string, frame: Blob, lang: string, perso
   if (!res.ok) throw new Error(`/api/match/live: HTTP ${res.status}`)
   return (await res.json()) as LiveTick
 }
+
+// Game State Integration for the signed-in account (ADR-0015).
+export type GsiStatus = { configured: boolean; receiving: boolean; createdAt?: string; lastPostAt?: string }
+
+export async function fetchGsiStatus(signal?: AbortSignal): Promise<GsiStatus | null> {
+  const res = await fetch('/api/me/gsi', { signal })
+  if (res.status === 401 || res.status === 503) return null
+  if (!res.ok) throw new Error(`/api/me/gsi: HTTP ${res.status}`)
+  return (await res.json()) as GsiStatus
+}
+
+// A new token, replacing the old one, and the config file that carries it.
+export async function issueGsiToken(): Promise<{ filename: string; config: string }> {
+  const res = await fetch('/api/me/gsi/token', { method: 'POST' })
+  if (!res.ok) throw new Error(`/api/me/gsi/token: HTTP ${res.status}`)
+  return (await res.json()) as { filename: string; config: string }
+}
+
+export async function revokeGsiToken(): Promise<void> {
+  const res = await fetch('/api/me/gsi/token', { method: 'DELETE' })
+  if (!res.ok) throw new Error(`/api/me/gsi/token: HTTP ${res.status}`)
+}
