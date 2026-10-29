@@ -8,6 +8,7 @@ import (
 	"image"
 	"image/color"
 	"image/jpeg"
+	"image/png"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -155,5 +156,60 @@ func TestDraftReadReportsReadersThatFailed(t *testing.T) {
 	_ = json.Unmarshal(rec.Body.Bytes(), &body)
 	if rec.Code != http.StatusBadGateway || body.Error == "" {
 		t.Fatalf("status %d, body %s", rec.Code, rec.Body)
+	}
+}
+
+func pngOf(t *testing.T, w, h int) []byte {
+	t.Helper()
+	var b bytes.Buffer
+	if err := png.Encode(&b, image.NewGray(image.Rect(0, 0, w, h))); err != nil {
+		t.Fatal(err)
+	}
+	return b.Bytes()
+}
+
+func TestDraftReadRefusesAPhotoLargerThanTheBrowserSends(t *testing.T) {
+	reader := &stubReader{}
+	srv := New(fakeDB{}, nil, quietLog()).WithPhotoReader(reader)
+	// A flat 4096 px image is a few KB, but decodes to 64 MiB.
+	rec := upload(t, srv, "image", pngOf(t, 4096, 4096))
+	if rec.Code != http.StatusRequestEntityTooLarge || reader.size != (image.Point{}) {
+		t.Fatalf("status %d, reader got %v", rec.Code, reader.size)
+	}
+}
+
+// blockingReader holds every read until released.
+type blockingReader struct {
+	stubReader
+	started chan struct{}
+	release chan struct{}
+}
+
+func (b *blockingReader) Read(ctx context.Context, img image.Image, heroes []catalog.Hero) (photo.Read, error) {
+	b.started <- struct{}{}
+	<-b.release
+	return b.stubReader.Read(ctx, img, heroes)
+}
+
+func TestDraftReadRunsAFewReadsAtOnceAndTurnsAwayTheRest(t *testing.T) {
+	pool := seedDraft(t)
+	reader := &blockingReader{started: make(chan struct{}, 10), release: make(chan struct{})}
+	srv := New(fakeDB{}, catalog.NewStore(pool), quietLog()).WithPhotoReader(reader)
+	file := jpegOf(t, 300, 300)
+	codes := make(chan int, maxConcurrentReads)
+	for range maxConcurrentReads {
+		go func() { codes <- upload(t, srv, "image", file).Code }()
+	}
+	for range maxConcurrentReads {
+		<-reader.started
+	}
+	if rec := upload(t, srv, "image", file); rec.Code != http.StatusServiceUnavailable || rec.Header().Get("Retry-After") == "" {
+		t.Fatalf("a read past the limit: status %d, Retry-After %q", rec.Code, rec.Header().Get("Retry-After"))
+	}
+	close(reader.release)
+	for range maxConcurrentReads {
+		if code := <-codes; code != http.StatusOK {
+			t.Fatalf("a read within the limit: status %d", code)
+		}
 	}
 }

@@ -28,7 +28,7 @@ func newVision(t *testing.T, h http.HandlerFunc) *Vision {
 	t.Helper()
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
-	return &Vision{BaseURL: srv.URL, APIKey: "sk-or-test-key-not-real", Model: "google/gemini-3.1-flash-lite", HTTP: srv.Client(), MinConfidence: 0.5}
+	return &Vision{BaseURL: srv.URL, APIKey: "sk-or-test-key-not-real", Model: "google/gemini-3.1-flash-lite", HTTP: srv.Client(), MinConfidence: 0.5, TrustNames: true}
 }
 
 func TestVisionSendsThePhotoWithAJSONSchemaAndResolvesTheNames(t *testing.T) {
@@ -137,3 +137,32 @@ func TestVisionNeverPutsTheKeyInAnError(t *testing.T) {
 var fullDraft = `{"radiant": [` + strings.Repeat(`{"hero": "Axe", "empty": false, "confidence": 0.9},`, 4) +
 	`{"hero": "", "empty": true, "confidence": 0.9}], "dire": [` + strings.Repeat(`{"hero": "", "empty": true, "confidence": 0.9},`, 4) +
 	`{"hero": "", "empty": true, "confidence": 0.9}]}`
+
+func TestVisionFlagsEveryHeroItNamesUnlessItsNamesAreTrusted(t *testing.T) {
+	recorded, err := os.ReadFile("testdata/openrouter-vision.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var provider map[string]any
+	v := newVision(t, func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			Provider map[string]any `json:"provider"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		provider = body.Provider
+		_, _ = w.Write(recorded)
+	})
+	v.TrustNames = false // as served: its 0.95 is no better than a coin on a hard slot
+	r, err := v.Read(context.Background(), solid(1600, 900, color.RGBA{20, 20, 20, 255}), visionHeroes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, s := range append(append([]Slot{}, r.Radiant...), r.Dire...) {
+		if s.Status == StatusHero || s.HeroID != 0 {
+			t.Errorf("slot %d kept the vision model's hero: %+v", i, s)
+		}
+	}
+	if provider["zdr"] != true || provider["data_collection"] != "deny" {
+		t.Fatalf("provider preferences %v, want zero data retention", provider)
+	}
+}

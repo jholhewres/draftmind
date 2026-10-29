@@ -67,6 +67,8 @@ func runBench(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, log *s
 		calls = printCalls{}
 	}
 	readers := newPhotoReaders(cfg, calls)
+	// Scored on the names it gives; as served, the fallback flags them all.
+	readers.vision.TrustNames = true
 	if err := readers.jev.Portraits.Load(ctx, heroes); err != nil {
 		return err
 	}
@@ -111,6 +113,7 @@ func runBench(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, log *s
 
 	// Photo to first suggestion, through the API as the browser calls it.
 	readers.jev.Trace = nil
+	readers.vision.TrustNames = false
 	srv := httpapi.New(pool, cat, log).
 		WithDecider(decision.New(cfg.OpenRouterBaseURL, cfg.OpenRouterAPIKey, cfg.DecisionModel, cfg.DecisionProvider, nil)).
 		WithPhotoReader(readers.chain(cfg.PhotoReader)).
@@ -128,8 +131,13 @@ func runBench(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, log *s
 		}
 		total = append(total, d)
 	}
-	fmt.Printf("\nphoto to first suggestion (POST /api/draft/read, then /api/draft/suggest; default reader %s): p50 %s, p95 %s, %d failed\n",
-		cfg.PhotoReader, pct(total, 50), pct(total, 95), failed)
+	fmt.Printf("\nphoto to first suggestion (POST /api/draft/read, then /api/draft/suggest; default reader %s): p50 %s, p95 %s, %d of %d failed\n",
+		cfg.PhotoReader, pct(total, 50), pct(total, 95), failed, len(set))
+	// The brief's target; a failed photo counts as missing it.
+	if failed > 0 || len(total) == 0 || median(total) > photoTargetP50 {
+		return fmt.Errorf("photo to first suggestion misses the %v p50 target", photoTargetP50)
+	}
+	fmt.Printf("target: p50 at most %v, met\n", photoTargetP50)
 	return nil
 }
 
@@ -311,6 +319,15 @@ func countSynth(set []fixture) int {
 		}
 	}
 	return n
+}
+
+// photoTargetP50 is the brief's photo-to-first-suggestion target.
+const photoTargetP50 = 5 * time.Second
+
+func median(d []time.Duration) time.Duration {
+	s := slices.Clone(d)
+	slices.Sort(s)
+	return s[(len(s)+1)/2-1]
 }
 
 // pct is the nearest-rank percentile.

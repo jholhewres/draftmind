@@ -30,11 +30,13 @@ The layout of the top bar is invented, so the Jev reader's layout constants (`ap
 
 4. Run `make bench-photo` and compare with the last result below. If the Jev reader slips on real photos, recheck the layout constants in `jev.go`.
 
-## Last result (2026-10-28, 8 synthetic photos, two runs)
+## Last result (2026-10-28, 8 synthetic photos, three runs)
 
 | reader | slots right | wrong hero | flagged | p50 | p95 | cost / photo |
 |---|---|---|---|---|---|---|
-| jev (`typesafe/jev-1.14`) | 77/80 and 73/80 (96 %, 91 %) | 0 | 3, 7 | 1.86 s, 2.64 s | 4.27 s, 3.47 s | $0.00124 |
-| vision (`google/gemini-3.1-flash-lite`) | 46/80 (57.5 %) | 32 | 2 | 3.24 s, 2.84 s | 4.39 s, 3.22 s | $0.00098 |
+| jev (`typesafe/jev-1.14`) | 77, 73, 74 of 80 (91–96 %) | 0 | 3, 7, 6 | 1.86–2.64 s | 2.98–4.27 s | $0.00124 |
+| vision (`google/gemini-3.1-flash-lite`), its names trusted | 46 of 80 (57.5 %) | 32 | 2 | 2.84–3.24 s | 3.22–4.39 s | $0.00098 |
 
-Jev's shortlist held the right hero in 65/66 and 62/66 picked slots. Photo to first suggestion: p50 2.27 s and 2.26 s, p95 3.42 s and 3.92 s. Default reader: Jev.
+Jev's shortlist held the right hero in 62 to 65 of 66 picked slots. Photo to first suggestion through the API: p50 2.1–2.3 s, p95 3.4–3.9 s, no failure; the bench fails when p50 is over 5 s.
+
+Default reader: Jev. The vision model is the fallback, and as served it flags every hero it names: its 0.95 was as likely wrong as right.

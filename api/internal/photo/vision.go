@@ -24,6 +24,10 @@ type Vision struct {
 	HTTP                   *http.Client
 	// MinConfidence is the least confidence a slot's answer needs to stand.
 	MinConfidence float64
+	// TrustNames keeps the heroes the model names. Off, every hero it names is
+	// flagged for the player: on the bench it gave a wrong hero 0.95, the same
+	// as a right one (ADR-0006), so its confidence cannot gate a guess.
+	TrustNames bool
 }
 
 // Name names the reader in reads and logs.
@@ -68,7 +72,7 @@ func (v *Vision) Read(ctx context.Context, img image.Image, heroes []catalog.Her
 		"temperature":     0,
 		"max_tokens":      800,
 		"reasoning":       map[string]any{"effort": "minimal"},
-		"provider":        map[string]any{"data_collection": "deny", "require_parameters": true},
+		"provider":        map[string]any{"data_collection": "deny", "require_parameters": true, "zdr": true},
 		"usage":           map[string]any{"include": true},
 	})
 	if err != nil {
@@ -132,6 +136,9 @@ func (v *Vision) parse(raw []byte, heroes []catalog.Hero) (Read, error) {
 			return Read{}, fmt.Errorf("photo: vision: slot %d is incomplete or its confidence is outside 0..1", i)
 		}
 		g[i] = Guess{Name: *s.Hero, Empty: *s.Empty, Confidence: *s.Confidence}
+		if !v.TrustNames && !g[i].Empty {
+			g[i].Name = ""
+		}
 	}
 	r := Resolve(g, heroes, v.MinConfidence)
 	r.Reader, r.Cost = v.Name(), w.Usage.Cost

@@ -151,3 +151,29 @@ test('a photo that cannot be read says so and offers the board by hand', async (
   expect(await screen.findByRole('alert')).toHaveTextContent('Could not read the photo')
   expect(screen.getByRole('link', { name: 'Build by hand' })).toHaveAttribute('href', '#/draft/manual')
 })
+
+test('an unread seat on your team is yours when no slot is empty, so every read ally stays in the ranking', async () => {
+  const { asked } = mockApi({
+    read: { patch: '7.41', reader: 'jev', radiant: [unread, slot(1), slot(5), slot(7), slot(14)], dire: [slot(2), slot(), slot(), slot(), slot()] },
+  })
+  renderScreen()
+  await waitFor(() => expect(asked).toHaveLength(1))
+  expect(asked[0].allies).toEqual([1, 5, 7, 14])
+  expect(within(group('Your team')).getByText('You')).toBeInTheDocument()
+  expect(within(group('Your team')).getAllByRole('button')).toHaveLength(4)
+})
+
+test('a flagged enemy slot can be set to empty from the picker', async () => {
+  mockApi()
+  renderScreen()
+  fireEvent.click(await within(await screen.findByRole('group', { name: 'Enemy' })).findByRole('button', { name: 'Unread hero, choose' }))
+  fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Remove' }))
+  await waitFor(() => expect(within(group('Enemy')).getAllByRole('button', { name: 'Add enemy' })).toHaveLength(3))
+  expect(screen.queryByText(/not read/)).not.toBeInTheDocument()
+})
+
+test('two unread slots read in the plural', async () => {
+  mockApi({ read: { ...read, radiant: [slot(1), slot(), unread, slot(), slot()] } })
+  renderScreen()
+  expect(await screen.findByText('2 heroes were not read. Tap + to choose them; the ranking already uses the others.')).toBeInTheDocument()
+})

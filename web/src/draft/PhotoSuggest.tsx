@@ -23,11 +23,14 @@ type Slots = ReadSlot[]
 const ALLIES = 4
 const roles = [1, 2, 3, 4, 5]
 const sideOf = (team: Team) => (team === 'radiant' ? [0, 1, 2, 3, 4] : [5, 6, 7, 8, 9])
-// Your team's first empty slot is yours; the other four are your allies.
+// Your team's first empty slot is yours, else its first unread one; the
+// other four are your allies.
 function seats(slots: Slots | null, team: Team) {
   const own = sideOf(team)
   const enemyAt = sideOf(team === 'radiant' ? 'dire' : 'radiant')
-  const you = slots ? own.find((i) => slots[i].status === 'empty') : undefined
+  const you = slots
+    ? (own.find((i) => slots[i].status === 'empty') ?? own.find((i) => slots[i].status === 'unknown'))
+    : undefined
   return { own, you, allyAt: own.filter((i) => i !== you).slice(0, ALLIES), enemyAt }
 }
 
@@ -37,7 +40,7 @@ const heroIds = (slots: Slots, at: number[]) => at.flatMap((i) => (slots[i].stat
 // with every slot the reader could not read flagged, and the ranking below
 // as soon as the read returns. Fixing a slot re-ranks in place.
 export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto }: Props) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [catalog, setCatalog] = useState<HeroCatalog | null>(null)
   const [slots, setSlots] = useState<Slots | null>(null)
   const [readError, setReadError] = useState<string | null>(null)
@@ -132,7 +135,7 @@ export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto
                   {enemyAt.map((i) => slotAt('enemy', i))}
                 </Row>
                 {unread > 0 && (
-                  <p className="unread-note">{unread === 1 ? t('photo.unreadOne') : t('photo.unreadMany', { count: unread })}</p>
+                  <p className="unread-note">{t(new Intl.PluralRules(locale).select(unread) === 'one' ? 'photo.unread.one' : 'photo.unread.other', { count: unread })}</p>
                 )}
                 <button type="button" className="chip swap" onClick={() => setTeam((s) => (s === 'radiant' ? 'dire' : 'radiant'))}>
                   {t('photo.swap')}
@@ -158,7 +161,7 @@ export default function PhotoSuggest({ photo, prepare = prepareImage, onNewPhoto
         <HeroPicker
           title={t(sideLabel[pickingSide].choose)}
           heroes={catalog.heroes.filter((h) => !taken.has(h.id))}
-          filled={slots[picking].status === 'hero'}
+          filled={slots[picking].status !== 'empty'} // an unread slot may turn out empty
           onPick={(id) => {
             set(picking, { heroId: id, status: 'hero', confidence: 1 })
             setPicking(null)

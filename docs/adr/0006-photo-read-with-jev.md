@@ -25,16 +25,17 @@ The pick phase leaves the player 15–20 s, so a photo must turn into suggestion
 
 ## Benchmark result (2026-10-28)
 
-`make bench-photo` on the 8 synthetic photos of `api/testdata/photos/` (no real photos yet), two runs:
+`make bench-photo` on the 8 synthetic photos of `api/testdata/photos/` (no real photos yet), three runs:
 
 | reader | slots right | wrong hero | flagged | p50 | p95 | cost / photo |
 |---|---|---|---|---|---|---|
-| Jev (`typesafe/jev-1.14`) | 91–96 % | 0 | 3–7 | 1.9–2.6 s | 3.5–4.3 s | $0.0012 |
+| Jev (`typesafe/jev-1.14`) | 91–96 % | 0 | 3–7 | 1.9–2.6 s | 3.0–4.3 s | $0.0012 |
 | Vision (`google/gemini-3.1-flash-lite`) | 57.5 % | 32 | 2 | 2.8–3.2 s | 3.2–4.4 s | $0.0010 |
 
-Photo to first suggestion through the API (read, then suggest): p50 2.3 s, p95 3.4–3.9 s.
+Photo to first suggestion through the API (read, then suggest): p50 2.1–2.3 s, p95 3.4–3.9 s.
 
-- **Default: Jev** (`PHOTO_READER=jev`); the vision model is its fallback. Jev reads more slots right and never named a wrong hero; the vision model names a wrong hero with 0.95 confidence on 40 % of slots, so its confidence cannot gate a guess.
+- **Default: Jev** (`PHOTO_READER=jev`); the vision model is its fallback. Jev reads more slots right and never named a wrong hero; the vision model names a wrong hero with 0.95 confidence on 40 % of slots, so its confidence cannot gate a guess: as the fallback it flags every hero it names and keeps only the empty slots, and the player picks the rest.
+- The server refuses a photo over 2048 px on a side (the browser sends 1600) and runs at most 4 reads at once; the vision request asks for zero data retention, as Jev's does.
 - How the Jev reader works: a Box question finds the clock between the teams; code walks outward from it, finds each portrait by correlating small normalized thumbnails of the current patch's portraits (cached under `DATA_DIR`, outside git), numbers each one by its distance from the clock and shortlists the 5 best-fitting heroes; one choice question per slot, in parallel, picks among their portraits, with `empty` and `other` options. A slot stands only when Jev's pick has probability ≥ 0.5 and its portrait also fits the slot by the code's measure (correlation ≥ 0.75); anything else is flagged.
 - The top bar's shape (slot size and gap relative to the clock) is calibrated on the synthetic layout; recheck it with real photos.
 - Jev photo calls go over HTTP/1.1, one connection each, without a hedge: over HTTP/2 the ten slot uploads queue on one connection and miss the 3 s deadline.

@@ -37,11 +37,13 @@ type Server struct {
 
 	suggestLimit, readLimit Limit
 	now                     func() time.Time
+	reads                   chan struct{} // a slot per photo read running
 }
 
 // New builds the server.
 func New(db Pinger, cat Catalog, log *slog.Logger) *Server {
-	return &Server{db: db, catalog: cat, log: log, suggestLimit: DefaultSuggestLimit, readLimit: DefaultReadLimit, now: time.Now}
+	return &Server{db: db, catalog: cat, log: log, suggestLimit: DefaultSuggestLimit, readLimit: DefaultReadLimit, now: time.Now,
+		reads: make(chan struct{}, maxConcurrentReads)}
 }
 
 // WithDecider lets jev choose among the draft suggestions; nil keeps the

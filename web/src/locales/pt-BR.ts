@@ -101,7 +101,7 @@ export const ptBR: Messages = {
   'photo.yourTeam': 'Seu time',
   'photo.enemy': 'Inimigo',
   'photo.unread': 'Herói não lido, escolher',
-  'photo.unreadOne': '1 herói não foi lido. Toque no + para escolher; o ranking já usa os outros.',
-  'photo.unreadMany': '{count} heróis não foram lidos. Toque no + para escolher; o ranking já usa os outros.',
+  'photo.unread.one': '1 herói não foi lido. Toque no + para escolher; o ranking já usa os outros.',
+  'photo.unread.other': '{count} heróis não foram lidos. Toque no + para escolher; o ranking já usa os outros.',
   'photo.swap': 'Trocar times',
 }

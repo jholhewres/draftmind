@@ -13,11 +13,15 @@ import (
 	"github.com/jholhewres/draftmind/api/internal/photo"
 )
 
-// Photo limits: the browser downscales to about 1600 px, so a larger photo
-// is refused rather than decoded.
+// Photo limits: the browser downscales to 1600 px, so a larger photo is
+// refused rather than decoded; a flat 4096 px image is a few KB but would
+// decode to 64 MiB.
 const (
 	maxPhotoBytes = 5 << 20
-	maxPhotoSide  = 4096
+	maxPhotoSide  = 2048
+	// Reads at once, server-wide; each holds a decoded photo while it waits on
+	// the models.
+	maxConcurrentReads = 4
 )
 
 // WithPhotoReader reads drafts from photos; nil leaves POST /api/draft/read unavailable.
@@ -44,13 +48,22 @@ func (s *Server) readDraft(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, status, map[string]string{"error": err.Error()})
 		return
 	}
+	// Taken once the upload is in, so a slow upload holds no slot.
+	select {
+	case s.reads <- struct{}{}:
+		defer func() { <-s.reads }()
+	default:
+		w.Header().Set("Retry-After", "2")
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "too many photos at once; try again shortly"})
+		return
+	}
 	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
 	if err != nil || (format != "jpeg" && format != "png") {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "the photo must be a JPEG or PNG image"})
 		return
 	}
 	if cfg.Width > maxPhotoSide || cfg.Height > maxPhotoSide {
-		writeJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": "the photo is larger than 4096 px on a side"})
+		writeJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": "the photo is larger than 2048 px on a side"})
 		return
 	}
 	img, _, err := image.Decode(bytes.NewReader(data))
