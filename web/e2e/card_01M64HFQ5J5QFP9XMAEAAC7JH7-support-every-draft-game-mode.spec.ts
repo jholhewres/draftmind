@@ -38,6 +38,8 @@ test('The draft screen offers the mode (default All Pick, remembered per user); 
   await page.route(`**/api/match/${session.id}`, (route) => route.fulfill({ json: { ...session, mode: 'turbo', messages: [] } }))
   await page.getByRole('button', { name: /^Pick .* and start$/ }).first().click()
   await expect.poll(() => (started[0] as { mode?: string } | undefined)?.mode).toBe('turbo')
+  // The started match opens the Coach tab before the draft is opened again.
+  await expect(page).toHaveURL(/#\/coach$/)
   await page.goto('/#/draft/manual')
   await expect(mode(page)).toBeVisible()
   await expect(page).toHaveScreenshot('mode-picker.png')
