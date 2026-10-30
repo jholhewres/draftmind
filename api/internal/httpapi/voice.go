@@ -70,7 +70,7 @@ func (s *Server) matchVoice(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusUnprocessableEntity, map[string]string{"error": "no speech in the clip"})
 		return
 	case errors.Is(err, budget.ErrOverCap):
-		writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": errOverCap})
+		writeOverCap(w)
 		return
 	case err != nil:
 		if !errors.Is(err, context.Canceled) {

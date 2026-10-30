@@ -56,3 +56,10 @@ type budgetUse struct {
 
 // errOverCap is the clear message a capped request answers with.
 const errOverCap = "the model spend cap is used up for now; the built-in ranking and answers still work"
+
+// writeOverCap answers 429 marked as the spend cap, so the client tells it
+// from a rate limit.
+func writeOverCap(w http.ResponseWriter) {
+	w.Header().Set("X-Spend-Cap", "used")
+	writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": errOverCap})
+}

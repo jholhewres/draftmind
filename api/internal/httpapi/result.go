@@ -72,7 +72,7 @@ func (s *Server) parseResult(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(err, writer.ErrUnclear):
 		writeJSON(w, http.StatusUnprocessableEntity, map[string]string{"error": "the message does not say how the match ended"})
 	case errors.Is(err, budget.ErrOverCap):
-		writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": errOverCap})
+		writeOverCap(w)
 	case err != nil:
 		s.log.Warn("parse result", "err", err)
 		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "the message could not be read; tap the result instead"})
@@ -131,7 +131,7 @@ func (s *Server) readEnd(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	read, err := s.endReader.ReadEnd(ctx, img, hero)
 	if errors.Is(err, budget.ErrOverCap) {
-		writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": errOverCap})
+		writeOverCap(w)
 		return
 	}
 	if err != nil {

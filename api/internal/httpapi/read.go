@@ -78,6 +78,7 @@ func (s *Server) readPhoto(ctx context.Context, w http.ResponseWriter, data []by
 	start := time.Now()
 	read, err := s.reader.Read(ctx, img, heroes)
 	if errors.Is(err, budget.ErrOverCap) {
+		w.Header().Set("X-Spend-Cap", "used")
 		return "", photo.Read{}, http.StatusTooManyRequests, errors.New(errOverCap)
 	}
 	if err != nil {

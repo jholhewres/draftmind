@@ -84,6 +84,10 @@ func TestPastTheSpendCapModelCallsStopAndTheCodeAnswers(t *testing.T) {
 	if !strings.Contains(rec.Body.String(), `"reason":"budget"`) || d.Source != draft.SourceRanking {
 		t.Fatalf("suggest after the cap: %s, want the code ranking labelled budget", rec.Body)
 	}
+	// A voice clip past the cap is refused as the cap, not as a rate limit.
+	if rec := send(h, http.MethodPost, "/api/match/"+id+"/voice", ""); rec.Code == http.StatusTooManyRequests && rec.Header().Get("X-Spend-Cap") != "used" {
+		t.Fatalf("voice over the cap: %d without the spend-cap mark", rec.Code)
+	}
 	// The item build and a new match spend from the same client cap.
 	for _, req := range [][2]string{{"/api/draft/build", `{"hero":1,"enemies":[2]}`}, {"/api/match", `{"hero":1,"role":2,"enemies":[2]}`}} {
 		if rec := send(h, http.MethodPost, req[0], req[1]); rec.Code != http.StatusOK || calls != before {
