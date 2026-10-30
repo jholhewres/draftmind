@@ -21,7 +21,7 @@ function tickSeconds(): number {
   return DEFAULT_TICK_S
 }
 
-type Stats = { ticks: number; spoken: number; cost: number; budget?: BudgetUse }
+type Stats = { ticks: number; spoken: number; cost: number; budget?: BudgetUse; refused?: boolean }
 
 // The live coach during a match (ADR-0014): with the game window shared,
 // one frame every tick goes to the server when the screen changed and looks
@@ -80,7 +80,7 @@ export default function LiveCoach({ session, onLine }: { session: MatchSession; 
               stop(stream)
               return
             }
-            setStats((s) => ({ ticks: s.ticks + 1, spoken: s.spoken + (r.message ? 1 : 0), cost: s.cost + (r.cost ?? 0), budget: r.budget ?? s.budget }))
+            setStats((s) => ({ ticks: s.ticks + 1, spoken: s.spoken + (r.message ? 1 : 0), cost: s.cost + (r.cost ?? 0), budget: r.budget ?? s.budget, refused: r.reason === 'budget' }))
             if (r.message) lineRef.current(r.message)
             // The match has a result: the coach stops looking.
             if (r.reason === 'ended') stop(stream)
@@ -119,7 +119,7 @@ export default function LiveCoach({ session, onLine }: { session: MatchSession; 
             {t('live.on')}
           </span>
           <span className="muted live-stats">{t('liveCoach.stats', { ticks: stats.ticks, spoken: stats.spoken, cost })}</span>
-          <BudgetMeter budget={stats.budget} />
+          <BudgetMeter budget={stats.budget} refused={stats.refused} />
           <button type="button" className="chip live-stop" onClick={() => stop()}>
             {t('live.stop')}
           </button>

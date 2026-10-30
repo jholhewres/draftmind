@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { streamSuggestions, type StreamRead, type StreamRequest, type SuggestResult, type Tip } from '../api'
+import { OverCap, streamSuggestions, type StreamRead, type StreamRequest, type SuggestResult, type Tip } from '../api'
+import { useI18n } from '../i18n'
 
 // The list on screen: the code ranking first, refined in place by Jev's
 // decision; deciding until the decision arrives.
@@ -17,14 +18,17 @@ export type SuggestStream = {
 // changes. The last list and its tips stay until the new ranking arrives,
 // so a change updates the suggestions in place. onRead gets a photo's read.
 export function useSuggestStream(request: StreamRequest | null, onRead?: (read: StreamRead) => void): SuggestStream {
+  const { t } = useI18n()
   const [result, setResult] = useState<StreamResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [tips, setTips] = useState<ReadonlyMap<number, Tip>>(new Map())
   // The last request whose stream ended; any other is still streaming.
   const [ended, setEnded] = useState<StreamRequest | null>(null)
   const readRef = useRef(onRead)
+  const overCap = useRef('')
   useEffect(() => {
     readRef.current = onRead
+    overCap.current = t('budget.out')
   })
 
   useEffect(() => {
@@ -53,7 +57,7 @@ export function useSuggestStream(request: StreamRequest | null, onRead?: (read: 
       ctrl.signal,
     )
       .catch((e: unknown) => {
-        if (!ctrl.signal.aborted) setError(e instanceof Error ? e.message : String(e))
+        if (!ctrl.signal.aborted) setError(e instanceof OverCap ? overCap.current : e instanceof Error ? e.message : String(e))
       })
       .finally(() => {
         if (ctrl.signal.aborted) return

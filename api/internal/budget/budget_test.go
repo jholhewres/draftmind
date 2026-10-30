@@ -3,6 +3,7 @@ package budget
 import (
 	"context"
 	"errors"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -57,5 +58,18 @@ func TestASessionStopsSpendingAtItsCapAndAClientAcrossSessionsAtItsOwn(t *testin
 	}
 	if spent, _, _ := Used(a); spent != 0 {
 		t.Fatalf("spent %v after the window, want 0", spent)
+	}
+}
+
+func TestAFullMeterRefusesNewSpendersInsteadOfGrowing(t *testing.T) {
+	m := New()
+	for i := range maxSpenders {
+		Add(m.With(context.Background(), "s"+strconv.Itoa(i), 1), usd(0.01))
+	}
+	if err := Check(m.With(context.Background(), "one-more", 1)); !errors.Is(err, ErrOverCap) {
+		t.Fatalf("a new spender on a full meter: %v, want ErrOverCap", err)
+	}
+	if len(m.spent) > maxSpenders {
+		t.Fatalf("%d spenders, want at most %d", len(m.spent), maxSpenders)
 	}
 }

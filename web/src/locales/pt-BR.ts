@@ -148,6 +148,7 @@ export const ptBR: Messages = {
   'liveCoach.stats': "{ticks} olhadas · {spoken} falas · {cost}",
   'live.budget': "Limite de IA {spent} de {cap}",
   'live.budgetOut': "Limite de IA esgotado: as respostas embutidas continuam",
+  'budget.out': "O limite de gasto com IA acabou por agora. Monte o draft à mão ou toque no resultado; o ranking embutido continua funcionando.",
   'liveCoach.off': "O coach ao vivo está desligado neste servidor.",
   'liveCoach.event.item_timing': "Você já tem o ouro: compre {item} agora.",
   'liveCoach.event.deaths': "Essa luta foi mal. Jogue seguro perto da torre até o time se juntar.",

@@ -11,9 +11,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jholhewres/draftmind/api/internal/photo"
-
 	"github.com/jholhewres/draftmind/api/internal/budget"
+	"github.com/jholhewres/draftmind/api/internal/photo"
 )
 
 // Photo limits: the browser downscales to 1600 px, so a larger photo is

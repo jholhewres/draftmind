@@ -13,11 +13,10 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/jholhewres/draftmind/api/internal/budget"
 	"github.com/jholhewres/draftmind/api/internal/draft"
 	"github.com/jholhewres/draftmind/api/internal/photo"
 	"github.com/jholhewres/draftmind/api/internal/writer"
-
-	"github.com/jholhewres/draftmind/api/internal/budget"
 )
 
 // TipHeroes is how many of the top heroes get a written tip.

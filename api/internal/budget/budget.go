@@ -19,7 +19,8 @@ var ErrOverCap = errors.New("budget: the model spend cap is used up")
 // Window is how long a spend counts; then the spender starts from zero.
 const Window = 24 * time.Hour
 
-// maxSpenders bounds the memory: past it, finished windows are dropped.
+// maxSpenders bounds the memory: past it, finished windows are swept at
+// most once a minute and a new spender is refused until one frees up.
 const maxSpenders = 10_000
 
 type spend struct {
@@ -32,6 +33,7 @@ type spend struct {
 type Meter struct {
 	mu    sync.Mutex
 	spent map[string]*spend
+	swept time.Time // the last sweep of finished windows
 	now   func() time.Time
 }
 
@@ -63,21 +65,27 @@ func (m *Meter) With(ctx context.Context, id string, capUSD float64) context.Con
 	return context.WithValue(ctx, key{}, tabs{m, list})
 }
 
-// get is the spender's live window, opened when missing or over.
+// get is the spender's live window, opened when missing or over; nil when
+// the meter is full of live windows, which counts as over the cap.
 func (m *Meter) get(id string) *spend {
 	now := m.now()
 	s := m.spent[id]
-	if s == nil || now.Sub(s.since) >= Window {
-		if len(m.spent) >= maxSpenders {
-			for k, v := range m.spent {
-				if now.Sub(v.since) >= Window {
-					delete(m.spent, k)
-				}
+	if s != nil && now.Sub(s.since) < Window {
+		return s
+	}
+	if s == nil && len(m.spent) >= maxSpenders && now.Sub(m.swept) >= time.Minute {
+		m.swept = now
+		for k, v := range m.spent {
+			if now.Sub(v.since) >= Window {
+				delete(m.spent, k)
 			}
 		}
-		s = &spend{since: now}
-		m.spent[id] = s
 	}
+	if s == nil && len(m.spent) >= maxSpenders {
+		return nil // fail open to the code: no model call for a spender we cannot count
+	}
+	s = &spend{since: now}
+	m.spent[id] = s
 	return s
 }
 
@@ -90,7 +98,7 @@ func Check(ctx context.Context) error {
 	t.m.mu.Lock()
 	defer t.m.mu.Unlock()
 	for _, tb := range t.list {
-		if t.m.get(tb.id).micros >= tb.capMicros {
+		if s := t.m.get(tb.id); s == nil || s.micros >= tb.capMicros {
 			return ErrOverCap
 		}
 	}
@@ -107,7 +115,9 @@ func Add(ctx context.Context, usd *float64) {
 	t.m.mu.Lock()
 	defer t.m.mu.Unlock()
 	for _, tb := range t.list {
-		t.m.get(tb.id).micros += micros(*usd)
+		if s := t.m.get(tb.id); s != nil {
+			s.micros += micros(*usd)
+		}
 	}
 }
 
@@ -120,5 +130,9 @@ func Used(ctx context.Context) (spent, capUSD float64, ok bool) {
 	t.m.mu.Lock()
 	defer t.m.mu.Unlock()
 	tb := t.list[0]
-	return float64(t.m.get(tb.id).micros) / 1e6, float64(tb.capMicros) / 1e6, true
+	s := t.m.get(tb.id)
+	if s == nil {
+		return float64(tb.capMicros) / 1e6, float64(tb.capMicros) / 1e6, true
+	}
+	return float64(s.micros) / 1e6, float64(tb.capMicros) / 1e6, true
 }

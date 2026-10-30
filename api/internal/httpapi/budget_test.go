@@ -84,4 +84,20 @@ func TestPastTheSpendCapModelCallsStopAndTheCodeAnswers(t *testing.T) {
 	if !strings.Contains(rec.Body.String(), `"reason":"budget"`) || d.Source != draft.SourceRanking {
 		t.Fatalf("suggest after the cap: %s, want the code ranking labelled budget", rec.Body)
 	}
+	// The item build and a new match spend from the same client cap.
+	for _, req := range [][2]string{{"/api/draft/build", `{"hero":1,"enemies":[2]}`}, {"/api/match", `{"hero":1,"role":2,"enemies":[2]}`}} {
+		if rec := send(h, http.MethodPost, req[0], req[1]); rec.Code != http.StatusOK || calls != before {
+			t.Fatalf("%s after the cap: %d %s, %d calls (want %d)", req[0], rec.Code, rec.Body, calls, before)
+		}
+	}
+}
+
+func TestAnIPv6ClientIsOneSpenderAcrossItsSlash64(t *testing.T) {
+	for in, want := range map[string]string{
+		"2001:db8:1:2::1": "2001:db8:1:2::/64", "2001:db8:1:2:ffff::9": "2001:db8:1:2::/64", "203.0.113.7": "203.0.113.7", "junk": "junk",
+	} {
+		if got := spenderOf(in); got != want {
+			t.Errorf("spenderOf(%q) = %q, want %q", in, got, want)
+		}
+	}
 }

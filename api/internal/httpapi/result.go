@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/jholhewres/draftmind/api/internal/auth"
+	"github.com/jholhewres/draftmind/api/internal/budget"
 	"github.com/jholhewres/draftmind/api/internal/match"
 	"github.com/jholhewres/draftmind/api/internal/persona"
 	"github.com/jholhewres/draftmind/api/internal/photo"
@@ -70,6 +71,8 @@ func (s *Server) parseResult(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case errors.Is(err, writer.ErrUnclear):
 		writeJSON(w, http.StatusUnprocessableEntity, map[string]string{"error": "the message does not say how the match ended"})
+	case errors.Is(err, budget.ErrOverCap):
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": errOverCap})
 	case err != nil:
 		s.log.Warn("parse result", "err", err)
 		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "the message could not be read; tap the result instead"})
@@ -127,6 +130,10 @@ func (s *Server) readEnd(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	start := time.Now()
 	read, err := s.endReader.ReadEnd(ctx, img, hero)
+	if errors.Is(err, budget.ErrOverCap) {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": errOverCap})
+		return
+	}
 	if err != nil {
 		s.log.Warn("end read failed", "err", err, "latency", time.Since(start))
 		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "the photo could not be read; tap the result instead"})

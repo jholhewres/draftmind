@@ -147,6 +147,7 @@ export const en = {
   'liveCoach.stats': "{ticks} looks · {spoken} spoken · {cost}",
   'live.budget': "AI budget {spent} of {cap}",
   'live.budgetOut': "AI budget used up: the built-in answers keep working",
+  'budget.out': "The AI spend cap for now is used up. Build the draft by hand or tap the result; the built-in ranking still works.",
   'liveCoach.off': "The live coach is off on this server.",
   'liveCoach.event.item_timing': "You have the gold: buy {item} now.",
   'liveCoach.event.deaths': "That fight went badly. Play safe near your tower until your team regroups.",

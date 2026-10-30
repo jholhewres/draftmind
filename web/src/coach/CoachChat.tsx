@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import {
   sendMatchMessage,
   sendMatchVoice,
+  OverCap,
   VoiceError,
   type Category,
   type CoachEvent,
@@ -167,7 +168,7 @@ export default function CoachChat({ session, pushed = [] }: { session: MatchSess
       .catch((err: unknown) => {
         if (ctrl.current?.signal.aborted) return
         if (err instanceof VoiceError && err.status === 422) setNote('unheard')
-        else setError(err instanceof Error ? err.message : String(err))
+        else setError(err instanceof OverCap ? t('budget.out') : err instanceof Error ? err.message : String(err))
       })
       .finally(() => {
         setPending(false)

@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"net/http"
+	"net/netip"
 	"strconv"
 
 	"github.com/jholhewres/draftmind/api/internal/budget"
@@ -26,12 +27,25 @@ func (s *Server) metered(next http.Handler) http.Handler {
 		if id := r.PathValue("id"); id != "" {
 			ctx = s.meter.With(ctx, "match:"+id, s.sessionBudget)
 		}
-		client := "ip:" + clientIP(r)
+		// A signed-in client spends from its account and its address both, so
+		// new accounts on one address do not add caps.
+		ctx = s.meter.With(ctx, "ip:"+spenderOf(clientIP(r)), s.clientBudget)
 		if u := s.userID(r); u != nil {
-			client = "user:" + strconv.FormatInt(*u, 10)
+			ctx = s.meter.With(ctx, "user:"+strconv.FormatInt(*u, 10), s.clientBudget)
 		}
-		next.ServeHTTP(w, r.WithContext(s.meter.With(ctx, client, s.clientBudget)))
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+// spenderOf is an address as one spender: an IPv6 client's whole /64, since
+// one host usually holds all of it.
+func spenderOf(ip string) string {
+	a, err := netip.ParseAddr(ip)
+	if err != nil || !a.Unmap().Is6() {
+		return ip
+	}
+	p, _ := a.Prefix(64)
+	return p.String()
 }
 
 // budgetUse is how much of its cap a session spent, for the live bar.

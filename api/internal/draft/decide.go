@@ -8,9 +8,8 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/jholhewres/draftmind/api/internal/decision"
-
 	"github.com/jholhewres/draftmind/api/internal/budget"
+	"github.com/jholhewres/draftmind/api/internal/decision"
 )
 
 // JevCandidates is how many of the ranking's top heroes Jev chooses among.

@@ -11,9 +11,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/jholhewres/draftmind/api/internal/persona"
-
 	"github.com/jholhewres/draftmind/api/internal/budget"
+	"github.com/jholhewres/draftmind/api/internal/persona"
 )
 
 // Categories a player's message can be about; other is anything else the

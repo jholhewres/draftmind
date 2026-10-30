@@ -220,6 +220,13 @@ function asEvent(name: string, data: string): StreamEvent | null {
   return null
 }
 
+// A model call refused because the AI spend cap is used up (HTTP 429).
+export class OverCap extends Error {
+  constructor() {
+    super('the AI spend cap is used up')
+  }
+}
+
 // Streams the suggestions for req over Server-Sent Events, calling onEvent
 // for each as it arrives; resolves when the stream ends.
 export async function streamSuggestions(req: StreamRequest, onEvent: (e: StreamEvent) => void, signal?: AbortSignal): Promise<void> {
@@ -236,6 +243,7 @@ export async function streamSuggestions(req: StreamRequest, onEvent: (e: StreamE
     init = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req.draft), signal }
   }
   const res = await fetch(`/api/draft/stream?${query}`, init)
+  if (res.status === 429 && req.kind === 'photo') throw new OverCap()
   if (!res.ok || !res.body) throw new Error(`/api/draft/stream: HTTP ${res.status}`)
   await readEvents(res.body, (name, data) => {
     const ev = asEvent(name, data)
@@ -428,6 +436,7 @@ export async function parseEndMessage(id: string, text: string, signal?: AbortSi
   const path = matchPath(id, 'end/parse')
   const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }), signal })
   if (res.status === 422) return null
+  if (res.status === 429) throw new OverCap()
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
   return ((await res.json()) as { result: Outcome }).result
 }
@@ -438,6 +447,7 @@ export async function readEndScreen(id: string, image: Blob, signal?: AbortSigna
   const form = new FormData()
   form.append('image', image, 'end.jpg')
   const res = await fetch(path, { method: 'POST', body: form, signal })
+  if (res.status === 429) throw new OverCap()
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
   return (await res.json()) as ResultFill
 }
@@ -533,6 +543,7 @@ export async function sendMatchVoice(
 ): Promise<void> {
   const path = `/api/match/${encodeURIComponent(id)}/voice?${coachQuery(lang, persona)}`
   const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'audio/wav' }, body: wav, signal })
+  if (res.status === 429) throw new OverCap()
   if (!res.ok || !res.body) throw new VoiceError(res.status)
   await readCoachTurn(res.body, onEvent)
 }

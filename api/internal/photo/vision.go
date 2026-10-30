@@ -14,9 +14,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/jholhewres/draftmind/api/internal/catalog"
-
 	"github.com/jholhewres/draftmind/api/internal/budget"
+	"github.com/jholhewres/draftmind/api/internal/catalog"
 )
 
 // Vision reads the draft with a vision model on OpenRouter's chat

@@ -7,13 +7,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jholhewres/draftmind/api/internal/budget"
 	"github.com/jholhewres/draftmind/api/internal/decision"
 	"github.com/jholhewres/draftmind/api/internal/draft"
 	"github.com/jholhewres/draftmind/api/internal/items"
 	"github.com/jholhewres/draftmind/api/internal/persona"
 	"github.com/jholhewres/draftmind/api/internal/writer"
-
-	"github.com/jholhewres/draftmind/api/internal/budget"
 )
 
 // The live coach (ADR-0014): every tick the browser sends one frame of the

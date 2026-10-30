@@ -9,14 +9,13 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/jholhewres/draftmind/api/internal/budget"
 	"github.com/jholhewres/draftmind/api/internal/catalog"
 	"github.com/jholhewres/draftmind/api/internal/decision"
 	"github.com/jholhewres/draftmind/api/internal/draft"
 	"github.com/jholhewres/draftmind/api/internal/items"
 	"github.com/jholhewres/draftmind/api/internal/persona"
 	"github.com/jholhewres/draftmind/api/internal/writer"
-
-	"github.com/jholhewres/draftmind/api/internal/budget"
 )
 
 // Situation is a message as the coach read it: the parsed category and

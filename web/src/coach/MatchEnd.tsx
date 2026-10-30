@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { parseEndMessage, readEndScreen, saveMatchResult, type MatchResult, type MatchSession, type Outcome, type ResultFill } from '../api'
+import { OverCap, parseEndMessage, readEndScreen, saveMatchResult, type MatchResult, type MatchSession, type Outcome, type ResultFill } from '../api'
 import { prepareImage } from '../draft/prepare'
 import { useI18n } from '../i18n'
 import BackButton from '../shell/BackButton'
@@ -60,8 +60,8 @@ export default function MatchEnd({ session, heroName, signedIn, onEnded }: Props
       .then((v) => {
         if (!signal.aborted) done(v)
       })
-      .catch(() => {
-        if (!signal.aborted) setNote(t(kind === 'photo' ? 'end.photoError' : 'end.messageError'))
+      .catch((e: unknown) => {
+        if (!signal.aborted) setNote(t(e instanceof OverCap ? 'budget.out' : kind === 'photo' ? 'end.photoError' : 'end.messageError'))
       })
       .finally(() => {
         if (!signal.aborted) setBusy(null)

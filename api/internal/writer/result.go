@@ -8,9 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jholhewres/draftmind/api/internal/persona"
-
 	"github.com/jholhewres/draftmind/api/internal/budget"
+	"github.com/jholhewres/draftmind/api/internal/persona"
 )
 
 // Results a match can end with.

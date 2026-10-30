@@ -43,7 +43,8 @@ browser (React/Vite) ──HTTP/SSE──▶ api (Go, one binary: serve, migrate
 | `api/internal/match` | Match session, coach pipeline, voice, result |
 | `api/internal/persona` | Coach persona settings (writer prompt only) |
 | `api/internal/auth` | Password, magic link and Steam sign-in, server-side sessions ([ADR-0008](adr/0008-accounts.md), [ADR-0010](adr/0010-password-sign-in.md)) |
-| `api/internal/httpapi` | HTTP routes, SSE, rate limits, static web serving |
+| `api/internal/budget` | Model spend cap per match session and client, in memory; past it model calls fail open to the code ranking and templates |
+| `api/internal/httpapi` | HTTP routes, SSE, rate limits, security headers, static web serving |
 | `api/internal/db` | Pool and embedded migrations (`migrations/`, applied once in name order) |
 | `web/src` | React app: `draft/`, `coach/`, `heroes/`, `patches/`, `auth/`, `landing/`, `shell/`, `locales/` |
 | `web/e2e` | Playwright visual tests at phone and desktop sizes |

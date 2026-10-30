@@ -63,6 +63,13 @@ test('Each match session and each anonymous client has a model spend cap (an env
   await page.getByRole('button', { name: 'Send' }).click()
   await expect(page.locator('.bubble.coach').last()).toContainText('The AI spend cap for now is used up.')
   await expect(page).toHaveScreenshot('budget-template.png')
+
+  // A photo read past the cap says so, and the board can still be built by hand.
+  await page.route('**/api/draft/stream**', (route) => route.fulfill({ status: 429, json: { error: 'cap' } }))
+  await page.goto('/#/draft')
+  await page.locator('input[type=file]').first().setInputFiles('e2e/fixtures/pick-photo.jpg')
+  await expect(page.getByRole('alert')).toContainText('The AI spend cap for now is used up.')
+  await expect(page.getByRole('link', { name: /by hand/i })).toBeVisible()
 })
 
 test('The live session shows how much of the cap is used', async ({ page }, testInfo) => {

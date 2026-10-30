@@ -13,6 +13,7 @@ import (
 	"slices"
 	"strconv"
 
+	"github.com/jholhewres/draftmind/api/internal/budget"
 	"github.com/jholhewres/draftmind/api/internal/decision"
 )
 
@@ -108,6 +109,7 @@ const (
 	ReasonError         = "error"
 	ReasonUnavailable   = "unavailable"
 	ReasonFewCandidates = "few_candidates"
+	ReasonBudget        = "budget" // the model spend cap is used up
 )
 
 // MinConfidence is the least confidence Jev's enemy choice needs to replace
@@ -394,6 +396,9 @@ func Decide(ctx context.Context, jev Asker, ds Dataset, hero int, enemies []int)
 		},
 		Questions: qs,
 	})
+	if errors.Is(err, budget.ErrOverCap) {
+		return fallback(ReasonBudget)
+	}
 	if errors.Is(err, context.DeadlineExceeded) {
 		return fallback(ReasonTimeout)
 	}
